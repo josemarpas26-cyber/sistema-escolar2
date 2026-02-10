@@ -8,7 +8,11 @@ use App\Models\Disciplina;
 use App\Models\User;
 use App\Models\AnoLetivo;
 use App\Models\HistoricoAcademico;
+use App\Exports\BoletimExport;
+use App\Exports\PautaExport;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
 
 class RelatorioController extends Controller
 {
@@ -229,50 +233,44 @@ class RelatorioController extends Controller
 
     /**
      * Gerar Boletim em PDF
-     * TODO: Implementar com DomPDF ou mPDF
      */
     private function gerarBoletimPDF(array $dados)
     {
-        // Placeholder - será implementado na Fase 5
-        return response()->json([
-            'message' => 'Geração de PDF será implementada na próxima fase',
-            'dados' => $dados,
-        ]);
+        $pdf = Pdf::loadView('relatorios.pdf.boletim', $dados)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('boletim-' . $dados['aluno']->numero_processo . '.pdf');
     }
 
     /**
      * Gerar Boletim em Excel
-     * TODO: Implementar com Laravel Excel
      */
     private function gerarBoletimExcel(array $dados)
     {
-        // Placeholder - será implementado na Fase 5
-        return response()->json([
-            'message' => 'Geração de Excel será implementada na próxima fase',
-            'dados' => $dados,
-        ]);
+        $fileName = 'boletim-' . $dados['aluno']->numero_processo . '.xlsx';
+        
+        return Excel::download(
+            new BoletimExport(
+                $dados['aluno'],
+                $dados['turma'],
+                $dados['notas'],
+                $dados['mediaGeral']
+            ),
+            $fileName
+        );
     }
 
-    /**
-     * Gerar Pauta Geral em PDF
-     */
-    private function gerarPautaGeralPDF(array $dados)
-    {
-        return response()->json([
-            'message' => 'Geração de PDF será implementada na próxima fase',
-            'dados' => $dados,
-        ]);
-    }
+
 
     /**
      * Gerar Pauta de Disciplina em PDF
      */
     private function gerarPautaDisciplinaPDF(array $dados)
     {
-        return response()->json([
-            'message' => 'Geração de PDF será implementada na próxima fase',
-            'dados' => $dados,
-        ]);
+        $pdf = Pdf::loadView('relatorios.pdf.pauta', $dados)
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download('pauta-' . $dados['turma']->nome . '-' . $dados['disciplina']->codigo . '.pdf');
     }
 
     /**
@@ -280,10 +278,17 @@ class RelatorioController extends Controller
      */
     private function gerarPautaExcel(array $dados)
     {
-        return response()->json([
-            'message' => 'Geração de Excel será implementada na próxima fase',
-            'dados' => $dados,
-        ]);
+        $fileName = 'pauta-' . $dados['turma']->nome . '-' . $dados['disciplina']->codigo . '.xlsx';
+        
+        return Excel::download(
+            new PautaExport(
+                $dados['turma'],
+                $dados['disciplina'],
+                $dados['notas'],
+                $dados
+            ),
+            $fileName
+        );
     }
 
     /**
@@ -291,9 +296,20 @@ class RelatorioController extends Controller
      */
     private function gerarHistoricoPDF(array $dados)
     {
-        return response()->json([
-            'message' => 'Geração de PDF será implementada na próxima fase',
-            'dados' => $dados,
-        ]);
+        $pdf = Pdf::loadView('relatorios.pdf.historico', $dados)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('historico-' . $dados['aluno']->numero_processo . '.pdf');
+    }
+
+    /**
+     * Gerar Pauta Geral em PDF
+     */
+    private function gerarPautaGeralPDF(array $dados)
+    {
+        $pdf = Pdf::loadView('relatorios.pdf.pauta-geral', $dados)
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download('pauta-geral-' . $dados['turma']->nome . '.pdf');
     }
 }

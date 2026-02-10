@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt" class="{{ (session('theme', 'light') === 'dark') ? 'dark' : '' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,12 +19,12 @@
     
     @stack('styles')
 </head>
-<body class="bg-gray-50 font-sans antialiased">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 dark:text-gray-100 font-sans antialiased">
     
     <div class="min-h-screen flex">
         
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-rbg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
             <div class="flex flex-col h-full">
                 
                 <!-- Logo -->
@@ -33,7 +33,7 @@
                         <div class="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
                             <i class="fas fa-graduation-cap text-white text-xl"></i>
                         </div>
-                        <span class="text-xl font-bold text-gray-900">NotasEscola</span>
+                        <span class="text-xl font-bold text-gray-900 dark:text-gray-100">NotasEscola</span>
                     </div>
                     <button onclick="toggleSidebar()" class="lg:hidden text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times text-xl"></i>
@@ -115,7 +115,7 @@
                     <a href="{{ route('profile.show') }}" class="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
                         <img src="{{ auth()->user()->foto_perfil_url }}" alt="{{ auth()->user()->name }}" class="w-10 h-10 rounded-full object-cover">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate">{{ auth()->user()->name }}</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ auth()->user()->name }}</p>
                             <p class="text-xs text-gray-500 truncate">{{ auth()->user()->role->display_name }}</p>
                         </div>
                         <i class="fas fa-cog text-gray-400"></i>
@@ -136,7 +136,7 @@
         <div class="flex-1 lg:ml-64">
             
             <!-- Top Bar -->
-            <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
+            <header class="bg-white border-b bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 sticky top-0 z-20">
                 <div class="flex items-center justify-between h-16 px-6">
                     
                     <!-- Mobile menu button -->
@@ -146,12 +146,17 @@
 
                     <!-- Page Title -->
                     <div class="flex-1">
-                        <h1 class="text-2xl font-bold text-gray-900">@yield('page-title', 'Dashboard')</h1>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">@yield('page-title', 'Dashboard')</h1>
                     </div>
 
                     <!-- Right Actions -->
                     <div class="flex items-center space-x-4">
                         @yield('header-actions')
+                        <button id="dark-toggle"
+                        class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:scale-105 transition">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
                     </div>
 
                 </div>
@@ -203,6 +208,28 @@
         </div>
 
     </div>
+        <script>
+            const toggle = document.getElementById('dark-toggle');
+
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    const html = document.documentElement;
+
+                    if (html.classList.contains('dark')) {
+                        html.classList.remove('dark');
+                        localStorage.setItem('theme', 'light');
+                    } else {
+                        html.classList.add('dark');
+                        localStorage.setItem('theme', 'dark');
+                    }
+                });
+            }
+
+            // Aplica preferência salva
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        </script>
 
     @stack('scripts')
 

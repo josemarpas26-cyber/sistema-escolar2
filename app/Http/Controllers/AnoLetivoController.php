@@ -14,12 +14,13 @@ class AnoLetivoController extends Controller
     {
         $this->checkPermission('anos.create');
 
-        $anos = AnoLetivo::withCount('turmas')
+        $anosLetivos = AnoLetivo::withCount('turmas')
             ->orderBy('nome', 'desc')
             ->get();
 
-        return view('anos-letivos.index', compact('anos'));
+        return view('anos-letivos.index', compact('anosLetivos'));
     }
+
 
     /**
      * Formulário de criação

@@ -54,17 +54,27 @@ class TurmaController extends Controller
     /**
      * Formulário de criação
      */
-    public function create()
-    {
-        $this->checkPermission('turmas.create');
+        public function create()
+        {
+            $this->checkPermission('turmas.create');
 
-        $cursos = Curso::ativos()->get();
-        $anoLetivo = AnoLetivo::ativo()->first();
-        $professores = User::professores()->ativos()->get();
-        $disciplinas = Disciplina::ativos()->get();
+            $cursos = Curso::ativos()->get();
+            $anosLetivos = AnoLetivo::orderBy('nome', 'desc')->get();
+            $anoAtivo = AnoLetivo::ativo()->first();
 
-        return view('turmas.create', compact('cursos', 'anoLetivo', 'professores', 'disciplinas'));
-    }
+            $professores = User::professores()->ativos()->get();
+            $disciplinas = Disciplina::ativos()->get();
+
+            return view('turmas.create', compact(
+                'cursos',
+                'anosLetivos',
+                'anoAtivo',
+                'professores',
+                'disciplinas'
+            ));
+        }
+
+
 
     /**
      * Salvar nova turma

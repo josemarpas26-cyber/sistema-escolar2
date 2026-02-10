@@ -50,7 +50,7 @@ class User extends Authenticatable
     // Para alunos
     public function turmas()
     {
-        return $this->belongsToMany(Turma::class, 'turma_alunos', 'aluno_id', 'turma_id')
+        return $this->belongsToMany(Turma::class, 'turma_aluno', 'aluno_id', 'turma_id')
             ->withPivot('data_matricula', 'status')
             ->withTimestamps();
     }
