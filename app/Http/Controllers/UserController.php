@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Models\Turma;
 
 class UserController extends Controller
 {
@@ -218,23 +219,39 @@ class UserController extends Controller
      * Listar apenas alunos
      */
     public function alunos(Request $request)
-    {
-        $this->checkPermission('users.view');
+{
+    $this->checkPermission('users.view');
 
-        $query = User::alunos()->with(['role', 'turmas.curso']);
+    $query = User::alunos()->with(['role', 'turmas.curso']);
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('numero_processo', 'like', "%{$search}%");
-            });
-        }
-
-        $alunos = $query->paginate(20);
-
-        return view('users.alunos', compact('alunos'));
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('numero_processo', 'like', "%{$search}%");
+        });
     }
+
+    // 👇 FILTRO POR TURMA (se estiver usando no select)
+    if ($request->filled('turma')) {
+        $query->whereHas('turmas', function ($q) use ($request) {
+            $q->where('turma_id', $request->turma);
+        });
+    }
+
+    // 👇 FILTRO POR STATUS (já que seu form tem isso)
+    if ($request->filled('status')) {
+        $query->where('ativo', $request->status === 'ativo');
+    }
+
+    $alunos = $query->paginate(20);
+
+    // 👇 ESSA LINHA ESTAVA FALTANDO
+    $turmas = Turma::orderBy('nome')->get();
+
+    return view('users.alunos', compact('alunos', 'turmas'));
+}
+
 
     /**
      * Listar apenas professores

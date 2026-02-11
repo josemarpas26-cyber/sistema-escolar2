@@ -36,7 +36,7 @@ class NotaController extends Controller
     /**
      * Painel do professor
      */
-    private function professorIndex(Request $request)
+    public function professorIndex(Request $request)
     {
         $professor = auth()->user();
         $anoLetivo = AnoLetivo::ativo()->first();
@@ -95,7 +95,7 @@ class NotaController extends Controller
     /**
      * Painel da secretaria/admin
      */
-    private function secretariaIndex(Request $request)
+    public function secretariaIndex(Request $request)
     {
         $this->checkPermission('notas.view_all');
 
@@ -127,7 +127,7 @@ class NotaController extends Controller
     /**
      * Painel do aluno
      */
-    private function alunoIndex()
+    public function alunoIndex()
     {
         $this->checkPermission('notas.view_own');
 
@@ -389,7 +389,7 @@ class NotaController extends Controller
     /**
      * Verificar se professor pode editar esta nota
      */
-    private function verificarPermissaoProfessor(Nota $nota): void
+    public function verificarPermissaoProfessor(Nota $nota): void
     {
         $professor = auth()->user();
 
