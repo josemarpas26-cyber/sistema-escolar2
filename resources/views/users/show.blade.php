@@ -135,7 +135,10 @@
                                     {{ ucfirst($turma->pivot->status) }}
                                 </x-badge>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ $turma->pivot->data_matricula->format('d/m/Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {{ \Carbon\Carbon::parse($turma->pivot->data_matricula)->format('d/m/Y') }}
+                            </td>
+
                         </tr>
                         @endforeach
                     </tbody>
