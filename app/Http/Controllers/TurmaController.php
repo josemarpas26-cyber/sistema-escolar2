@@ -54,27 +54,25 @@ class TurmaController extends Controller
     /**
      * Formulário de criação
      */
-        public function create()
-        {
-            $this->checkPermission('turmas.create');
+    public function create()
+    {
+        $this->checkPermission('turmas.create');
 
-            $cursos = Curso::ativos()->get();
-            $anosLetivos = AnoLetivo::orderBy('nome', 'desc')->get();
-            $anoAtivo = AnoLetivo::ativo()->first();
+        $cursos = Curso::ativos()->get();
+        $anosLetivos = AnoLetivo::orderBy('nome', 'desc')->get();
+        $anoAtivo = AnoLetivo::ativo()->first();
 
-            $professores = User::professores()->ativos()->get();
-            $disciplinas = Disciplina::ativos()->get();
+        $professores = User::professores()->ativos()->get();
+        $disciplinas = Disciplina::ativos()->get();
 
-            return view('turmas.create', compact(
-                'cursos',
-                'anosLetivos',
-                'anoAtivo',
-                'professores',
-                'disciplinas'
-            ));
-        }
-
-
+        return view('turmas.create', compact(
+            'cursos',
+            'anosLetivos',
+            'anoAtivo',
+            'professores',
+            'disciplinas'
+        ));
+    }
 
     /**
      * Salvar nova turma
@@ -122,7 +120,18 @@ class TurmaController extends Controller
             'atribuicoes' => fn($q) => $q->with(['professor', 'disciplina']),
         ]);
 
-        return view('turmas.show', compact('turma'));
+        // Buscar alunos disponíveis para matrícula
+        // Assumindo que role_id = 3 é para alunos (ajuste conforme sua tabela roles)
+        $alunosDisponiveis = User::where('role_id', 4)
+            ->where('ativo', true)
+            ->whereNotIn('id', $turma->alunos()->pluck('users.id'))
+            ->orderBy('name')
+            ->get();
+
+        // Buscar professores ativos para atribuição
+        $professores = User::professores()->ativos()->get();
+
+        return view('turmas.show', compact('turma', 'alunosDisponiveis', 'professores'));
     }
 
     /**

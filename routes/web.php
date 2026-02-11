@@ -56,8 +56,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('turmas', TurmaController::class);
     Route::post('turmas/{turma}/toggle-status', [TurmaController::class, 'toggleStatus'])
         ->name('turmas.toggle-status');
-    Route::post('turmas/{turma}/matricular', [TurmaController::class, 'matricularAluno'])
-        ->name('turmas.matricular');
+    Route::post('turmas/{turma}/matricular-aluno', [TurmaController::class, 'matricularAluno'])
+        ->name('turmas.matricular-aluno');
     Route::delete('turmas/{turma}/alunos/{aluno}', [TurmaController::class, 'removerAluno'])
         ->name('turmas.remover-aluno');
     Route::post('turmas/{turma}/atribuir-professor', [TurmaController::class, 'atribuirProfessor'])
@@ -70,6 +70,15 @@ Route::middleware(['auth'])->group(function () {
     // === NOTAS ===
     Route::get('notas', [NotaController::class, 'index'])
         ->name('notas.index');
+    
+    // Index por papel
+    Route::get('notas/professor', [NotaController::class, 'professorIndex'])
+        ->name('notas.professor-index');
+    Route::get('notas/secretaria', [NotaController::class, 'secretariaIndex'])
+        ->name('notas.secretaria-index');
+    Route::get('notas/aluno', [NotaController::class, 'alunoIndex'])
+        ->name('notas.aluno-index');
+    
     Route::get('notas/{nota}/edit', [NotaController::class, 'edit'])
         ->name('notas.edit');
     Route::put('notas/{nota}', [NotaController::class, 'update'])

@@ -18,6 +18,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
     @stack('styles')
+    @stack('head-scripts')
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 dark:text-gray-100 font-sans antialiased">
     

@@ -12,7 +12,7 @@
     <form method="POST" action="{{ route('turmas.promover', $turma) }}" class="inline">
         @csrf
         <button type="submit" class="btn btn-success" 
-                onclick="return confirm('Deseja promover esta turma para a {{ $turma->classe + 1 }}ª classe?')">
+                onclick="return confirm('Deseja promover esta turma para a {{ $turma->classe + 1 }}a classe?')">
             <i class="fas fa-arrow-up mr-2"></i>
             Promover Turma
         </button>
@@ -20,6 +20,12 @@
     @endif
 </div>
 @endsection
+
+@push('head-scripts')
+<!-- Alpine.js DEVE ser carregado ANTES do conteúdo -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>[x-cloak] { display: none !important; }</style>
+@endpush
 
 @section('content')
 
@@ -68,7 +74,7 @@
                 <div x-show="tab === 'alunos'">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">Alunos Matriculados</h3>
-                        <button @click="$refs.matricularModal.classList.toggle('hidden')" 
+                        <button onclick="toggleModal('matricularModal')" 
                                 class="btn btn-primary btn-sm">
                             <i class="fas fa-user-plus mr-2"></i>
                             Matricular Aluno
@@ -96,7 +102,9 @@
                                         </a>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-500">{{ $aluno->numero_processo }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">{{ $aluno->pivot->data_matricula->format('d/m/Y') }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                        {{ \Carbon\Carbon::parse($aluno->pivot->data_matricula)->format('d/m/Y') }}
+                                    </td>
                                     <td class="px-6 py-4 text-center">
                                         <x-badge type="success">{{ ucfirst($aluno->pivot->status) }}</x-badge>
                                     </td>
@@ -119,7 +127,7 @@
                     <div class="text-center py-8">
                         <i class="fas fa-users text-4xl text-gray-300 mb-3"></i>
                         <p class="text-gray-500">Nenhum aluno matriculado</p>
-                        <button @click="$refs.matricularModal.classList.toggle('hidden')" 
+                        <button onclick="toggleModal('matricularModal')" 
                                 class="btn btn-primary mt-4">
                             <i class="fas fa-user-plus mr-2"></i>
                             Matricular Primeiro Aluno
@@ -160,7 +168,7 @@
                 <div x-show="tab === 'professores'" x-cloak>
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">Atribuições de Professores</h3>
-                        <button @click="$refs.atribuirModal.classList.toggle('hidden')" 
+                        <button onclick="toggleModal('atribuirModal')" 
                                 class="btn btn-primary btn-sm">
                             <i class="fas fa-user-plus mr-2"></i>
                             Atribuir Professor
@@ -322,11 +330,11 @@
 </div>
 
 <!-- Modal Matricular Aluno -->
-<div x-ref="matricularModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="$refs.matricularModal.classList.add('hidden')">
+<div id="matricularModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onclick="if(event.target === this) toggleModal('matricularModal')">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold">Matricular Aluno</h3>
-            <button @click="$refs.matricularModal.classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+            <button onclick="toggleModal('matricularModal')" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -347,18 +355,18 @@
             </div>
             <div class="flex space-x-3">
                 <button type="submit" class="btn btn-primary flex-1">Matricular</button>
-                <button type="button" @click="$refs.matricularModal.classList.add('hidden')" class="btn btn-outline flex-1">Cancelar</button>
+                <button type="button" onclick="toggleModal('matricularModal')" class="btn btn-outline flex-1">Cancelar</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Modal Atribuir Professor -->
-<div x-ref="atribuirModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="$refs.atribuirModal.classList.add('hidden')">
+<div id="atribuirModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onclick="if(event.target === this) toggleModal('atribuirModal')">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold">Atribuir Professor</h3>
-            <button @click="$refs.atribuirModal.classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+            <button onclick="toggleModal('atribuirModal')" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -384,7 +392,7 @@
             </div>
             <div class="flex space-x-3">
                 <button type="submit" class="btn btn-primary flex-1">Atribuir</button>
-                <button type="button" @click="$refs.atribuirModal.classList.add('hidden')" class="btn btn-outline flex-1">Cancelar</button>
+                <button type="button" onclick="toggleModal('atribuirModal')" class="btn btn-outline flex-1">Cancelar</button>
             </div>
         </form>
     </div>
@@ -393,6 +401,12 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<style>[x-cloak] { display: none !important; }</style>
+<script>
+function toggleModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.toggle('hidden');
+    }
+}
+</script>
 @endpush

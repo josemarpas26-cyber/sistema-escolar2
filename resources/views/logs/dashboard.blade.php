@@ -67,7 +67,7 @@
                 <div class="flex items-center space-x-3">
                     <div class="w-32 bg-gray-200 rounded-full h-2">
                         <div class="h-2 rounded-full {{ $acao == 'created' ? 'bg-green-500' : ($acao == 'updated' ? 'bg-blue-500' : 'bg-red-500') }}" 
-                             style="width: {{ ($quantidade / $totalLogs) * 100 }}%"></div>
+                            style="width: {{ $totalLogs > 0 ? ($quantidade / $totalLogs) * 100 : 0 }}%"></div>
                     </div>
                     <span class="text-sm font-bold text-gray-900 w-12 text-right">{{ $quantidade }}</span>
                 </div>
@@ -87,7 +87,7 @@
                     </div>
                     <div>
                         <p class="font-medium text-gray-900">{{ $usuarioData->usuario->name }}</p>
-                        <p class="text-xs text-gray-500">{{ $usuarioData->usuario->role->display_name }}</p>
+                        <p class="text-xs text-gray-500">{{ $usuarioData->usuario->role->display_name ?? 'Sem função' }}</p>
                     </div>
                 </div>
                 <div class="text-right">
@@ -159,10 +159,17 @@
                     <p class="text-xs text-gray-500">{{ $discData->disciplina->codigo }}</p>
                 </div>
                 <div class="flex items-center space-x-3">
+                    @php
+                        $max = max($topDisciplinas->first()->total ?? 0, 1);
+                        $percent = min(100, ($discData->total / $max) * 100);
+                    @endphp
+
                     <div class="w-24 bg-gray-200 rounded-full h-2">
-                        <div class="bg-primary-500 h-2 rounded-full" 
-                             style="width: {{ ($discData->total / $topDisciplinas->first()->total) * 100 }}%"></div>
+                        <div class="bg-primary-500 h-2 rounded-full"
+                            style="width: {{ $percent }}%">
+                        </div>
                     </div>
+
                     <span class="text-sm font-bold text-gray-900 w-10 text-right">{{ $discData->total }}</span>
                 </div>
             </div>

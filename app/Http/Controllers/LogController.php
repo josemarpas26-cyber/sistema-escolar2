@@ -130,40 +130,72 @@ class LogController extends Controller
     /**
      * Dashboard de logs (estatísticas)
      */
-    public function dashboard()
-    {
-        $this->checkPermission('logs.view');
+public function dashboard()
+{
+    $this->checkPermission('logs.view');
 
-        $stats = [
-            'total_logs' => NotaLog::count(),
-            'logs_hoje' => NotaLog::whereDate('data_alteracao', today())->count(),
-            'logs_semana' => NotaLog::where('data_alteracao', '>=', now()->subWeek())->count(),
-            'logs_mes' => NotaLog::where('data_alteracao', '>=', now()->subMonth())->count(),
-            
-            'por_acao' => NotaLog::selectRaw('acao, COUNT(*) as total')
-                ->groupBy('acao')
-                ->pluck('total', 'acao'),
-            
-            'por_trimestre' => NotaLog::whereNotNull('trimestre')
-                ->selectRaw('trimestre, COUNT(*) as total')
-                ->groupBy('trimestre')
-                ->pluck('total', 'trimestre'),
-            
-            'usuarios_mais_ativos' => NotaLog::selectRaw('usuario_id, COUNT(*) as total')
-                ->groupBy('usuario_id')
-                ->orderByDesc('total')
-                ->take(10)
-                ->with('usuario')
-                ->get(),
-            
-            'logs_recentes' => NotaLog::with(['usuario', 'aluno', 'disciplina'])
-                ->latest('data_alteracao')
-                ->take(20)
-                ->get(),
-        ];
+    $totalLogs = NotaLog::count();
+    $logsHoje = NotaLog::whereDate('data_alteracao', today())->count();
+    $logsSemana = NotaLog::where('data_alteracao', '>=', now()->subWeek())->count();
+    $logsMes = NotaLog::where('data_alteracao', '>=', now()->subMonth())->count();
 
-        return view('logs.dashboard', $stats);
+    $logsPorAcao = NotaLog::selectRaw('acao, COUNT(*) as total')
+    ->groupBy('acao')
+    ->pluck('total', 'acao');
+
+
+    $logsPorTrimestre = NotaLog::whereNotNull('trimestre')
+        ->selectRaw('trimestre, COUNT(*) as total')
+        ->groupBy('trimestre')
+        ->pluck('total', 'trimestre');
+
+    $topUsuarios = NotaLog::selectRaw('usuario_id, COUNT(*) as total')
+    ->groupBy('usuario_id')
+    ->orderByDesc('total')
+    ->take(10)
+    ->with('usuario.role') // já aproveita e carrega role junto
+    ->get();
+
+    $topDisciplinas = NotaLog::selectRaw('disciplina_id, COUNT(*) as total')
+    ->whereNotNull('disciplina_id')
+    ->groupBy('disciplina_id')
+    ->orderByDesc('total')
+    ->take(10)
+    ->with('disciplina')
+    ->get();
+
+    $atividadeSemanalRaw = NotaLog::selectRaw('DATE(data_alteracao) as dia, COUNT(*) as total')
+        ->where('data_alteracao', '>=', now()->subDays(6))
+        ->groupBy('dia')
+        ->pluck('total', 'dia');
+
+    $atividadeSemanal = collect();
+
+    for ($i = 6; $i >= 0; $i--) {
+        $data = now()->subDays($i)->format('Y-m-d');
+        $atividadeSemanal[$data] = $atividadeSemanalRaw[$data] ?? 0;
     }
+
+    $logsRecentes = NotaLog::with(['usuario', 'aluno', 'disciplina'])
+        ->latest('data_alteracao')
+        ->take(20)
+        ->get();
+
+    return view('logs.dashboard', compact(
+    'totalLogs',
+    'logsHoje',
+    'logsSemana',
+    'logsMes',
+    'logsPorAcao',
+    'logsPorTrimestre',
+    'topUsuarios',
+    'topDisciplinas',
+    'logsRecentes',
+    'atividadeSemanal'
+));
+
+}
+
 
     /**
      * Exportar logs para CSV
