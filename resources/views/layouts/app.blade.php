@@ -34,7 +34,7 @@
                         <div class="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
                             <i class="fas fa-graduation-cap text-white text-xl"></i>
                         </div>
-                        <span class="text-xl font-bold text-gray-900 dark:text-gray-100">NotasEscola</span>
+                        <span class="text-xl font-bold text-gray-900 dark:text-gray-100">SIGA</span>
                     </div>
                     <button onclick="toggleSidebar()" class="lg:hidden text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times text-xl"></i>

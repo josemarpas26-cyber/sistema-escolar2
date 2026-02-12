@@ -105,23 +105,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Sugerir nome baseado nas datas
     function sugerirNome() {
-        if (dataInicio.value && dataFim.value && !nomeInput.value) {
+        if (dataInicio.value && dataFim.value) {
             const anoInicio = new Date(dataInicio.value).getFullYear();
             const anoFim = new Date(dataFim.value).getFullYear();
-            nomeInput.value = `${anoInicio}/${anoFim}`;
+
+            // Só sugere se anos consecutivos
+            if (anoFim === anoInicio + 1) {
+                nomeInput.value = `${anoInicio}/${anoFim}`;
+                nomeInput.setCustomValidity(''); // ok
+            } else {
+                nomeInput.setCustomValidity('O ano final deve ser o ano seguinte ao inicial');
+            }
         }
     }
 
     dataInicio.addEventListener('change', sugerirNome);
     dataFim.addEventListener('change', sugerirNome);
 
-    // Validar que data fim é posterior
+    // Validar que data fim é posterior à data início
     dataFim.addEventListener('change', function() {
         if (dataInicio.value && dataFim.value) {
             if (new Date(dataFim.value) <= new Date(dataInicio.value)) {
                 alert('A data de fim deve ser posterior à data de início');
                 dataFim.value = '';
             }
+        }
+    });
+
+    // Validação manual caso o usuário digite no campo nome
+    nomeInput.addEventListener('input', function() {
+        const regex = /^20\d{2}\/20\d{2}$/;
+        if (!regex.test(nomeInput.value)) {
+            nomeInput.setCustomValidity('Formato inválido. Use AAAA/AAAA');
+            return;
+        }
+
+        const [inicio, fim] = nomeInput.value.split('/').map(Number);
+        if (fim !== inicio + 1) {
+            nomeInput.setCustomValidity('O ano final deve ser o ano seguinte ao inicial');
+        } else {
+            nomeInput.setCustomValidity('');
         }
     });
 });
