@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page-title', 'Dashboard')
+@section('page-title', 'Painel do administrador')
 
 @section('content')
 
@@ -11,7 +11,8 @@
         title="Total de Usuários" 
         :value="$total_usuarios" 
         icon="fas fa-users"
-        color="primary" 
+        color="primary"
+        :href="route('users.index')" 
     />
 
     <x-stat-card 
@@ -19,20 +20,24 @@
         :value="$total_alunos" 
         icon="fas fa-user-graduate"
         color="green" 
+        :href="route('users.alunos')"
     />
 
     <x-stat-card 
         title="Professores" 
         :value="$total_professores" 
         icon="fas fa-chalkboard-teacher"
-        color="blue" 
+        color="blue"
+        :href="route('users.professores')"
     />
 
     <x-stat-card 
         title="Turmas" 
         :value="$total_turmas" 
         icon="fas fa-school"
-        color="purple" 
+        color="purple"
+        :href="route('turmas.index')"
+
     />
 
 </div>
@@ -55,12 +60,27 @@
                 <span class="text-gray-600">Fim:</span>
                 <span class="font-semibold">{{ $ano_letivo_ativo->data_fim->format('d/m/Y') }}</span>
             </div>
-            <div class="flex justify-between items-center">
-                <span class="text-gray-600">Status:</span>
-                <x-badge type="{{ $ano_letivo_ativo->encerrado ? 'danger' : 'success' }}">
-                    {{ $ano_letivo_ativo->encerrado ? 'Encerrado' : 'Ativo' }}
-                </x-badge>
-            </div>
+<div class="flex justify-between items-center">
+    <span class="text-gray-600">Status:</span>
+    <div class="flex items-center space-x-2">
+        <x-badge type="{{ $ano_letivo_ativo->encerrado ? 'danger' : 'success' }}">
+            {{ $ano_letivo_ativo->encerrado ? 'Encerrado' : 'Ativo' }}
+        </x-badge>
+
+        @if(!$ano_letivo_ativo->encerrado && $dias_restantes !== null)
+            <span class="text-sm text-gray-500">
+                @if($dias_restantes > 0)
+                    ({{ $dias_restantes }} dias restantes)
+                @elseif($dias_restantes === 0)
+                    (Encerrando hoje)
+                @else
+                    (Já deveria estar encerrado 👀)
+                @endif
+            </span>
+        @endif
+    </div>
+</div>
+
         </div>
         @else
         <p class="text-gray-500 text-center py-4">Nenhum ano letivo ativo</p>
@@ -93,7 +113,7 @@
             @endforeach
         </div>
         <div class="mt-4 text-center">
-            <a href="{{ route('logs.index') }}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <a href="{{ route('logs.index') }}" class="text-sm text-primary-900 hover:text-primary-500 font-medium">
                 Ver todos os logs →
             </a>
         </div>
@@ -105,31 +125,77 @@
 </div>
 
 <!-- Quick Actions -->
-<div class="mt-8">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        
-        <a href="{{ route('users.create') }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-500 hover:bg-primary-50 transition-all">
-            <i class="fas fa-user-plus text-2xl text-primary-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Novo Usuário</span>
-        </a>
+@php
+$actions = [
+    [
+        'label' => 'Novo Usuário',
+        'route' => route('users.create'),
+        'icon' => 'fas fa-user-plus',
+        'color' => 'blue',
+        'description' => 'Criar novo usuário no sistema'
+    ],
+    [
+        'label' => 'Nova Turma',
+        'route' => route('turmas.create'),
+        'icon' => 'fas fa-chalkboard',
+        'color' => 'green',
+        'description' => 'Cadastrar uma nova turma'
+    ],
+    [
+        'label' => 'Dashboard Logs',
+        'route' => route('logs.dashboard'),
+        'icon' => 'fas fa-chart-line',
+        'color' => 'purple',
+        'description' => 'Visualizar estatísticas e alterações'
+    ],
+];
+@endphp
 
-        <a href="{{ route('turmas.create') }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all">
-            <i class="fas fa-chalkboard text-2xl text-green-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Nova Turma</span>
-        </a>
+<div class="mt-10">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Ações Rápidas</h2>
+        <span class="text-sm text-gray-400">{{ now()->format('d/m/Y') }}</span>
+    </div>
 
-        <a href="{{ route('anos-letivos.create') }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all">
-            <i class="fas fa-calendar-plus text-2xl text-blue-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Novo Ano Letivo</span>
-        </a>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        @foreach($actions as $action)
+            <a href="{{ $action['route'] }}"
+               class="group relative p-6 bg-white rounded-xl border border-gray-200 shadow-sm 
+                      hover:shadow-xl transition-all duration-300 
+                      hover:-translate-y-2 overflow-hidden">
 
-        <a href="{{ route('logs.dashboard') }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all">
-            <i class="fas fa-chart-line text-2xl text-purple-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Dashboard Logs</span>
-        </a>
+                <!-- Glow animado -->
+                <div class="absolute inset-0 bg-gradient-to-r from-{{ $action['color'] }}-100 
+                            to-transparent opacity-0 group-hover:opacity-100 
+                            transition-opacity duration-300"></div>
 
+                <div class="relative flex items-start space-x-4">
+                    <div class="w-14 h-14 flex items-center justify-center 
+                                rounded-xl bg-{{ $action['color'] }}-100 
+                                text-{{ $action['color'] }}-600 
+                                text-2xl transition-transform duration-300 
+                                group-hover:scale-110">
+                        <i class="{{ $action['icon'] }}"></i>
+                    </div>
+
+                    <div>
+                        <h3 class="font-semibold text-gray-800 text-lg">
+                            {{ $action['label'] }}
+                        </h3>
+                        <p class="text-sm text-gray-500 mt-1">
+                            {{ $action['description'] }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Indicador lateral animado -->
+                <div class="absolute bottom-0 left-0 h-1 w-0 
+                            bg-{{ $action['color'] }}-500 
+                            group-hover:w-full transition-all duration-300"></div>
+            </a>
+        @endforeach
     </div>
 </div>
+
 
 @endsection

@@ -47,12 +47,52 @@
                             {{ $ano->turmas_count }}
                         </td>
 
-                        <td class="px-6 py-4 text-right space-x-3">
-                            <a href="{{ route('anos-letivos.edit', $ano) }}"
-                            class="text-blue-600 hover:text-blue-800 transition">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        </td>
+    <td class="px-6 py-4 text-right space-x-3">
+
+    {{-- Visualizar --}}
+    <a href="{{ route('anos-letivos.show', $ano) }}"
+       class="text-gray-600 hover:text-gray-800 transition">
+        <i class="fas fa-eye"></i>
+    </a>
+
+    {{-- Editar (somente se não estiver encerrado) --}}
+    @if(!$ano->encerrado)
+    <a href="{{ route('anos-letivos.edit', $ano) }}"
+       class="text-blue-600 hover:text-blue-800 transition">
+        <i class="fas fa-edit"></i>
+    </a>
+    @endif
+
+    {{-- Encerrar --}}
+    @if($ano->ativo && !$ano->encerrado)
+    <form action="{{ route('anos-letivos.encerrar', $ano) }}"
+          method="POST"
+          class="inline">
+        @csrf
+        <button type="submit"
+                class="text-red-600 hover:text-red-800 transition"
+                onclick="return confirm('Deseja encerrar este ano letivo?')">
+            <i class="fas fa-stop"></i>
+        </button>
+    </form>
+    @endif
+
+    {{-- Reativar --}}
+    @if(!$ano->ativo && !$ano->encerrado)
+    <form action="{{ route('anos-letivos.reativar', $ano) }}"
+          method="POST"
+          class="inline">
+        @csrf
+        <button type="submit"
+                class="text-green-600 hover:text-green-800 transition"
+                onclick="return confirm('Deseja reativar este ano letivo?')">
+            <i class="fas fa-play"></i>
+        </button>
+    </form>
+    @endif
+
+</td>
+
                     </tr>
                     @empty
                     <tr>

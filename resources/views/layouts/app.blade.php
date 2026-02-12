@@ -25,7 +25,7 @@
     <div class="min-h-screen flex">
         
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-rbg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30">
             <div class="flex flex-col h-full">
                 
                 <!-- Logo -->
@@ -55,39 +55,51 @@
                     <div class="pt-4">
                         <p class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Gestão</p>
                         
-                        <div x-data="{ open: {{ request()->routeIs('users.*') ? 'true' : 'false' }} }">
     
-                            <button @click="open = !open"
-                                class="w-full flex items-center justify-between px-4 py-3 mt-2 text-gray-700 rounded-lg hover:bg-gray-100 {{ request()->routeIs('users.*') ? 'bg-primary-50 text-primary-700' : '' }}">
-                                
-                                <div class="flex items-center">
-                                    <i class="fas fa-users w-5"></i>
-                                    <span class="ml-3 font-medium">Usuários</span>
-                                </div>
+<div x-data="{ open: {{ request()->routeIs('users.*') ? 'true' : 'false' }} }">
 
-                                <i class="fas fa-chevron-down text-xs transition-transform"
-                                :class="{ 'rotate-180': open }"></i>
-                            </button>
+    <div class="flex items-center mt-2">
 
-                            <div x-show="open" x-cloak class="ml-8 mt-1 space-y-1">
-                                
-                                <a href="{{ route('users.index') }}"
-                                class="block px-4 py-2 text-sm rounded hover:bg-gray-100 {{ request()->routeIs('users.index') ? 'text-primary-700 font-semibold' : 'text-gray-600' }}">
-                                    Todos
-                                </a>
+        {{-- Link principal --}}
+        <a href="{{ route('users.index') }}"
+           class="flex-1 flex items-center px-4 py-3 rounded-l-lg hover:bg-gray-100
+           {{ request()->routeIs('users.*') ? 'bg-primary-50 text-primary-700' : 'text-gray-700' }}">
+            
+            <i class="fas fa-users w-5"></i>
+            <span class="ml-3 font-medium">Usuários</span>
+        </a>
 
-                                <a href="{{ route('users.alunos') }}"
-                                class="block px-4 py-2 text-sm rounded hover:bg-gray-100 {{ request()->routeIs('users.alunos') ? 'text-primary-700 font-semibold' : 'text-gray-600' }}">
-                                    Alunos
-                                </a>
+        {{-- Botão da seta --}}
+        <button @click="open = !open"
+                class="px-3 py-3 rounded-r-lg hover:bg-gray-100
+                {{ request()->routeIs('users.*') ? 'bg-primary-50 text-primary-700' : 'text-gray-700' }}">
+            
+            <i class="fas fa-chevron-down text-xs transition-transform"
+               :class="{ 'rotate-180': open }"></i>
+        </button>
 
-                                <a href="{{ route('users.professores') }}"
-                                class="block px-4 py-2 text-sm rounded hover:bg-gray-100 {{ request()->routeIs('users.professores') ? 'text-primary-700 font-semibold' : 'text-gray-600' }}">
-                                    Professores
-                                </a>
+    </div>
 
-                            </div>
-                        </div>
+    {{-- Submenu --}}
+    <div x-show="open" x-cloak class="ml-8 mt-1 space-y-1">
+        
+        <a href="{{ route('users.alunos') }}"
+           class="block px-4 py-2 text-sm rounded hover:bg-gray-100
+           {{ request()->routeIs('users.alunos') ? 'text-primary-700 font-semibold' : 'text-gray-600' }}">
+            Alunos
+        </a>
+
+        <a href="{{ route('users.professores') }}"
+           class="block px-4 py-2 text-sm rounded hover:bg-gray-100
+           {{ request()->routeIs('users.professores') ? 'text-primary-700 font-semibold' : 'text-gray-600' }}">
+            Professores
+        </a>
+
+    </div>
+
+</div>
+
+
 
 
                         <a href="{{ route('cursos.index') }}" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 {{ request()->routeIs('cursos.*') ? 'bg-primary-50 text-primary-700' : '' }}">

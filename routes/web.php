@@ -101,7 +101,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.finalizar');
 
     // === ANOS LETIVOS ===
-    Route::resource('anos-letivos', AnoLetivoController::class);
+    Route::resource('anos-letivos', AnoLetivoController::class)
+    ->parameters([
+        'anos-letivos' => 'anoLetivo'
+    ]);
     Route::post('anos-letivos/{anoLetivo}/encerrar', [AnoLetivoController::class, 'encerrar'])
         ->name('anos-letivos.encerrar');
     Route::post('anos-letivos/{anoLetivo}/reativar', [AnoLetivoController::class, 'reativar'])

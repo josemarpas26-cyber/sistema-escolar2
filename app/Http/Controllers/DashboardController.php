@@ -30,22 +30,31 @@ class DashboardController extends Controller
     /**
      * Dashboard do Administrador
      */
-    private function adminDashboard()
-    {
-        $stats = [
-            'total_usuarios' => User::count(),
-            'total_alunos' => User::alunos()->count(),
-            'total_professores' => User::professores()->count(),
-            'total_turmas' => Turma::count(),
-            'ano_letivo_ativo' => AnoLetivo::ativo()->first(),
-            'logs_recentes' => NotaLog::with(['usuario', 'aluno', 'disciplina'])
-                ->latest('data_alteracao')
-                ->take(10)
-                ->get(),
-        ];
+private function adminDashboard()
+{
+    $anoLetivoAtivo = AnoLetivo::ativo()->first();
 
-        return view('dashboard.admin', $stats);
+    $dias_restantes = null;
+
+    if ($anoLetivoAtivo && !$anoLetivoAtivo->encerrado) {
+        $dias_restantes = now()->diffInDays($anoLetivoAtivo->data_fim, false);
     }
+
+    $stats = [
+        'total_usuarios' => User::count(),
+        'total_alunos' => User::alunos()->count(),
+        'total_professores' => User::professores()->count(),
+        'total_turmas' => Turma::count(),
+        'ano_letivo_ativo' => $anoLetivoAtivo,
+        'dias_restantes' => $dias_restantes,
+        'logs_recentes' => NotaLog::with(['usuario', 'aluno', 'disciplina'])
+            ->latest('data_alteracao')
+            ->take(10)
+            ->get(),
+    ];
+
+    return view('dashboard.admin', $stats);
+}
 
     /**
      * Dashboard da Secretaria
