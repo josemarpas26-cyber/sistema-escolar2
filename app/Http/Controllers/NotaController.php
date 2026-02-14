@@ -127,20 +127,37 @@ class NotaController extends Controller
     /**
      * Painel do aluno
      */
-    public function alunoIndex()
-    {
-        $this->checkPermission('notas.view_own');
+public function alunoIndex()
+{
+    $this->checkPermission('notas.view_own');
 
-        $aluno = auth()->user();
-        $anoLetivo = AnoLetivo::ativo()->first();
+    $aluno = auth()->user();
+    $anoLetivo = AnoLetivo::ativo()->first();
 
-        $notas = Nota::where('aluno_id', $aluno->id)
-            ->where('ano_letivo_id', $anoLetivo?->id)
-            ->with(['disciplina', 'turma'])
-            ->get();
+    $notas = Nota::where('aluno_id', $aluno->id)
+        ->where('ano_letivo_id', $anoLetivo?->id)
+        ->with(['disciplina', 'turma'])
+        ->get();
 
-        return view('notas.aluno', compact('notas'));
-    }
+    // Turma atual (pegamos da primeira nota)
+    $turmaAtual = $notas->first()?->turma;
+
+    // Média geral (ignora null automaticamente)
+    $mediaGeral = $notas->avg('cfd') ?? 0;
+
+    // Aprovações e reprovações
+    $aprovacoes = $notas->filter(fn($n) => $n->cfd !== null && $n->cfd >= 10)->count();
+    $reprovacoes = $notas->filter(fn($n) => $n->cfd !== null && $n->cfd < 10)->count();
+
+    return view('notas.aluno', compact(
+        'notas',
+        'turmaAtual',
+        'mediaGeral',
+        'aprovacoes',
+        'reprovacoes'
+    ));
+}
+
 
     /**
      * Lançar notas (1º Trimestre)

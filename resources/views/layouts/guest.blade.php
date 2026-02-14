@@ -17,7 +17,7 @@
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gradient-to-br from-primary-500 to-primary-700 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gradient-to-br from-[#4c1d95] to-[#1e3a8a] min-h-screen flex items-center justify-center p-4">
     
     <div class="w-full max-w-md">
         
