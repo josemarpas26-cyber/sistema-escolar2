@@ -18,7 +18,7 @@
               method="POST"
               onsubmit="return confirm('Tem certeza que deseja encerrar este ano letivo? Esta ação não poderá ser desfeita.')">
             @csrf
-            @method('PATCH')
+
 
             <button type="submit" class="btn btn-danger">
                 <i class="fas fa-lock mr-2"></i>

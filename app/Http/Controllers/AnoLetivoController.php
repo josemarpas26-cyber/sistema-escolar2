@@ -60,6 +60,26 @@ class AnoLetivoController extends Controller
             'data_fim' => 'required|date|after:data_inicio',
         ]);
 
+        $validated = $request->validate([
+            'nome' => 'required|string|max:20|unique:anos_letivos,nome',
+            'data_inicio' => 'required|date',
+            'data_fim' => 'required|date|after:data_inicio',
+        ]);
+
+        // Extrair anos do nome (ex: 2024/2025)
+        [$anoInicio, $anoFim] = explode('/', $validated['nome']);
+
+        $dataInicio = \Carbon\Carbon::parse($validated['data_inicio']);
+        $dataFim = \Carbon\Carbon::parse($validated['data_fim']);
+
+        // Validar se pertencem ao intervalo correto
+        if ($dataInicio->year != $anoInicio || $dataFim->year != $anoFim) {
+            return back()->withInput()->with(
+                'error',
+                'As datas devem corresponder ao intervalo do ano letivo (' . $validated['nome'] . ').'
+            );
+        }
+
         // Desativar todos os anos anteriores
         AnoLetivo::query()->update(['ativo' => false]);
 
@@ -129,25 +149,29 @@ class AnoLetivoController extends Controller
      * Encerrar ano letivo
      */
     public function encerrar(AnoLetivo $anoLetivo)
-    {
-        $this->checkPermission('anos.encerrar');
+{
+    $this->checkPermission('anos.encerrar');
 
-        if ($anoLetivo->encerrado) {
-            return back()->with('error', 'Este ano letivo já está encerrado!');
-        }
-
-        // TODO: Aqui você pode adicionar validações:
-        // - Verificar se todas as notas foram lançadas
-        // - Gerar históricos académicos
-        // - Etc.
-
-        $anoLetivo->update([
-            'encerrado' => true,
-            'ativo' => false,
-        ]);
-
-        return back()->with('success', 'Ano letivo encerrado com sucesso!');
+    if ($anoLetivo->encerrado) {
+        return back()->with('error', 'Este ano letivo já está encerrado!');
     }
+
+    // 🔒 Impedir encerramento antes da data de fim
+    if (now()->startOfDay()->lt($anoLetivo->data_fim->startOfDay())) {
+        return back()->with('error', 
+            'Não é possível encerrar o ano letivo antes de ' 
+            . $anoLetivo->data_fim->format('d/m/Y') . '.'
+        );
+    }
+
+    $anoLetivo->update([
+        'encerrado' => true,
+        'ativo' => false,
+    ]);
+
+    return back()->with('success', 'Ano letivo encerrado com sucesso!');
+}
+
 
     /**
      * Reativar ano letivo
