@@ -40,6 +40,7 @@ class RolePermissionSeeder extends Seeder
             // Gestão de notas
             ['name' => 'notas.lancar', 'display_name' => 'Lançar notas'],
             ['name' => 'notas.editar', 'display_name' => 'Editar notas'],
+            ['name' => 'notas.reabrir', 'display_name' => 'Reabrir/editar notas finalizadas'],
             ['name' => 'notas.view_own', 'display_name' => 'Ver próprias notas'],
             ['name' => 'notas.view_turma', 'display_name' => 'Ver notas da turma'],
             ['name' => 'notas.view_curso', 'display_name' => 'Ver notas do curso'],

@@ -124,9 +124,12 @@ class TurmaController extends Controller
         // Assumindo que role_id = 3 é para alunos (ajuste conforme sua tabela roles)
         $alunosDisponiveis = User::where('role_id', 4)
             ->where('ativo', true)
-            ->whereNotIn('id', $turma->alunos()->pluck('users.id'))
+            ->whereDoesntHave('turmas', function ($q) {
+                $q->where('status', 'matriculado');
+            })
             ->orderBy('name')
             ->get();
+
 
         // Buscar professores ativos para atribuição
         $professores = User::professores()->ativos()->get();
@@ -317,7 +320,10 @@ class TurmaController extends Controller
         $this->checkPermission('turmas.promote');
 
         // Verificar se há próximo ano letivo
-        $proximoAno = AnoLetivo::ativo()->first();
+        $proximoAno = AnoLetivo::where('data_inicio', '>', $turma->anoLetivo->data_inicio)
+        ->orderBy('data_inicio')
+        ->first();
+
         
         if (!$proximoAno) {
             return back()->with('error', 'Não há ano letivo ativo para promover a turma!');

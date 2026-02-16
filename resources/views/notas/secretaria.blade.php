@@ -3,7 +3,9 @@
 @section('page-title', 'Gerenciar Notas')
 
 @section('content')
-
+@php
+    $podeReabrirNotas = auth()->user()->role->hasPermission('notas.reabrir');
+@endphp
 <!-- Filtros -->
 <x-card title="Filtros de Pesquisa" icon="fas fa-filter" class="mb-6">
     <form method="GET" action="{{ route('notas.secretaria-index') }}">
@@ -147,9 +149,15 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <a href="{{ route('notas.edit', $nota) }}" class="text-blue-600 hover:text-blue-900" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
+                          @if($nota->status === 'finalizado' && !$podeReabrirNotas)
+                                <span class="text-gray-400" title="Nota finalizada (somente leitura)">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            @else
+                                <a href="{{ route('notas.edit', $nota) }}" class="text-blue-600 hover:text-blue-900" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            @endif
                         </td>
                     </tr>
                     @endforeach

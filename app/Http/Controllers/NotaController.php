@@ -8,7 +8,7 @@ use App\Models\Disciplina;
 use App\Models\User;
 use App\Models\AnoLetivo;
 use Illuminate\Http\Request;
-
+use Illuminate\Http\RedirectResponse;
 class NotaController extends Controller
 {
     /**
@@ -42,6 +42,10 @@ class NotaController extends Controller
         $anoLetivo = AnoLetivo::ativo()->first();
 
         // Turmas e disciplinas que leciona
+    
+        if (!$anoLetivo) {
+            return $this->redirectSemAnoLetivoAtivo();
+        }
         $atribuicoes = $professor->atribuicoes()
             ->where('ano_letivo_id', $anoLetivo?->id)
             ->with(['turma', 'disciplina'])
@@ -100,6 +104,11 @@ class NotaController extends Controller
         $this->checkPermission('notas.view_all');
 
         $anoLetivo = AnoLetivo::ativo()->first();
+        
+        if (!$anoLetivo) {
+            return $this->redirectSemAnoLetivoAtivo();
+        }
+
         $turmas = Turma::anoAtivo()->with('curso')->get();
         $disciplinas = Disciplina::ativos()->get();
 
@@ -107,21 +116,22 @@ class NotaController extends Controller
         $disciplinaId = $request->disciplina_id;
 
         $notas = null;
-        $turma = null;
-        $disciplina = null;
+        $turmaSelecionada = null;
+        $disciplinaSelecionada = null;
+
 
         if ($turmaId && $disciplinaId) {
-            $turma = Turma::findOrFail($turmaId);
-            $disciplina = Disciplina::findOrFail($disciplinaId);
+            $turmaSelecionada = Turma::findOrFail($turmaId);
+            $disciplinaSelecionada = Disciplina::findOrFail($disciplinaId);
 
-            $notas = Nota::where('turma_id', $turma->id)
-                ->where('disciplina_id', $disciplina->id)
+            $notas = Nota::where('turma_id', $turmaSelecionada->id)
+                ->where('disciplina_id', $disciplinaSelecionada->id)
                 ->where('ano_letivo_id', $anoLetivo->id)
                 ->with('aluno')
                 ->get();
         }
 
-        return view('notas.secretaria', compact('turmas', 'disciplinas', 'notas', 'turma', 'disciplina'));
+        return view('notas.secretaria', compact('turmas', 'disciplinas', 'notas', 'turmaSelecionada', 'disciplinaSelecionada'));
     }
 
     /**
@@ -133,9 +143,13 @@ public function alunoIndex()
 
     $aluno = auth()->user();
     $anoLetivo = AnoLetivo::ativo()->first();
+        
+    if (!$anoLetivo) {
+            return $this->redirectSemAnoLetivoAtivo();
+        }
 
     $notas = Nota::where('aluno_id', $aluno->id)
-        ->where('ano_letivo_id', $anoLetivo?->id)
+        ->where('ano_letivo_id', $anoLetivo->id)
         ->with(['disciplina', 'turma'])
         ->get();
 
@@ -187,7 +201,7 @@ public function alunoIndex()
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
             }
-
+            $this->validarBloqueioFinalizacao($nota);
             $nota->update([
                 'mac1' => $notaData['mac1'] ?? null,
                 'pp1' => $notaData['pp1'] ?? null,
@@ -228,7 +242,7 @@ public function alunoIndex()
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
             }
-
+            $this->validarBloqueioFinalizacao($nota);
             $nota->update([
                 'mac2' => $notaData['mac2'] ?? null,
                 'pp2' => $notaData['pp2'] ?? null,
@@ -269,7 +283,7 @@ public function alunoIndex()
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
             }
-
+            $this->validarBloqueioFinalizacao($nota);
             $nota->update([
                 'mac3' => $notaData['mac3'] ?? null,
                 'pp3' => $notaData['pp3'] ?? null,
@@ -295,7 +309,7 @@ public function alunoIndex()
         } else {
             $this->checkPermission('notas.editar');
         }
-
+        $this->validarBloqueioFinalizacao($nota);
         $nota->load(['aluno', 'turma', 'disciplina']);
 
         return view('notas.edit', compact('nota'));
@@ -314,7 +328,7 @@ public function alunoIndex()
         } else {
             $this->checkPermission('notas.editar');
         }
-
+        $this->validarBloqueioFinalizacao($nota);
         $validated = $request->validate([
             'mac1' => 'nullable|numeric|min:0|max:20',
             'pp1' => 'nullable|numeric|min:0|max:20',
@@ -388,6 +402,7 @@ public function alunoIndex()
                 ->first();
 
             if ($notaAtual) {
+                    $this->validarBloqueioFinalizacao($notaAtual);
                 if ($turma->classe == '11') {
                     $notaAtual->update(['ca_10' => $notaAnterior->ca]);
                 } elseif ($turma->classe == '12') {
@@ -432,11 +447,45 @@ public function alunoIndex()
             'turma_id' => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
         ]);
-
+        $anoLetivo = AnoLetivo::ativo()->first();
+        if (!$anoLetivo) {
+            return $this->redirectSemAnoLetivoAtivo();
+        }
         Nota::where('turma_id', $validated['turma_id'])
             ->where('disciplina_id', $validated['disciplina_id'])
+            ->where('ano_letivo_id', $anoLetivo->id)
             ->update(['status' => 'finalizado']);
 
         return back()->with('success', 'Notas finalizadas com sucesso!');
+    }
+        private function validarBloqueioFinalizacao(Nota $nota): void
+    {
+        if ($nota->status !== 'finalizado') {
+            return;
+        }
+
+        $user = auth()->user();
+        if ($user->role->hasPermission('notas.reabrir')) {
+            return;
+        }
+
+        abort(403, 'Esta nota já foi finalizada e está bloqueada para edição.');
+    }
+
+    
+    
+    private function redirectSemAnoLetivoAtivo(): RedirectResponse
+    {
+        $user = auth()->user();
+
+        if ($user->role->hasPermission('anos.create')) {
+            return redirect()
+                ->route('anos-letivos.index')
+                ->with('error', 'Nenhum ano letivo ativo encontrado. Defina um ano letivo ativo para continuar.');
+        }
+
+        return redirect()
+            ->route('dashboard')
+            ->with('error', 'Nenhum ano letivo ativo encontrado. Entre em contato com a administração para definir um ano letivo ativo.');
     }
 }

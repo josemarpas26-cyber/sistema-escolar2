@@ -46,4 +46,17 @@ class AnoLetivo extends Model
     {
         return $query->where('ativo', true)->where('encerrado', false);
     }
+
+    
+    public static function encerrarAutomaticamente()
+    {
+        self::where('encerrado', false)
+            ->whereDate('data_fim', '<=', today())
+            ->update([
+                'encerrado' => true,
+                'ativo' => false,
+            ]);
+    }
+
+
 }

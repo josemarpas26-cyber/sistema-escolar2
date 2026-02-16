@@ -46,6 +46,9 @@
 </x-card>
 
 @if($notas && $turma && $disciplina)
+@php
+    $podeReabrirNotas = auth()->user()->role->hasPermission('notas.reabrir');
+@endphp
 <!-- Info da Turma/Disciplina -->
 <div class="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
     <div class="flex items-center justify-between">
@@ -53,7 +56,12 @@
             <h3 class="font-bold text-primary-900 text-lg">{{ $turma->nome_completo }}</h3>
             <p class="text-primary-700">{{ $disciplina->nome }} - {{ $disciplina->codigo }}</p>
         </div>
-        <x-badge type="primary" class="text-lg">{{ $turma->classe }}ª Classe</x-badge>
+                <div class="text-right">
+            <x-badge type="primary" class="text-lg">{{ $turma->classe }}ª Classe</x-badge>
+            @if($notas->contains(fn($nota) => $nota->status === 'finalizado'))
+                <p class="text-xs text-amber-700 mt-2">Notas finalizadas ficam somente leitura.</p>
+            @endif
+        </div>
     </div>
 </div>
 
@@ -100,6 +108,9 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ $nota->aluno->name }}
+                                                                        @if($nota->status === 'finalizado')
+                                        <x-badge type="warning" class="ml-2">Somente leitura</x-badge>
+                                    @endif
                                     <input type="hidden" name="notas[{{ $index }}][id]" value="{{ $nota->id }}">
                                 </td>
                                 <td class="px-6 py-4 text-center">
@@ -107,21 +118,24 @@
                                            name="notas[{{ $index }}][mac1]" 
                                            value="{{ $nota->mac1 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                                                                      onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
                                            name="notas[{{ $index }}][pp1]" 
                                            value="{{ $nota->pp1 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                                                                      onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
                                            name="notas[{{ $index }}][pt1]" 
                                            value="{{ $nota->pt1 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                                                                      onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-sm font-bold text-primary-600">
@@ -134,7 +148,8 @@
                     </table>
                 </div>
                 <div class="mt-6 flex justify-end">
-                    <button type="submit" class="btn btn-success">
+                                        <button type="submit" class="btn btn-success"
+                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
                         <i class="fas fa-save mr-2"></i>
                         Salvar 1º Trimestre
                     </button>
@@ -164,6 +179,9 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ $nota->aluno->name }}
+                                                                        @if($nota->status === 'finalizado')
+                                        <x-badge type="warning" class="ml-2">Somente leitura</x-badge>
+                                    @endif
                                     <input type="hidden" name="notas[{{ $index }}][id]" value="{{ $nota->id }}">
                                 </td>
                                 <td class="px-6 py-4 text-center">
@@ -174,21 +192,24 @@
                                            name="notas[{{ $index }}][mac2]" 
                                            value="{{ $nota->mac2 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                                                                      onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
                                            name="notas[{{ $index }}][pp2]" 
                                            value="{{ $nota->pp2 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                                                                      onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
                                            name="notas[{{ $index }}][pt2]" 
                                            value="{{ $nota->pt2 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                                                                      onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-sm font-bold text-primary-600">
@@ -206,7 +227,8 @@
                     </table>
                 </div>
                 <div class="mt-6 flex justify-end">
-                    <button type="submit" class="btn btn-success">
+                             <button type="submit" class="btn btn-success"
+                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
                         <i class="fas fa-save mr-2"></i>
                         Salvar 2º Trimestre
                     </button>
@@ -236,6 +258,9 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ $nota->aluno->name }}
+                                     @if($nota->status === 'finalizado')
+                                        <x-badge type="warning" class="ml-2">Somente leitura</x-badge>
+                                    @endif
                                     <input type="hidden" name="notas[{{ $index }}][id]" value="{{ $nota->id }}">
                                 </td>
                                 <td class="px-6 py-4 text-center">
@@ -246,21 +271,24 @@
                                            name="notas[{{ $index }}][mac3]" 
                                            value="{{ $nota->mac3 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                            onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
                                            name="notas[{{ $index }}][pp3]" 
                                            value="{{ $nota->pp3 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                            onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
                                            name="notas[{{ $index }}][pg]" 
                                            value="{{ $nota->pg }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
-                                           onblur="formatNota(this)">
+                                            onblur="formatNota(this)"
+                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-sm font-bold {{ $nota->cfd && $nota->cfd >= 10 ? 'text-green-600' : 'text-red-600' }}">
@@ -287,13 +315,15 @@
                         @csrf
                         <input type="hidden" name="turma_id" value="{{ $turma->id }}">
                         <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
-                        <button type="submit" class="btn btn-outline">
+                        <button type="submit" class="btn btn-outline"
+                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
                             <i class="fas fa-download mr-2"></i>
                             Importar CAs
                         </button>
                     </form>
                     @endif
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-success"
+                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
                         <i class="fas fa-save mr-2"></i>
                         Salvar 3º Trimestre
                     </button>

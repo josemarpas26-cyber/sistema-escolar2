@@ -156,6 +156,30 @@ class AnoLetivoController extends Controller
         return back()->with('error', 'Este ano letivo já está encerrado!');
     }
 
+    
+      foreach ($anoLetivo->turmas as $turma) {
+
+        $totalAlunos = $turma->alunos()
+            ->wherePivot('status', 'matriculado')
+            ->count();
+
+        $totalDisciplinas = $turma->disciplinas()->count();
+
+        $totalEsperado = $totalAlunos * $totalDisciplinas;
+
+        $totalNotasLancadas = \App\Models\Nota::where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivo->id)
+            ->whereNotNull('cfd')
+            ->count();
+
+        if ($totalNotasLancadas < $totalEsperado) {
+            return back()->with(
+                'error',
+                "A turma {$turma->nome_completo} ainda possui notas pendentes."
+            );
+        }
+    }
+
     // 🔒 Impedir encerramento antes da data de fim
     if (now()->startOfDay()->lt($anoLetivo->data_fim->startOfDay())) {
         return back()->with('error', 
