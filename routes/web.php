@@ -92,6 +92,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('notas/trimestre-3', [NotaController::class, 'lancarTrimestre3'])
         ->name('notas.trimestre-3');
     
+    Route::post('notas/prova-global', [NotaController::class, 'lancarProvaGlobal'])
+    ->name('notas.prova-global');
+        Route::post('notas/inicializar-pauta', [NotaController::class, 'inicializarPauta'])
+        ->name('notas.inicializar-pauta');
     // Importar CAs
     Route::post('notas/importar-cas', [NotaController::class, 'importarCAs'])
         ->name('notas.importar-cas');

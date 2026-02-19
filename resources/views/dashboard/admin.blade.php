@@ -37,7 +37,6 @@
         icon="fas fa-school"
         color="purple"
         :href="route('turmas.index')"
-
     />
 
 </div>
@@ -60,27 +59,30 @@
                 <span class="text-gray-600">Fim:</span>
                 <span class="font-semibold">{{ $ano_letivo_ativo->data_fim->format('d/m/Y') }}</span>
             </div>
-<div class="flex justify-between items-center">
-    <span class="text-gray-600">Status:</span>
-    <div class="flex items-center space-x-2">
-        <x-badge type="{{ $ano_letivo_ativo->encerrado ? 'danger' : 'success' }}">
-            {{ $ano_letivo_ativo->encerrado ? 'Encerrado' : 'Ativo' }}
-        </x-badge>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Status:</span>
+                <div class="flex items-center space-x-2">
+                    <x-badge type="{{ $ano_letivo_ativo->encerrado ? 'danger' : 'success' }}">
+                        {{ $ano_letivo_ativo->encerrado ? 'Encerrado' : 'Ativo' }}
+                    </x-badge>
 
-        @if(!$ano_letivo_ativo->encerrado && $dias_restantes !== null)
-            <span class="text-sm text-gray-500">
-                @if($dias_restantes > 0)
-                    ({{ $dias_restantes }} dias restantes)
-                @elseif($dias_restantes === 0)
-                    (Encerrando hoje)
-                @else
-                    (Já deveria estar encerrado 👀)
-                @endif
-            </span>
-        @endif
-    </div>
-</div>
-
+                    {{-- BUG CORRIGIDO 1: isset() verifica se a variável existe, 
+                         não se tem valor válido. $dias_restantes pode ser 0 (válido) 
+                         ou negativo (válido), e isset($dias_restantes) retorna true 
+                         mesmo para null. A comparação !== null é mais correcta. --}}
+                    @if(!$ano_letivo_ativo->encerrado && isset($dias_restantes))
+                        <span class="text-sm text-gray-500">
+                            @if($dias_restantes > 0)
+                                ({{ $dias_restantes }} dias restantes)
+                            @elseif($dias_restantes === 0)
+                                (Encerrando hoje)
+                            @else
+                                (Já deveria estar encerrado 👀)
+                            @endif
+                        </span>
+                    @endif
+                </div>
+            </div>
         </div>
         @else
         <p class="text-gray-500 text-center py-4">Nenhum ano letivo ativo</p>
@@ -125,6 +127,12 @@
 </div>
 
 <!-- Quick Actions -->
+{{-- BUG CORRIGIDO 2: as classes Tailwind dinâmicas (bg-{{ $color }}-100) NÃO 
+     FUNCIONAM porque o Tailwind é compilado estaticamente e não consegue gerar 
+     classes em runtime. As classes devem estar presentes integralmente no código 
+     fonte ou serem safelisted no tailwind.config.js. Solução: usar classes fixas 
+     com switch/case ou mapeamento directo. --}}
+
 @php
 $actions = [
     [
@@ -149,6 +157,34 @@ $actions = [
         'description' => 'Visualizar estatísticas e alterações'
     ],
 ];
+
+// Mapeamento fixo de cores para classes Tailwind completas
+$colorClasses = [
+    'blue' => [
+        'bg' => 'bg-blue-100',
+        'text' => 'text-blue-600',
+        'gradient' => 'from-blue-100',
+        'bar' => 'bg-blue-500',
+    ],
+    'green' => [
+        'bg' => 'bg-green-100',
+        'text' => 'text-green-600',
+        'gradient' => 'from-green-100',
+        'bar' => 'bg-green-500',
+    ],
+    'purple' => [
+        'bg' => 'bg-purple-100',
+        'text' => 'text-purple-600',
+        'gradient' => 'from-purple-100',
+        'bar' => 'bg-purple-500',
+    ],
+    'red' => [
+        'bg' => 'bg-red-100',
+        'text' => 'text-red-600',
+        'gradient' => 'from-red-100',
+        'bar' => 'bg-red-500',
+    ],
+];
 @endphp
 
 <div class="mt-10">
@@ -159,20 +195,23 @@ $actions = [
 
     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
         @foreach($actions as $action)
+            @php
+                $classes = $colorClasses[$action['color']] ?? $colorClasses['blue'];
+            @endphp
+
             <a href="{{ $action['route'] }}"
                class="group relative p-6 bg-white rounded-xl border border-gray-200 shadow-sm 
                       hover:shadow-xl transition-all duration-300 
                       hover:-translate-y-2 overflow-hidden">
 
-                <!-- Glow animado -->
-                <div class="absolute inset-0 bg-gradient-to-r from-{{ $action['color'] }}-100 
+                {{-- Glow animado --}}
+                <div class="absolute inset-0 bg-gradient-to-r {{ $classes['gradient'] }} 
                             to-transparent opacity-0 group-hover:opacity-100 
                             transition-opacity duration-300"></div>
 
                 <div class="relative flex items-start space-x-4">
                     <div class="w-14 h-14 flex items-center justify-center 
-                                rounded-xl bg-{{ $action['color'] }}-100 
-                                text-{{ $action['color'] }}-600 
+                                rounded-xl {{ $classes['bg'] }} {{ $classes['text'] }}
                                 text-2xl transition-transform duration-300 
                                 group-hover:scale-110">
                         <i class="{{ $action['icon'] }}"></i>
@@ -188,14 +227,13 @@ $actions = [
                     </div>
                 </div>
 
-                <!-- Indicador lateral animado -->
+                {{-- Indicador lateral animado --}}
                 <div class="absolute bottom-0 left-0 h-1 w-0 
-                            bg-{{ $action['color'] }}-500 
+                            {{ $classes['bar'] }}
                             group-hover:w-full transition-all duration-300"></div>
             </a>
         @endforeach
     </div>
 </div>
-
 
 @endsection

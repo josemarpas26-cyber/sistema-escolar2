@@ -34,6 +34,15 @@
                     <td class="px-6 py-4 text-right space-x-2">
                         <a href="{{ route('cursos.show', $curso) }}" class="text-primary-600"><i class="fas fa-eye"></i></a>
                         <a href="{{ route('cursos.edit', $curso) }}" class="text-blue-600"><i class="fas fa-edit"></i></a>
+
+                    {{-- Botão deletar --}}
+                    <form action="{{ route('cursos.destroy', $curso) }}" method="POST" class="inline-block" onsubmit="return confirm('Tem certeza que deseja deletar este curso?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600"><i class="fas fa-trash-alt"></i></button>
+                    </form>
+                </td>
+
                     </td>
                 </tr>
                 @endforeach

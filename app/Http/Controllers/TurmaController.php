@@ -54,25 +54,30 @@ class TurmaController extends Controller
     /**
      * Formulário de criação
      */
-    public function create()
+        public function create()
     {
         $this->checkPermission('turmas.create');
 
-        $cursos = Curso::ativos()->get();
-        $anosLetivos = AnoLetivo::orderBy('nome', 'desc')->get();
         $anoAtivo = AnoLetivo::ativo()->first();
 
+        if (!$anoAtivo) {
+            return redirect()
+                ->route('anos-letivos.index')
+                ->with('error', 'Não existe ano letivo ativo. Ative ou crie um antes de criar turmas.');
+        }
+
+        $cursos = Curso::ativos()->get();
         $professores = User::professores()->ativos()->get();
         $disciplinas = Disciplina::ativos()->get();
 
         return view('turmas.create', compact(
             'cursos',
-            'anosLetivos',
             'anoAtivo',
             'professores',
             'disciplinas'
         ));
     }
+
 
     /**
      * Salvar nova turma
@@ -81,6 +86,16 @@ class TurmaController extends Controller
     {
         $this->checkPermission('turmas.create');
 
+        // 1️⃣ Verificar se existe ano letivo ativo
+        $anoAtivo = AnoLetivo::ativo()->first();
+
+        if (!$anoAtivo) {
+            return back()
+                ->withInput()
+                ->with('error', 'Não existe ano letivo ativo. Ative um ano letivo antes de criar turmas.');
+        }
+
+        // 2️⃣ Validar dados
         $validated = $request->validate([
             'nome' => 'required|string|max:10',
             'classe' => 'required|in:10,11,12',
@@ -92,6 +107,25 @@ class TurmaController extends Controller
             'disciplinas.*' => 'exists:disciplinas,id',
         ]);
 
+        // 3️⃣ Garantir que o ano selecionado é o ativo
+        if ($validated['ano_letivo_id'] != $anoAtivo->id) {
+            return back()
+                ->withInput()
+                ->with('error', 'Só é permitido criar turmas no ano letivo ativo.');
+        }
+
+        // 4️⃣ Verificar se já existe turma com mesmo nome no mesmo ano
+        $turmaExiste = Turma::where('nome', $validated['nome'])
+            ->where('ano_letivo_id', $validated['ano_letivo_id'])
+            ->exists();
+
+        if ($turmaExiste) {
+            return back()
+                ->withInput()
+                ->with('error', 'Já existe uma turma com este nome neste ano letivo.');
+        }
+
+        // 5️⃣ Criar turma
         $turma = Turma::create($validated);
 
         // Associar disciplinas
@@ -103,6 +137,7 @@ class TurmaController extends Controller
             ->route('turmas.show', $turma)
             ->with('success', 'Turma criada com sucesso!');
     }
+
 
     /**
      * Exibir turma

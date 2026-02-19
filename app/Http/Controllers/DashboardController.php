@@ -38,6 +38,7 @@ private function adminDashboard()
 
     if ($anoLetivoAtivo && !$anoLetivoAtivo->encerrado) {
         $dias_restantes = now()->diffInDays($anoLetivoAtivo->data_fim, false);
+        $dias_restantes =  (int) $dias_restantes;
     }
 
     $stats = [
