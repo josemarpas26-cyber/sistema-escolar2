@@ -1,1 +1,1 @@
-@include('relatorios.pdf.pauta')
+@include('relatorios.pdf.pauta-geral')

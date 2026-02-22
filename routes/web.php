@@ -129,6 +129,8 @@ Route::middleware(['auth'])->group(function () {
     // Histórico académico
     Route::get('relatorios/historico/{aluno?}', [RelatorioController::class, 'historicoAcademico'])
         ->name('relatorios.historico');
+        Route::get('relatorios/historico-professor/{professor?}', [RelatorioController::class, 'historicoProfessor'])
+        ->name('relatorios.historico-professor');
     
     // Consolidado da turma
     Route::get('relatorios/consolidado/{turma}', [RelatorioController::class, 'consolidadoTurma'])
