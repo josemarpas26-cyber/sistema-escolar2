@@ -212,7 +212,7 @@
             <div class="space-y-2">
                 <a href="{{ route('users.edit', $user) }}" class="btn btn-primary w-full">
                     <i class="fas fa-edit mr-2"></i>
-                    Editar Dados
+                    Editar
                 </a>
 
                 @if($user->isAluno())
