@@ -31,8 +31,8 @@
                 <!-- Logo -->
                 <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-graduation-cap text-white text-xl"></i>
+                        <div class="w-10 h-10 bg-[#0000] rounded-lg flex items-center justify-center">
+                            <img src="{{ asset('images/logo1.png') }}" alt="Logo da escola" class="w-15 h-15">
                         </div>
                         <span class="text-xl font-bold text-gray-900 dark:text-gray-100">SIGA</span>
                     </div>
@@ -210,7 +210,7 @@
                 
                 <!-- Alerts -->
                 @if(session('success'))
-                <div class="alert alert-success auto-dismiss mb-6">
+                 <div class="alert alert-success auto-dismiss mb-6" data-dismiss-after="60000">
                     <div class="flex items-center">
                         <i class="fas fa-check-circle mr-3"></i>
                         <span>{{ session('success') }}</span>
@@ -219,7 +219,7 @@
                 @endif
 
                 @if(session('error'))
-                <div class="alert alert-error auto-dismiss mb-6">
+                 <div class="alert alert-error auto-dismiss mb-6" data-dismiss-after="5000">
                     <div class="flex items-center">
                         <i class="fas fa-exclamation-circle mr-3"></i>
                         <span>{{ session('error') }}</span>

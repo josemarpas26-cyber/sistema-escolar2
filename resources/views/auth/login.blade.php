@@ -79,7 +79,7 @@
     <!-- Submit Button -->
     <button 
         type="submit" 
-        class="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+        class="w-full bg-[#23aae2] hover:bg-[#1b7fb0] text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
     >
         <i class="fas fa-sign-in-alt mr-2"></i>
         Entrar

@@ -8,7 +8,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     
     <x-stat-card 
-        title="Total de Usuários" 
+        title="Usuários" 
         :value="$total_usuarios" 
         icon="fas fa-users"
         color="primary"
@@ -170,7 +170,7 @@ $actions = [
                             transition-opacity duration-300"></div>
 
                 <div class="relative flex items-start space-x-4">
-                    <div class="w-14 h-14 flex items-center justify-center 
+                    <div class="w-20 h-14 flex items-center justify-center 
                                 rounded-xl bg-{{ $action['color'] }}-100 
                                 text-{{ $action['color'] }}-600 
                                 text-2xl transition-transform duration-300 

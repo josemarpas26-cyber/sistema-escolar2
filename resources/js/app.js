@@ -16,11 +16,13 @@ window.confirmDelete = function(formId, message = 'Tem certeza que deseja deleta
 document.addEventListener('DOMContentLoaded', function() {
     const alerts = document.querySelectorAll('.auto-dismiss');
     alerts.forEach(alert => {
+        const timeout = Number(alert.dataset.dismissAfter || 5000);
+
         setTimeout(() => {
             alert.style.transition = 'opacity 0.5s';
             alert.style.opacity = '0';
             setTimeout(() => alert.remove(), 500);
-        }, 5000);
+        }, timeout);
     });
 });
 
