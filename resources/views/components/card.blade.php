@@ -33,7 +33,7 @@
 
     <!-- Barra inferior animada -->
     <div class="absolute bottom-0 left-0 h-1 w-0
-                bg-gray-600 
+                bg-blue-600
                 group-hover:w-full transition-all duration-300">
     </div>
 </div>
