@@ -227,23 +227,19 @@
                 <thead>
                     <tr>
                         <th width="35%">Disciplina</th>
-                        <th width="10%">MT1</th>
-                        <th width="10%">MT2</th>
-                        <th width="10%">MT3</th>
-                        <th width="10%">CFD</th>
-                        <th width="10%">Carga Horária</th>
-                        <th width="15%">Status</th>
+                        <th width="20%">Classe</th>
+                        <th width="20%">Classificação Final</th>
+                        <th width="20%">Data de Conclusão</th>
+                        <th width="25%">Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($registros as $registro)
                     <tr>
                         <td class="disciplina">{{ $registro->disciplina->nome }}</td>
-                        <td>{{ $registro->mt1 ? number_format($registro->mt1, 2) : '-' }}</td>
-                        <td>{{ $registro->mt2 ? number_format($registro->mt2, 2) : '-' }}</td>
-                        <td>{{ $registro->mt3 ? number_format($registro->mt3, 2) : '-' }}</td>
+                        <td>{{ $registro->classe }}ª</td>
                         <td><strong>{{ number_format($registro->classificacao_final, 2) }}</strong></td>
-                        <td>-</td>
+                         <td>{{ optional($registro->data_conclusao)->format('d/m/Y') }}</td>
                         <td class="{{ $registro->classificacao_final >= 10 ? 'aprovado' : 'reprovado' }}">
                             {{ $registro->classificacao_final >= 10 ? 'Aprovado' : 'Reprovado' }}
                         </td>

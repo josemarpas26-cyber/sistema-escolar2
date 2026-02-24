@@ -64,7 +64,20 @@
         </div>
     </div>
 </div>
-
+    <div class="mb-6 flex items-center justify-between gap-3">
+        <p class="text-sm text-gray-600">
+            Se não existirem notas para esta pauta, clique em <strong>Inicializar Pauta</strong> para criar os registos.
+        </p>
+        <form method="POST" action="{{ route('notas.inicializar-pauta') }}">
+            @csrf
+            <input type="hidden" name="turma_id" value="{{ $turma->id }}">
+            <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
+            <button type="submit" class="btn btn-outline">
+                <i class="fas fa-plus-circle mr-2"></i>
+                Inicializar Pauta
+            </button>
+        </form>
+    </div>
 <!-- Tabs de Trimestres -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6" x-data="{ tab: '1' }">
     <div class="border-b border-gray-200">
@@ -88,6 +101,11 @@
     </div>
 
     <div class="p-6">
+                @if($notas->isEmpty())
+                    <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p class="text-sm text-yellow-800">Nenhuma nota encontrada para esta pauta. Inicialize a pauta para começar os lançamentos.</p>
+                    </div>
+                 @endif
         <!-- 1º Trimestre -->
         <div x-show="tab === '1'">
             <form method="POST" action="{{ route('notas.trimestre-1') }}">

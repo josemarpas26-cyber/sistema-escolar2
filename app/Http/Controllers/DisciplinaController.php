@@ -60,7 +60,12 @@ class DisciplinaController extends Controller
             'disciplina_terminal' => 'boolean',
             'ativo' => 'boolean',
         ]);
-
+        $validated['leciona_10'] = $request->has('leciona_10');
+        $validated['leciona_11'] = $request->has('leciona_11');
+        $validated['leciona_12'] = $request->has('leciona_12');
+        $validated['disciplina_terminal'] = $request->has('disciplina_terminal');
+        $validated['ativo'] = $request->has('ativo');
+        
         $disciplina = Disciplina::create($validated);
 
         return redirect()
