@@ -84,6 +84,11 @@
                         @error('password')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
+                        
+                        <label class="mt-2 inline-flex items-center text-sm text-gray-600">
+                            <input type="checkbox" name="generate_random_password" value="1" class="mr-2 w-5 h-5 rounded-md border-gray-400 text-indigo-600 focus:ring-indigo-500" {{ old('generate_random_password') ? 'checked' : '' }} onchange="toggleAutoPassword(this)">
+                            Gerar senha aleatória automaticamente
+                        </label>
                     </div>
 
                     <!-- Confirmar Senha -->
@@ -342,6 +347,32 @@
     </div>
 
 </form>
+
+<script>
+function toggleAutoPassword(checkbox) {
+    const passwordInput = document.querySelector('input[name="password"]');
+    const confirmationInput = document.querySelector('input[name="password_confirmation"]');
+
+    if (!passwordInput || !confirmationInput) return;
+
+    if (checkbox.checked) {
+        passwordInput.value = '';
+        confirmationInput.value = '';
+        passwordInput.required = false;
+        confirmationInput.required = false;
+    } else {
+        passwordInput.required = true;
+        confirmationInput.required = true;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const checkbox = document.querySelector('input[name="generate_random_password"]');
+    if (checkbox) {
+        toggleAutoPassword(checkbox);
+    }
+});
+</script>
 
 @endsection
 

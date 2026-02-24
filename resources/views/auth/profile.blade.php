@@ -36,7 +36,8 @@
                                     <i class="fas fa-camera mr-2"></i>
                                     Alterar Foto
                                 </label>
-                                <p class="text-xs text-gray-500 mt-1">JPG, PNG. Máx 2MB</p>
+                                <br>
+                                <p class="text-xs text-gray-500 mt-2">JPG, PNG. Máx 2MB</p>
                             </div>
                         </div>
                     </div>

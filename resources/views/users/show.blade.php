@@ -214,7 +214,8 @@
                     <i class="fas fa-edit mr-2"></i>
                     Editar
                 </a>
-
+                    <br>
+                    <br>
                 @if($user->isAluno())
                 <a href="{{ route('relatorios.boletim', $user) }}" class="btn btn-outline w-full">
                     <i class="fas fa-file-pdf mr-2"></i>

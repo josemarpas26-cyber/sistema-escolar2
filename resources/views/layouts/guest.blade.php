@@ -17,17 +17,17 @@
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gradient-to-br from-[#4c1d95] to-[#1e3a8a] min-h-screen flex items-center justify-center p-4">
+<body class="bg-gradient-to-br from-[#23aae2] to-[#1b7fb0] min-h-screen flex items-center justify-center p-4">
     
     <div class="w-full max-w-md">
         
         <!-- Logo -->
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4">
-                <i class="fas fa-graduation-cap text-primary-600 text-4xl"></i>
+                <img src="{{ asset('images/logo1.png') }}" alt="Logo da escola" class="w-15 h-15">
             </div>
-            <h1 class="text-3xl font-bold text-white mb-2">NotasEscola</h1>
-            <p class="text-primary-100">Sistema de Gestão Escolar</p>
+            <h1 class="text-3xl font-bold text-white mb-2">SIGA</h1>
+            <p class="text-primary-100">Sistema Integrado de Gestão Acadêmica</p>
         </div>
 
         <!-- Card -->
@@ -75,7 +75,7 @@
 
         <!-- Footer -->
         <div class="text-center mt-6 text-primary-100 text-sm">
-            <p>&copy; {{ date('Y') }} NotasEscola. Desenvolvido em Angola 🇦🇴</p>
+            <p>&copy; {{ date('Y') }} SIGA. Desenvolvido em Angola 🇦🇴</p>
         </div>
 
     </div>

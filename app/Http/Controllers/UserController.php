@@ -7,6 +7,7 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use App\Models\Turma;
 
@@ -64,11 +65,23 @@ class UserController extends Controller
     {
         $this->checkPermission('users.create');
 
+        $selectedRole = Role::find($request->input('role_id'));
+        $shouldGeneratePassword = $request->boolean('generate_random_password')
+            || optional($selectedRole)->name === 'professor';
+
+        $passwordRules = ['nullable', 'string', 'min:6'];
+
+        if (! $shouldGeneratePassword) {
+            $passwordRules[] = 'required';
+            $passwordRules[] = 'confirmed';
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => $passwordRules,
             'role_id' => 'required|exists:roles,id',
+            'generate_random_password' => 'nullable|boolean',
             'bi' => 'nullable|string|unique:users,bi',
             'data_nascimento' => 'nullable|date',
             'genero' => 'nullable|in:M,F',
@@ -80,7 +93,15 @@ class UserController extends Controller
             'contacto_encarregado' => 'nullable|string|max:20',
         ]);
 
+      $generatedPassword = null;
+
+        if ($shouldGeneratePassword && empty($validated['password'])) {
+            $generatedPassword = Str::password(10);
+            $validated['password'] = $generatedPassword;
+        }
+
         $validated['password'] = Hash::make($validated['password']);
+        unset($validated['generate_random_password']);
 
         // Upload de foto
         if ($request->hasFile('foto_perfil')) {
@@ -90,9 +111,15 @@ class UserController extends Controller
 
         $user = User::create($validated);
 
+          $successMessage = 'Usuário criado com sucesso!';
+
+        if ($generatedPassword) {
+            $successMessage .= " Senha provisória gerada: {$generatedPassword}";
+        }
+
         return redirect()
             ->route('users.show', $user)
-            ->with('success', 'Usuário criado com sucesso!');
+            ->with('success', $successMessage);
     }
 
     /**

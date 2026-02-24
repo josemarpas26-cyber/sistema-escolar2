@@ -40,6 +40,7 @@
     <div class="text-center py-12">
         <i class="fas fa-chalkboard text-5xl text-gray-300 mb-4"></i>
         <p class="text-gray-500">Nenhuma turma cadastrada</p>
+        <br>
         <a href="{{ route('turmas.create') }}" class="btn btn-primary mt-4"><i class="fas fa-plus mr-2"></i>Criar Primeira Turma</a>
     </div>
     @endif
