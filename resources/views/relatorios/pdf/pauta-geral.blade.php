@@ -2,419 +2,406 @@
 <html lang="pt-AO">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pauta Geral - {{ $turma->nome_completo }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: Arial, sans-serif;
-            font-size: 9px;
+            font-size: 7px;
             color: #1a202c;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 10px;
-        }
-
-        .container {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #3B82F6;
-        }
-
-        .header h1 {
-            font-size: 20px;
-            color: #3B82F6;
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            font-size: 11px;
-            color: #64748b;
-            margin: 2px 0;
-        }
-
-        .info-section {
-            background: #f3f4f6;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-        }
-
-        .info-item {
             padding: 8px;
             background: white;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #3B82F6;
+        }
+        .header h1 { font-size: 16px; color: #3B82F6; margin-bottom: 3px; }
+        .header p  { font-size: 9px; color: #64748b; margin: 1px 0; }
+
+        /* ── INFO GRID ── */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .info-item {
+            padding: 5px 7px;
+            background: #f3f4f6;
             border-radius: 4px;
             border-left: 3px solid #3B82F6;
         }
+        .info-label { font-size: 6.5px; color: #64748b; text-transform: uppercase; }
+        .info-value { font-size: 9px; font-weight: bold; color: #1e293b; margin-top: 2px; }
 
-        .info-label {
-            font-size: 8px;
-            color: #64748b;
-            text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-
-        .info-value {
-            font-size: 11px;
-            font-weight: bold;
-            color: #1e293b;
-        }
-
+        /* ── TABELA ── */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
-            font-size: 8px;
+            margin-bottom: 12px;
+            table-layout: fixed;
         }
 
-        thead {
+        /* cabeçalho de grupo de disciplina */
+        th.disc-group {
+            background: #1e40af;
+            color: white;
+            font-size: 7px;
+            padding: 4px 2px;
+            text-align: center;
+            border: 1px solid #1e3a8a;
+            letter-spacing: 0.3px;
+        }
+
+        /* cabeçalho de sub-coluna */
+        th.sub-col {
             background: #3B82F6;
             color: white;
+            font-size: 6px;
+            padding: 3px 1px;
+            text-align: center;
+            border: 1px solid #2563EB;
         }
 
-        th {
-            padding: 6px 4px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #2563eb;
+        /* cabeçalho fixo (Nº / Nome) */
+        th.fix-col {
+            background: #374151;
+            color: white;
             font-size: 7px;
+            padding: 4px 3px;
+            text-align: center;
+            border: 1px solid #1f2937;
         }
 
         td {
-            padding: 5px 3px;
+            padding: 3px 1px;
             border: 1px solid #e2e8f0;
             text-align: center;
+            font-size: 6.5px;
+            overflow: hidden;
         }
 
-        tbody tr:nth-child(even) {
-            background-color: #f9fafb;
-        }
-
-        tbody tr:hover {
-            background-color: #eff6ff;
-        }
-
-        .disciplina-col {
-            text-align: left !important;
+        td.nome-aluno {
+            text-align: left;
+            padding-left: 4px;
+            font-size: 7px;
             font-weight: 600;
-            color: #1e293b;
-            padding-left: 8px !important;
         }
 
-        .media-col {
-            background-color: #dbeafe;
-            font-weight: bold;
-        }
+        tbody tr:nth-child(even) { background: #f9fafb; }
 
-        .aprovado {
-            color: #10B981;
-            font-weight: bold;
-        }
+        /* média / nota final da disciplina — destaque */
+        td.mt-col   { background: #dbeafe; font-weight: bold; font-size: 7px; }
+        td.cfd-col  { background: #d1fae5; font-weight: bold; font-size: 7px; }
+        td.ca-col   { background: #fef3c7; font-weight: bold; font-size: 7px; }
 
-        .reprovado {
-            color: #EF4444;
-            font-weight: bold;
-        }
+        .aprovado { color: #059669; font-weight: bold; }
+        .reprovado { color: #dc2626; font-weight: bold; }
 
+        /* ── RESUMO ── */
         .summary {
-            background: #eff6ff;
-            padding: 12px;
-            border-radius: 6px;
-            border: 2px solid #3B82F6;
-            margin-bottom: 15px;
-        }
-
-        .summary-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            text-align: center;
+            gap: 8px;
+            background: #eff6ff;
+            border: 2px solid #3B82F6;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
         }
+        .summary-item { text-align: center; background: white; padding: 6px; border-radius: 4px; }
+        .summary-label { font-size: 7px; color: #64748b; }
+        .summary-value { font-size: 14px; font-weight: bold; margin-top: 3px; }
+        .summary-value.blue  { color: #3B82F6; }
+        .summary-value.green { color: #10B981; }
+        .summary-value.red   { color: #EF4444; }
 
-        .summary-item {
-            padding: 8px;
-            background: white;
-            border-radius: 4px;
-        }
-
-        .summary-label {
-            font-size: 8px;
-            color: #64748b;
-            margin-bottom: 3px;
-        }
-
-        .summary-value {
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        .summary-value.green {
-            color: #10B981;
-        }
-
-        .summary-value.red {
-            color: #EF4444;
-        }
-
-        .summary-value.blue {
-            color: #3B82F6;
-        }
-
+        /* ── ASSINATURAS ── */
         .assinaturas {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #e2e8f0;
-        }
-
-        .assinatura-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin-top: 20px;
+            margin-top: 25px;
         }
+        .assinatura-item { text-align: center; }
+        .assinatura-linha { border-top: 1px solid #1e293b; padding-top: 30px; margin-bottom: 4px; }
+        .assinatura-label { font-size: 8px; color: #64748b; }
 
-        .assinatura-item {
-            text-align: center;
-        }
-
-        .assinatura-linha {
-            border-top: 1px solid #1e293b;
-            margin-bottom: 5px;
-            padding-top: 40px;
-        }
-
-        .assinatura-label {
-            font-size: 9px;
-            color: #64748b;
-        }
-
+        /* ── FOOTER ── */
         .footer {
             text-align: center;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 2px solid #e2e8f0;
-            font-size: 8px;
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 7px;
             color: #64748b;
         }
 
         .legenda {
             background: #f3f4f6;
-            padding: 8px;
+            padding: 5px 8px;
             border-radius: 4px;
-            margin-bottom: 10px;
-            font-size: 7px;
+            margin-bottom: 8px;
+            font-size: 6.5px;
             color: #475569;
-            text-align: center;
-        }
-
-        .page-break {
-            page-break-after: always;
         }
 
         @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            .container {
-                padding: 0;
-            }
+            body { padding: 0; }
+            @page { size: A3 landscape; margin: 8mm; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        
-        <!-- Header -->
-        <div class="header">
-            <h1>📊 PAUTA GERAL DA TURMA</h1>
-            <p>{{ $turma->curso->nome }} - {{ $turma->classe }}ª Classe</p>
-            <p>{{ $turma->nome_completo }} | Ano Letivo: {{ $turma->anoLetivo->nome }}</p>
-        </div>
 
-        <!-- Informações -->
-        <div class="info-section">
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Curso</div>
-                    <div class="info-value">{{ $turma->curso->nome }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Classe</div>
-                    <div class="info-value">{{ $turma->classe }}ª</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Total de Disciplinas</div>
-                    <div class="info-value">{{ $turma->disciplinas->count() }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Total de Alunos</div>
-                    <div class="info-value">{{ $turma->total_alunos }}</div>
-                </div>
-            </div>
-        </div>
+@php
+    $trimestreLabel = match($trimestre) {
+        '1'     => '1º Trimestre',
+        '2'     => '2º Trimestre',
+        '3'     => '3º Trimestre',
+        default => 'Final (CFD)',
+    };
 
-        <!-- Legenda -->
-        <div class="legenda">
-            <strong>Legenda:</strong> 
-            Média Turma = Média de todos os alunos na disciplina | 
-            Aprovados = CFD ≥ 10 | 
-            Reprovados = CFD &lt; 10 | 
-            Taxa = % de aprovação
-        </div>
+    $isFinal = $trimestre === 'final' || !in_array($trimestre, ['1','2','3']);
 
-        <!-- Tabela Principal -->
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 30%;">Disciplina</th>
-                    <th style="width: 12%;">Média Turma</th>
-                    <th style="width: 12%;">Maior Nota</th>
-                    <th style="width: 12%;">Menor Nota</th>
-                    <th style="width: 10%;">Aprovados</th>
-                    <th style="width: 10%;">Reprovados</th>
-                    <th style="width: 14%;">Taxa Aprovação</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php
-                    $totalAprovadosGeral = 0;
-                    $totalReprovadosGeral = 0;
-                    $somaMediasGerais = 0;
-                    $disciplinasComNotas = 0;
-                @endphp
+    // Recolher disciplinas com notas nesta turma
+    $disciplinas = $turma->disciplinas->sortBy('nome');
 
-                @foreach($turma->disciplinas as $disciplina)
+    // Recolher todos os alunos com notas nesta turma
+    $alunos = $turma->alunos->sortBy('name');
+
+    // Indexar notas: [aluno_id][disciplina_id] => Nota
+    $notasIndex = [];
+    foreach ($turma->notas as $nota) {
+        $notasIndex[$nota->aluno_id][$nota->disciplina_id] = $nota;
+    }
+
+    // Colunas por trimestre
+    $colsDisciplina = match($trimestre) {
+        '1'     => [
+            ['campo' => 'mac1', 'label' => 'MAC', 'tipo' => 'normal'],
+            ['campo' => 'pp1',  'label' => 'PP',  'tipo' => 'normal'],
+            ['campo' => 'pt1',  'label' => 'PT',  'tipo' => 'normal'],
+            ['campo' => 'mt1',  'label' => 'MT1', 'tipo' => 'mt'],
+        ],
+        '2'     => [
+            ['campo' => 'mac2', 'label' => 'MAC', 'tipo' => 'normal'],
+            ['campo' => 'pp2',  'label' => 'PP',  'tipo' => 'normal'],
+            ['campo' => 'pt2',  'label' => 'PT',  'tipo' => 'normal'],
+            ['campo' => 'mt2',  'label' => 'MT2', 'tipo' => 'mt'],
+            ['campo' => 'mft2', 'label' => 'MFT', 'tipo' => 'mt'],
+        ],
+        '3'     => [
+            ['campo' => 'mac3', 'label' => 'MAC', 'tipo' => 'normal'],
+            ['campo' => 'pp3',  'label' => 'PP',  'tipo' => 'normal'],
+            ['campo' => 'mt3',  'label' => 'MT3', 'tipo' => 'mt'],
+            ['campo' => 'cf',   'label' => 'CF',  'tipo' => 'mt'],
+            ['campo' => 'pg',   'label' => 'PG',  'tipo' => 'normal'],
+            ['campo' => 'ca',   'label' => 'CA',  'tipo' => 'ca'],
+        ],
+        default => [
+            ['campo' => 'mt1', 'label' => 'MT1', 'tipo' => 'mt'],
+            ['campo' => 'mt2', 'label' => 'MT2', 'tipo' => 'mt'],
+            ['campo' => 'mt3', 'label' => 'MT3', 'tipo' => 'mt'],
+            ['campo' => 'pg',  'label' => 'PG',  'tipo' => 'normal'],
+            ['campo' => 'ca',  'label' => 'CA',  'tipo' => 'ca'],
+            ['campo' => 'cfd', 'label' => 'CFD', 'tipo' => 'cfd'],
+        ],
+    };
+
+    $numCols   = count($colsDisciplina);
+    $campoMT   = match($trimestre) { '1' => 'mt1', '2' => 'mt2', '3' => 'mt3', default => 'cfd' };
+
+    // Estatísticas gerais
+    $totalAprovados  = 0;
+    $totalReprovados = 0;
+    $somaMedias      = 0;
+    $countMedias     = 0;
+
+    foreach ($alunos as $aluno) {
+        $notas = $notasIndex[$aluno->id] ?? [];
+        foreach ($disciplinas as $disc) {
+            $nota = $notas[$disc->id] ?? null;
+            if ($nota && $nota->$campoMT !== null) {
+                $somaMedias += $nota->$campoMT;
+                $countMedias++;
+                if ($nota->$campoMT >= 10) $totalAprovados++;
+                else $totalReprovados++;
+            }
+        }
+    }
+    $mediaGeral = $countMedias > 0 ? $somaMedias / $countMedias : null;
+    $totalGeral = $totalAprovados + $totalReprovados;
+    $taxaGeral  = $totalGeral > 0 ? ($totalAprovados / $totalGeral) * 100 : 0;
+@endphp
+
+{{-- ── HEADER ── --}}
+<div class="header">
+    <h1>📊 PAUTA GERAL DA TURMA</h1>
+    <p>{{ $turma->curso->nome }} — {{ $turma->classe }}ª Classe &nbsp;|&nbsp; {{ $turma->nome_completo }} &nbsp;|&nbsp; Ano Letivo: {{ $turma->anoLetivo->nome }}</p>
+    <p><strong>Período: {{ $trimestreLabel }}</strong></p>
+</div>
+
+{{-- ── INFO ── --}}
+<div class="info-grid">
+    <div class="info-item">
+        <div class="info-label">Curso</div>
+        <div class="info-value">{{ $turma->curso->nome }}</div>
+    </div>
+    <div class="info-item">
+        <div class="info-label">Classe</div>
+        <div class="info-value">{{ $turma->classe }}ª</div>
+    </div>
+    <div class="info-item">
+        <div class="info-label">Período</div>
+        <div class="info-value">{{ $trimestreLabel }}</div>
+    </div>
+    <div class="info-item">
+        <div class="info-label">Nº Disciplinas</div>
+        <div class="info-value">{{ $disciplinas->count() }}</div>
+    </div>
+    <div class="info-item">
+        <div class="info-label">Total de Alunos</div>
+        <div class="info-value">{{ $alunos->count() }}</div>
+    </div>
+</div>
+
+{{-- ── LEGENDA ── --}}
+<div class="legenda">
+    <strong>Legenda:</strong>
+    @if(!$isFinal)
+        MAC = Média de Avaliações Contínuas &nbsp;|&nbsp;
+        PP = Prova do Professor &nbsp;|&nbsp;
+        @if($trimestre == '1') PT = Prova Trimestral &nbsp;|&nbsp; MT1 = Média 1º Trim @endif
+        @if($trimestre == '2') PT = Prova Trimestral &nbsp;|&nbsp; MT2 = Média 2º Trim &nbsp;|&nbsp; MFT = Média Final até T2 @endif
+        @if($trimestre == '3') MT3 = Média 3º Trim &nbsp;|&nbsp; CF = Classificação Final &nbsp;|&nbsp; PG = Prova Global &nbsp;|&nbsp; CA = Classificação Anual @endif
+    @else
+        MT1/MT2/MT3 = Médias Trimestrais &nbsp;|&nbsp; PG = Prova Global &nbsp;|&nbsp; CA = Classif. Anual &nbsp;|&nbsp; CFD = Classif. Final Disciplina &nbsp;|&nbsp;
+        ✓ Aprovado ≥ 10 valores
+    @endif
+    &nbsp;|&nbsp; Cabeçalhos de coluna = código da disciplina
+</div>
+
+{{-- ── TABELA PRINCIPAL ── --}}
+<table>
+    <thead>
+        {{-- Linha 1: Nº | Nome | [Código disciplina] agrupado --}}
+        <tr>
+            <th class="fix-col" style="width:2.5%" rowspan="2">Nº</th>
+            <th class="fix-col" style="width:12%" rowspan="2">Nome do Aluno</th>
+            @foreach($disciplinas as $disc)
+                <th class="disc-group" colspan="{{ $numCols }}">
+                    {{ $disc->codigo ?? $disc->nome }}
+                </th>
+            @endforeach
+        </tr>
+
+        {{-- Linha 2: sub-colunas de cada disciplina --}}
+        <tr>
+            @foreach($disciplinas as $disc)
+                @foreach($colsDisciplina as $col)
+                    <th class="sub-col">{{ $col['label'] }}</th>
+                @endforeach
+            @endforeach
+        </tr>
+    </thead>
+
+    <tbody>
+        @php $contador = 1; @endphp
+        @foreach($alunos as $aluno)
+        @php
+            $notasAluno = $notasIndex[$aluno->id] ?? [];
+            // calcular média do aluno neste período (para linha de status)
+            $somaAluno  = 0;
+            $countAluno = 0;
+            foreach ($disciplinas as $disc) {
+                $n = $notasAluno[$disc->id] ?? null;
+                if ($n && $n->$campoMT !== null) {
+                    $somaAluno += $n->$campoMT;
+                    $countAluno++;
+                }
+            }
+            $mediaAluno = $countAluno > 0 ? round($somaAluno / $countAluno, 1) : null;
+        @endphp
+        <tr>
+            <td>{{ $contador++ }}</td>
+            <td class="nome-aluno">{{ $aluno->name }}</td>
+
+            @foreach($disciplinas as $disc)
+                @php $nota = $notasAluno[$disc->id] ?? null; @endphp
+                @foreach($colsDisciplina as $col)
                     @php
-                        // Buscar todas as notas desta disciplina nesta turma
-                        $notasDisciplina = $turma->notas
-                            ->where('disciplina_id', $disciplina->id)
-                            ->whereNotNull('cfd');
-                        
-                        $total = $notasDisciplina->count();
-                        
-                        if ($total > 0) {
-                            $media = $notasDisciplina->avg('cfd');
-                            $maior = $notasDisciplina->max('cfd');
-                            $menor = $notasDisciplina->min('cfd');
-                            $aprovados = $notasDisciplina->filter(function($nota) {
-                                return $nota->isAprovado();
-                            })->count();
-                            $reprovados = $total - $aprovados;
-                            $taxa = ($aprovados / $total) * 100;
-                            
-                            $totalAprovadosGeral += $aprovados;
-                            $totalReprovadosGeral += $reprovados;
-                            $somaMediasGerais += $media;
-                            $disciplinasComNotas++;
-                        } else {
-                            $media = null;
-                            $maior = null;
-                            $menor = null;
-                            $aprovados = 0;
-                            $reprovados = 0;
-                            $taxa = 0;
+                        $val     = $nota ? $nota->{$col['campo']} : null;
+                        $tdClass = match($col['tipo']) {
+                            'mt'  => 'mt-col',
+                            'cfd' => 'cfd-col',
+                            'ca'  => 'ca-col',
+                            default => '',
+                        };
+                        // colorir CFD/MT aprovado ou reprovado
+                        $statusClass = '';
+                        if (in_array($col['tipo'], ['cfd', 'mt', 'ca']) && $val !== null) {
+                            $statusClass = $val >= 10 ? 'aprovado' : 'reprovado';
                         }
                     @endphp
-
-                    <tr>
-                        <td class="disciplina-col">{{ $disciplina->nome }}</td>
-                        <td class="media-col">
-                            {{ $media ? number_format($media, 2) : '-' }}
-                        </td>
-                        <td>{{ $maior ? number_format($maior, 2) : '-' }}</td>
-                        <td>{{ $menor ? number_format($menor, 2) : '-' }}</td>
-                        <td class="aprovado">{{ $aprovados }}</td>
-                        <td class="reprovado">{{ $reprovados }}</td>
-                        <td>
-                            <span class="{{ $taxa >= 70 ? 'aprovado' : 'reprovado' }}">
-                                {{ number_format($taxa, 1) }}%
-                            </span>
-                        </td>
-                    </tr>
+                    <td class="{{ $tdClass }}">
+                        <span class="{{ $statusClass }}">
+                            {{ $val !== null ? number_format($val, 1) : '—' }}
+                        </span>
+                    </td>
                 @endforeach
-            </tbody>
-        </table>
+            @endforeach
+        </tr>
+        @endforeach
+    </tbody>
+</table>
 
-        <!-- Estatísticas Gerais -->
-        <div class="summary">
-            <div class="summary-grid">
-                <div class="summary-item">
-                    <div class="summary-label">Média Geral da Turma</div>
-                    <div class="summary-value blue">
-                        {{ $disciplinasComNotas > 0 ? number_format($somaMediasGerais / $disciplinasComNotas, 2) : '-' }}
-                    </div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-label">Total de Aprovações</div>
-                    <div class="summary-value green">{{ $totalAprovadosGeral }}</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-label">Total de Reprovações</div>
-                    <div class="summary-value red">{{ $totalReprovadosGeral }}</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-label">Taxa Geral</div>
-                    <div class="summary-value {{ ($totalAprovadosGeral + $totalReprovadosGeral) > 0 && (($totalAprovadosGeral / ($totalAprovadosGeral + $totalReprovadosGeral)) * 100) >= 70 ? 'green' : 'red' }}">
-                        {{ ($totalAprovadosGeral + $totalReprovadosGeral) > 0 ? number_format(($totalAprovadosGeral / ($totalAprovadosGeral + $totalReprovadosGeral)) * 100, 1) : '0' }}%
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Observações -->
-        <div style="background: #fef3c7; padding: 10px; border-radius: 4px; border-left: 4px solid #f59e0b; margin-bottom: 15px;">
-            <p style="font-size: 8px; color: #92400e; margin-bottom: 5px;">
-                <strong>📌 Observações:</strong>
-            </p>
-            <ul style="font-size: 8px; color: #92400e; margin-left: 15px;">
-                <li>Média Turma: Média aritmética das CFDs de todos os alunos na disciplina</li>
-                <li>Taxa de Aprovação: Percentual de alunos com CFD ≥ 10 valores</li>
-                <li>Este relatório apresenta o desempenho geral da turma por disciplina</li>
-            </ul>
-        </div>
-
-        <!-- Assinaturas -->
-        <div class="assinaturas">
-            <div class="assinatura-grid">
-                <div class="assinatura-item">
-                    <div class="assinatura-linha"></div>
-                    <div class="assinatura-label">Coordenador da Turma</div>
-                </div>
-                <div class="assinatura-item">
-                    <div class="assinatura-linha"></div>
-                    <div class="assinatura-label">Coordenador Pedagógico</div>
-                </div>
-                <div class="assinatura-item">
-                    <div class="assinatura-linha"></div>
-                    <div class="assinatura-label">Direção</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <p>Gerado em {{ now()->format('d/m/Y H:i') }} | Sistema de Gestão Escolar 🇦🇴</p>
-            <p>Este documento apresenta estatísticas gerais de desempenho da turma</p>
-        </div>
-
+{{-- ── RESUMO ── --}}
+<div class="summary">
+    <div class="summary-item">
+        <div class="summary-label">Média Geral ({{ $trimestreLabel }})</div>
+        <div class="summary-value blue">{{ $mediaGeral !== null ? number_format($mediaGeral, 2) : '—' }}</div>
     </div>
+    <div class="summary-item">
+        <div class="summary-label">Total Aprovações</div>
+        <div class="summary-value green">{{ $totalAprovados }}</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-label">Total Reprovações</div>
+        <div class="summary-value red">{{ $totalReprovados }}</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-label">Taxa Geral de Aprovação</div>
+        <div class="summary-value {{ $taxaGeral >= 70 ? 'green' : 'red' }}">{{ number_format($taxaGeral, 1) }}%</div>
+    </div>
+</div>
+
+{{-- ── ASSINATURAS ── --}}
+<div class="assinaturas">
+    <div class="assinatura-item">
+        <div class="assinatura-linha"></div>
+        <div class="assinatura-label">Coordenador da Turma</div>
+    </div>
+    <div class="assinatura-item">
+        <div class="assinatura-linha"></div>
+        <div class="assinatura-label">Coordenador Pedagógico</div>
+    </div>
+    <div class="assinatura-item">
+        <div class="assinatura-linha"></div>
+        <div class="assinatura-label">Direção</div>
+    </div>
+</div>
+
+{{-- ── FOOTER ── --}}
+<div class="footer">
+    <p>Gerado em {{ now()->format('d/m/Y H:i') }} &nbsp;|&nbsp; Sistema de Gestão Escolar 🇦🇴</p>
+</div>
+
 </body>
 </html>
