@@ -210,12 +210,11 @@ $colorClasses = [
                             transition-opacity duration-300"></div>
 
                 <div class="relative flex items-start space-x-4">
-            <div class="w-20 h-14 flex items-center justify-center 
-            rounded-xl {{ $classes['bg'] }} {{ $classes['text'] }}
-            text-2xl transition-transform duration-300 
-            group-hover:scale-110">
-            <i class="{{ $action['icon'] }}"></i>
-            </div>
+
+                    <div class="w-14 h-14 flex items-center justify-center 
+                                rounded-xl {{ $classes['bg'] }} {{ $classes['text'] }}
+                                text-2xl transition-transform duration-300 
+                                group-hover:scale-110">
                         <i class="{{ $action['icon'] }}"></i>
                     </div>
 

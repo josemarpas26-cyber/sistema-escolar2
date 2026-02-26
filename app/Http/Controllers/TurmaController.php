@@ -54,29 +54,31 @@ class TurmaController extends Controller
     /**
      * Formulário de criação
      */
-        public function create()
-    {
-        $this->checkPermission('turmas.create');
+     public function create()
+{
+    $this->checkPermission('turmas.create');
 
-        $anoAtivo = AnoLetivo::ativo()->first();
+    $anoAtivo = AnoLetivo::ativo()->first();
 
-        if (!$anoAtivo) {
-            return redirect()
-                ->route('anos-letivos.index')
-                ->with('error', 'Não existe ano letivo ativo. Ative ou crie um antes de criar turmas.');
-        }
-
-        $cursos = Curso::ativos()->get();
-        $professores = User::professores()->ativos()->get();
-        $disciplinas = Disciplina::ativos()->get();
-
-        return view('turmas.create', compact(
-            'cursos',
-            'anoAtivo',
-            'professores',
-            'disciplinas'
-        ));
+    if (!$anoAtivo) {
+        return redirect()
+            ->route('anos-letivos.index')
+            ->with('error', 'Não existe ano letivo ativo. Ative ou crie um antes de criar turmas.');
     }
+
+    $cursos = Curso::ativos()->get();
+    $professores = User::professores()->ativos()->get();
+    $disciplinas = Disciplina::ativos()->get();
+    $anosLetivos = AnoLetivo::orderByDesc('created_at')->get(); 
+
+    return view('turmas.create', compact(
+        'cursos',
+        'anoAtivo',
+        'professores',
+        'disciplinas',
+        'anosLetivos' 
+    ));
+}
 
 
     /**
