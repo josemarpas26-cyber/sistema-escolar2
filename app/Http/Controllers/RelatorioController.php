@@ -320,4 +320,64 @@ class RelatorioController extends Controller
 
         return $pdf->download('pauta-geral-' . $dados['turma']->nome . '.pdf');
     }
+
+    public function consolidadoTurma(Request $request, Turma $turma)
+{
+    $this->checkPermission('relatorios.pautas');
+
+    $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
+    $trimestre = $request->trimestre ?? 'final';
+
+    $anoLetivo = AnoLetivo::findOrFail($anoLetivoId);
+
+    $notas = Nota::where('turma_id', $turma->id)
+        ->where('ano_letivo_id', $anoLetivoId)
+        ->with(['aluno', 'disciplina'])
+        ->get();
+
+    // Agrupa por aluno
+    $notasPorAluno = $notas->groupBy('aluno_id');
+
+    $dadosAlunos = $notasPorAluno->map(function ($notasAluno) use ($trimestre) {
+
+        $valores = $notasAluno
+            ->map(fn($nota) => $this->valorPeriodo($nota, $trimestre))
+            ->filter(fn($valor) => $valor !== null);
+
+        $media = $valores->avg();
+
+        return [
+            'aluno' => $notasAluno->first()->aluno,
+            'media' => round($media ?? 0, 2),
+            'aprovado' => $media !== null && $media >= 10,
+        ];
+    });
+
+    $mediaGeralTurma = round(
+        $dadosAlunos->avg('media') ?? 0,
+        2
+    );
+
+    $totalAprovados = $dadosAlunos->where('aprovado', true)->count();
+    $totalReprovados = $dadosAlunos->count() - $totalAprovados;
+
+    $dados = [
+        'turma' => $turma,
+        'anoLetivo' => $anoLetivo,
+        'trimestre' => $trimestre,
+        'dadosAlunos' => $dadosAlunos,
+        'mediaGeralTurma' => $mediaGeralTurma,
+        'totalAprovados' => $totalAprovados,
+        'totalReprovados' => $totalReprovados,
+    ];
+
+    if ($request->formato === 'pdf') {
+        $pdf = Pdf::loadView('relatorios.pdf.consolidado-turma', $dados)
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download('consolidado-' . $turma->nome . '.pdf');
+    }
+
+    return view('relatorios.consolidado-turma', $dados);
+}
 }
