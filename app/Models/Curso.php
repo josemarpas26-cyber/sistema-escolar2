@@ -30,7 +30,13 @@ class Curso extends Model
     {
         return $this->hasMany(Turma::class);
     }
-
+    
+    public function disciplinas()
+    {
+        return $this->belongsToMany(Disciplina::class, 'curso_disciplina')
+            ->withPivot('ano_terminal')
+            ->withTimestamps();
+    }
     public function scopeAtivos($query)
     {
         return $query->where('ativo', true);

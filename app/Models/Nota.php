@@ -116,10 +116,7 @@ class Nota extends Model
             $this->ca = round((0.6 * $this->cf) + (0.4 * $this->pg), 2);
         }
 
-        // CFD para disciplinas terminais
-        if ($this->disciplina->disciplina_terminal) {
-            $this->cfd = $this->ca;
-        }
+        $this->aplicarRegraTerminalPorCurso(10);
     }
 
     /**
@@ -146,11 +143,7 @@ class Nota extends Model
         if ($this->ca_10 !== null && $this->ca !== null) {
             $this->cfd = round(($this->ca_10 + $this->ca) / 2, 2);
         }
-
-        // CFD para disciplinas apenas da 11ª
-        if (!$this->disciplina->leciona_10 && $this->disciplina->leciona_11) {
-            $this->cfd = $this->ca;
-        }
+         $this->aplicarRegraTerminalPorCurso(11);
     }
 
     /**
@@ -178,9 +171,30 @@ class Nota extends Model
             $this->cfd = round(($this->ca_10 + $this->ca_11 + $this->ca) / 3, 2);
         }
 
-        // CFD para disciplinas apenas da 12ª
-        if (!$this->disciplina->leciona_10 && !$this->disciplina->leciona_11 && $this->disciplina->leciona_12) {
+           $this->aplicarRegraTerminalPorCurso(12);
+    }
+
+
+        private function aplicarRegraTerminalPorCurso(int $classeAtual): void
+        {
+            $anoTerminal = $this->disciplina->anoTerminalParaCurso($this->turma?->curso_id);
+
+            if ($anoTerminal !== $classeAtual) {
+            return;
+            }
+
+            if ($classeAtual === 10 && $this->ca !== null) {
             $this->cfd = $this->ca;
+            return;
+        }
+
+        if ($classeAtual === 11 && $this->ca_10 !== null && $this->ca !== null) {
+            $this->cfd = round(($this->ca_10 + $this->ca) / 2, 2);
+            return;
+        }
+
+        if ($classeAtual === 12 && $this->ca_10 !== null && $this->ca_11 !== null && $this->ca !== null) {
+            $this->cfd = round(($this->ca_10 + $this->ca_11 + $this->ca) / 3, 2);
         }
     }
 

@@ -44,6 +44,13 @@ class Disciplina extends Model
         return $this->hasMany(ProfessorTurmaDisciplina::class);
     }
 
+    public function cursos()
+    {
+        return $this->belongsToMany(Curso::class, 'curso_disciplina')
+            ->withPivot('ano_terminal')
+            ->withTimestamps();
+    }
+
     public function scopeAtivos($query)
     {
         return $query->where('ativo', true);
@@ -59,4 +66,22 @@ class Disciplina extends Model
             default => false,
         };
     }
+    public function anoTerminalParaCurso(?int $cursoId): ?int
+        {
+            if (!$cursoId) {
+                return null;
+            }
+
+            $relacao = $this->cursos()
+                ->where('curso_id', $cursoId)
+                ->first();
+
+            if (!$relacao) {
+                return $this->disciplina_terminal ? 10 : null;
+            }
+
+            return $relacao->pivot->ano_terminal !== null
+                ? (int) $relacao->pivot->ano_terminal
+                : null;
+        }
 }
