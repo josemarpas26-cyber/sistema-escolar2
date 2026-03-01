@@ -150,48 +150,75 @@ class NotaController extends Controller
             ->with('success', "Pauta inicializada. {$criados} registros criados.");
     }
 
-    /**
-     * Painel da secretaria/admin
-     */
-    public function secretariaIndex(Request $request)
-    {
-        $this->checkPermission('notas.view_all');
+/**
+ * Painel da secretaria/admin
+ */
+public function secretariaIndex(Request $request)
+{
+    $this->checkPermission('notas.view_all');
 
-        $anoLetivo = AnoLetivo::ativo()->first();
+    $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
-            return $this->redirectSemAnoLetivoAtivo();
-        }
-
-        $turmas      = Turma::anoAtivo()->with('curso')->get();
-        $disciplinas = Disciplina::ativos()->get();
-
-        $turmaId      = $request->turma_id;
-        $disciplinaId = $request->disciplina_id;
-
-        $notas                = null;
-        $turmaSelecionada     = null;
-        $disciplinaSelecionada = null;
-
-        if ($turmaId && $disciplinaId) {
-            $turmaSelecionada      = Turma::findOrFail($turmaId);
-            $disciplinaSelecionada = Disciplina::findOrFail($disciplinaId);
-
-            $notas = Nota::where('turma_id',      $turmaSelecionada->id)
-                ->where('disciplina_id', $disciplinaSelecionada->id)
-                ->where('ano_letivo_id', $anoLetivo->id)
-                ->with('aluno')
-                ->get();
-        }
-
-        return view('notas.secretaria', compact(
-            'turmas',
-            'disciplinas',
-            'notas',
-            'turmaSelecionada',
-            'disciplinaSelecionada'
-        ));
+    if (!$anoLetivo) {
+        return $this->redirectSemAnoLetivoAtivo();
     }
+
+    $turmas      = Turma::anoAtivo()->with('curso')->get();
+    $disciplinas = collect();
+
+    $turmaId      = $request->turma_id;
+    $disciplinaId = $request->disciplina_id;
+
+    $notas                 = null;
+    $notasAgrupadas        = null; // aluno_id => ['aluno' => User, 'notas' => [disciplina_id => Nota]]
+    $turmaSelecionada      = null;
+    $disciplinaSelecionada = null;
+
+    if ($turmaId) {
+        $turmaSelecionada = Turma::findOrFail($turmaId);
+
+        // Disciplinas da turma para o filtro e para montar as colunas
+        $disciplinas = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
+
+        $query = Nota::where('turma_id',      $turmaSelecionada->id)
+                     ->where('ano_letivo_id', $anoLetivo->id)
+                     ->with(['aluno', 'disciplina']);
+
+        if ($disciplinaId) {
+            $disciplinaSelecionada = Disciplina::findOrFail($disciplinaId);
+            $query->where('disciplina_id', $disciplinaSelecionada->id);
+        }
+
+        if ($request->filled('aluno')) {
+            $query->whereHas('aluno', fn($q) => $q
+                ->where('name',              'like', "%{$request->aluno}%")
+                ->orWhere('numero_processo', 'like', "%{$request->aluno}%")
+            );
+        }
+
+        $notas = $query->get();
+
+        // Quando não há disciplina específica, agrupamos por aluno
+        // para renderizar uma linha por aluno com colunas por disciplina
+        if (!$disciplinaSelecionada) {
+            $notasAgrupadas = $notas
+                ->groupBy('aluno_id')
+                ->map(fn($grupo) => [
+                    'aluno' => $grupo->first()->aluno,
+                    'notas' => $grupo->keyBy('disciplina_id'),
+                ]);
+        }
+    }
+
+    return view('notas.secretaria', compact(
+        'turmas',
+        'disciplinas',
+        'notas',
+        'notasAgrupadas',
+        'turmaSelecionada',
+        'disciplinaSelecionada'
+    ));
+}
 
     /**
      * Painel do aluno

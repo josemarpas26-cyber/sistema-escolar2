@@ -306,23 +306,34 @@
 
         <!-- Quick Actions -->
         <x-card title="Ações Rápidas" icon="fas fa-bolt">
-            <div class="space-y-2">
-                <a href="{{ route('notas.index', ['turma_id' => $turma->id]) }}" class="btn btn-primary w-full">
-                    <i class="fas fa-clipboard-list mr-2"></i>
-                    Ver Notas
-                </a>
-                <a href="{{ route('relatorios.consolidado', $turma) }}" class="btn btn-outline w-full">
-                    <i class="fas fa-file-alt mr-2"></i>
-                    Consolidado
-                </a>
-                <form method="POST" action="{{ route('turmas.toggle-status', $turma) }}">
-                    @csrf
-                    <button type="submit" class="btn btn-outline w-full">
-                        <i class="fas fa-{{ $turma->ativo ? 'ban' : 'check' }} mr-2"></i>
-                        {{ $turma->ativo ? 'Desativar' : 'Ativar' }}
-                    </button>
-                </form>
-            </div>
+<div class="space-y-2">
+
+    {{-- NOTAS --}}
+    <a href="{{ route('notas.index', ['turma_id' => $turma->id]) }}"
+       class="btn btn-primary w-full flex items-center justify-center">
+        <i class="fas fa-clipboard-list mr-2"></i>
+        <span>Notas</span>
+    </a>
+
+    {{-- CONSOLIDADO --}}
+    <a href="{{ route('relatorios.consolidado', $turma) }}"
+       class="btn btn-outline w-full flex items-center justify-center">
+        <i class="fas fa-file-alt mr-2"></i>
+        <span>Consolidado</span>
+    </a>
+
+    {{-- ATIVAR / DESATIVAR --}}
+    <form method="POST" action="{{ route('turmas.toggle-status', $turma) }}">
+        @csrf
+        <button type="submit"
+            class="btn w-full flex items-center justify-center
+                {{ $turma->ativo ? 'bg-red-600 hover:bg-red-700 text-white' : 'btn-outline' }}">
+            <i class="fas fa-{{ $turma->ativo ? 'ban' : 'check' }} mr-2"></i>
+            <span>{{ $turma->ativo ? 'Desativar' : 'Ativar' }}</span>
+        </button>
+    </form>
+
+</div>
         </x-card>
 
     </div>
