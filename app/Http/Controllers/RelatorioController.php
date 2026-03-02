@@ -73,12 +73,15 @@ class RelatorioController extends Controller
                 ->get();
 
             $disciplinas = Disciplina::ativos()
-                ->where(function ($q) use ($disciplinaIdsProfessor, $turmaIdsPermitidas, $anoLetivoAtivoId) {
-                    $q->whereIn('id', $disciplinaIdsProfessor)
-                        ->orWhereHas('notas', function ($qq) use ($turmaIdsPermitidas, $anoLetivoAtivoId) {
+                ->where(function ($q) use ($user, $disciplinaIdsProfessor, $turmaIdsPermitidas, $anoLetivoAtivoId) {
+                    $q->whereIn('id', $disciplinaIdsProfessor);
+
+                    if ($this->isCoordenadorCurso($user) || $this->isCoordenadorTurma($user)) {
+                        $q->orWhereHas('notas', function ($qq) use ($turmaIdsPermitidas, $anoLetivoAtivoId) {
                             $qq->whereIn('turma_id', $turmaIdsPermitidas)
                                 ->when($anoLetivoAtivoId, fn($qf) => $qf->where('ano_letivo_id', $anoLetivoAtivoId));
                         });
+                    }
                 })
                 ->orderBy('nome')
                 ->get();
@@ -137,8 +140,7 @@ class RelatorioController extends Controller
         if (!$turma) {
             return back()->with('error', 'Aluno não possui turma no ano letivo selecionado!');
         }
-
-        $disciplinaId = $request->disciplina_id;
+        $disciplinaId = $request->filled('disciplina_id') ? (int) $request->disciplina_id : null;
         $trimestre = $request->trimestre ?? 'final';
 
             [$aplicarRestricaoProfessor, $disciplinasPermitidas] = $this->regrasAcessoBoletim(
@@ -513,6 +515,10 @@ class RelatorioController extends Controller
             return [false, []];
         }
 
+        if (!$disciplinaId) {
+            abort(403, 'Professor deve selecionar uma disciplina específica.');
+        }
+
         if (!$anoLetivoAtivo || $anoLetivo->id !== $anoLetivoAtivo->id) {
             abort(403, 'Professor só pode visualizar dados do ano letivo corrente.');
         }
@@ -559,6 +565,10 @@ class RelatorioController extends Controller
         if ($podeComoCoordenadorCurso || $podeComoCoordenadorTurma) {
 
             return [false, []];
+        }
+
+        if (!$disciplina) {
+            abort(403, 'Professor deve selecionar uma disciplina específica.');
         }
 
         if (!$anoLetivoAtivo || $anoLetivoId !== $anoLetivoAtivo->id) {
