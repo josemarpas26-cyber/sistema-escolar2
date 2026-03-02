@@ -21,12 +21,75 @@ class RelatorioController extends Controller
     {
         $this->checkPermission('relatorios.boletins');
 
-        $anoLetivo = AnoLetivo::ativo()->first();
+        $user = auth()->user();
+        $anoLetivoAtivo = AnoLetivo::ativo()->first();
+
         $anosLetivos = AnoLetivo::orderByDesc('id')->get();
         $turmas = Turma::with(['curso', 'anoLetivo'])->orderBy('classe')->get();
         $disciplinas = Disciplina::ativos()->orderBy('nome')->get();
         $alunos = User::alunos()->orderBy('name')->get();
         $professores = User::professores()->orderBy('name')->get();
+
+                if ($this->isProfessorComRestricao($user)) {
+            $anosLetivos = $anoLetivoAtivo ? collect([$anoLetivoAtivo]) : collect();
+
+                   $anoLetivoAtivoId = $anoLetivoAtivo?->id;
+
+            $atribuicoes = $user->atribuicoes()
+                ->when($anoLetivoAtivoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
+                ->get(['turma_id', 'disciplina_id']);
+
+            $turmaIdsPermitidas = $atribuicoes->pluck('turma_id')->unique()->values();
+            $disciplinaIdsProfessor = $atribuicoes->pluck('disciplina_id')->unique()->values();
+
+            if ($this->isCoordenadorTurma($user)) {
+                $turmaCoord = Turma::where('coordenador_turma_id', $user->id)
+                    ->when($anoLetivoAtivoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
+                    ->first();
+
+                if ($turmaCoord) {
+                    $turmaIdsPermitidas = $turmaIdsPermitidas->push($turmaCoord->id)->unique()->values();
+                }
+            }
+
+            if ($this->isCoordenadorCurso($user)) {
+                $cursoId = $user->cursoCoordenado?->id;
+
+            if ($cursoId) {
+                    $turmaIdsCurso = Turma::query()
+                        ->where('curso_id', $cursoId)
+                        ->when($anoLetivoAtivoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
+                        ->pluck('id');
+
+                    $turmaIdsPermitidas = $turmaIdsPermitidas
+                        ->merge($turmaIdsCurso)
+                        ->unique()
+                        ->values();
+                }
+            }
+            $turmas = Turma::with(['curso', 'anoLetivo'])
+                ->whereIn('id', $turmaIdsPermitidas)
+                ->orderBy('classe')
+                ->get();
+
+            $disciplinas = Disciplina::ativos()
+                ->where(function ($q) use ($disciplinaIdsProfessor, $turmaIdsPermitidas, $anoLetivoAtivoId) {
+                    $q->whereIn('id', $disciplinaIdsProfessor)
+                        ->orWhereHas('notas', function ($qq) use ($turmaIdsPermitidas, $anoLetivoAtivoId) {
+                            $qq->whereIn('turma_id', $turmaIdsPermitidas)
+                                ->when($anoLetivoAtivoId, fn($qf) => $qf->where('ano_letivo_id', $anoLetivoAtivoId));
+                        });
+                })
+                ->orderBy('nome')
+                ->get();
+
+            $alunos = User::alunos()
+                ->whereHas('turmas', fn($q) => $q->whereIn('turmas.id', $turmaIdsPermitidas))
+                ->orderBy('name')
+                ->get();
+        }
+
+        $anoLetivo = $anoLetivoAtivo;
 
         return view('relatorios.index', compact(
             'anoLetivo',
@@ -59,7 +122,8 @@ class RelatorioController extends Controller
             $this->checkPermission('relatorios.boletins');
         }
 
-        $anoLetivoId = $request->ano_letivo_id ?? AnoLetivo::ativo()->first()?->id;
+        $anoLetivoAtivo = AnoLetivo::ativo()->first();
+        $anoLetivoId = $request->ano_letivo_id ?? $anoLetivoAtivo?->id;
 
         if (!$anoLetivoId) {
             return back()->with('error', 'Nenhum ano letivo ativo encontrado!');
@@ -77,9 +141,20 @@ class RelatorioController extends Controller
         $disciplinaId = $request->disciplina_id;
         $trimestre = $request->trimestre ?? 'final';
 
+            [$aplicarRestricaoProfessor, $disciplinasPermitidas] = $this->regrasAcessoBoletim(
+            $user,
+            $turma,
+            $anoLetivo,
+            $disciplinaId,
+            $anoLetivoAtivo
+        );
         $notasQuery = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
             ->with('disciplina');
+    
+        if ($aplicarRestricaoProfessor) {
+            $notasQuery->whereIn('disciplina_id', $disciplinasPermitidas);
+        }
 
         if ($disciplinaId) {
             $notasQuery->where('disciplina_id', $disciplinaId);
@@ -124,14 +199,29 @@ class RelatorioController extends Controller
     {
         $this->checkPermission('relatorios.pautas');
 
+        $user = auth()->user();
+        $anoLetivoAtivo = AnoLetivo::ativo()->first();
         $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
         $trimestre = $request->trimestre ?? 'final';
 
+        [$aplicarRestricaoProfessor, $disciplinasPermitidas] = $this->regrasAcessoPauta(
+            $user,
+            $turma,
+            $disciplina,
+            $anoLetivoId,
+            $anoLetivoAtivo
+        );
+
         if (!$disciplina) {
-            $notas = Nota::where('turma_id', $turma->id)
+            $query = Nota::where('turma_id', $turma->id)
                 ->where('ano_letivo_id', $anoLetivoId)
-                ->with(['aluno', 'disciplina'])
-                ->get()
+                    ->with(['aluno', 'disciplina']);
+
+            if ($aplicarRestricaoProfessor) {
+                $query->whereIn('disciplina_id', $disciplinasPermitidas);
+            }
+
+            $notas = $query->get()
                 ->groupBy('disciplina_id');
 
             $dados = [
@@ -325,9 +415,13 @@ class RelatorioController extends Controller
 {
     $this->checkPermission('relatorios.pautas');
 
+    $user = auth()->user();
+    $anoLetivoAtivo = AnoLetivo::ativo()->first();
+
     $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
     $trimestre = $request->trimestre ?? 'final';
 
+    $this->regrasAcessoPauta($user, $turma, null, $anoLetivoId, $anoLetivoAtivo);
     $anoLetivo = AnoLetivo::findOrFail($anoLetivoId);
 
     $notas = Nota::where('turma_id', $turma->id)
@@ -380,4 +474,112 @@ class RelatorioController extends Controller
 
     return view('relatorios.consolidado-turma', $dados);
 }
+ private function isProfessorComRestricao(User $user): bool
+    {
+        return $user->isProfessor() && !$user->isAdmin() && !$user->isSecretaria();
+    }
+
+    private function isCoordenadorTurma(User $user): bool
+    {
+        return $user->isProfessor() && $user->isCoordenadorTurma();
+    }
+
+    private function isCoordenadorCurso(User $user): bool
+    {
+        return $user->isProfessor() && $user->isCoordenadorCurso();
+    }
+
+    private function regrasAcessoBoletim(
+        User $user,
+        Turma $turma,
+        AnoLetivo $anoLetivo,
+        ?int $disciplinaId,
+        ?AnoLetivo $anoLetivoAtivo
+    ): array {
+        if (!$this->isProfessorComRestricao($user)) {
+            return [false, []];
+        }
+
+            $podeComoCoordenadorCurso = $this->isCoordenadorCurso($user)
+            && $turma->curso_id === $user->cursoCoordenado?->id
+            && $turma->ano_letivo_id === $anoLetivo->id;
+
+          $podeComoCoordenadorTurma = $this->isCoordenadorTurma($user)
+            && $turma->coordenador_turma_id === $user->id
+            && $turma->ano_letivo_id === $anoLetivo->id;
+
+        if ($podeComoCoordenadorCurso || $podeComoCoordenadorTurma) { 
+
+            return [false, []];
+        }
+
+        if (!$anoLetivoAtivo || $anoLetivo->id !== $anoLetivoAtivo->id) {
+            abort(403, 'Professor só pode visualizar dados do ano letivo corrente.');
+        }
+
+        $atribuicoes = $user->atribuicoes()
+            ->where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivo->id)
+            ->get(['disciplina_id']);
+
+        if ($atribuicoes->isEmpty()) {
+            abort(403, 'Sem permissão para visualizar boletim desta turma.');
+        }
+
+        $disciplinasPermitidas = $atribuicoes->pluck('disciplina_id')->unique()->values()->all();
+
+        if ($disciplinaId && !in_array((int) $disciplinaId, $disciplinasPermitidas, true)) {
+            abort(403, 'Sem permissão para visualizar boletim desta disciplina.');
+        }
+
+        return [true, $disciplinasPermitidas];
+    }
+
+    private function regrasAcessoPauta(
+        User $user,
+        Turma $turma,
+        ?Disciplina $disciplina,
+        int|string $anoLetivoId,
+        ?AnoLetivo $anoLetivoAtivo
+    ): array {
+        if (!$this->isProfessorComRestricao($user)) {
+            return [false, []];
+        }
+
+        $anoLetivoId = (int) $anoLetivoId;
+
+        $podeComoCoordenadorCurso = $this->isCoordenadorCurso($user)
+            && $turma->curso_id === $user->cursoCoordenado?->id
+            && $turma->ano_letivo_id === $anoLetivoId;
+
+        $podeComoCoordenadorTurma = $this->isCoordenadorTurma($user)
+            && $turma->coordenador_turma_id === $user->id
+            && $turma->ano_letivo_id === $anoLetivoId;
+
+        if ($podeComoCoordenadorCurso || $podeComoCoordenadorTurma) {
+
+            return [false, []];
+        }
+
+        if (!$anoLetivoAtivo || $anoLetivoId !== $anoLetivoAtivo->id) {
+            abort(403, 'Professor só pode visualizar dados do ano letivo corrente.');
+        }
+
+        $atribuicoes = $user->atribuicoes()
+            ->where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivoId)
+            ->get(['disciplina_id']);
+
+        if ($atribuicoes->isEmpty()) {
+            abort(403, 'Sem permissão para visualizar pauta desta turma.');
+        }
+
+        $disciplinasPermitidas = $atribuicoes->pluck('disciplina_id')->unique()->values()->all();
+
+        if ($disciplina && !in_array($disciplina->id, $disciplinasPermitidas, true)) {
+            abort(403, 'Sem permissão para visualizar pauta desta disciplina.');
+        }
+
+        return [true, $disciplinasPermitidas];
+    }
 }
