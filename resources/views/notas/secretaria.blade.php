@@ -22,6 +22,7 @@
 
     $totalFinalizadas  = $notas->where('status', 'finalizado')->count();
     $totalEmLancamento = $notas->where('status', '!=', 'finalizado')->count();
+    $totalBloqueadasTrimestre = $notas->filter(fn($n) => $n->bloqueado_t1 || $n->bloqueado_t2 || $n->bloqueado_t3)->count();
     $opcoesAlunosOperacao = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
 @endphp
 
@@ -172,7 +173,7 @@
                                 @endforeach
                             </select>
                             <button type="submit" class="nr-btn nr-btn-ghost"
-                                    {{ $notas->isEmpty() || $totalFinalizadas === 0 ? 'disabled' : '' }}
+                                    {{ $notas->isEmpty() || ($totalFinalizadas === 0 && $totalBloqueadasTrimestre === 0) ? 'disabled' : '' }}
                                     title="Reabrir pauta finalizada">
                                 <i class="fas fa-lock-open"></i> Reabrir/Desbloquear
                             </button>

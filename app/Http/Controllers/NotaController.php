@@ -288,7 +288,10 @@ public function secretariaIndex(Request $request)
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
             }
-            $this->validarBloqueioFinalizacao($nota, '1');
+
+            if ($this->notaBloqueadaParaEdicao($nota, '1')) {
+                continue;
+            }
 
             $nota->update([
                 'mac1' => $notaData['mac1'] ?? null,
@@ -330,7 +333,10 @@ public function secretariaIndex(Request $request)
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
             }
-            $this->validarBloqueioFinalizacao($nota, '2');
+
+            if ($this->notaBloqueadaParaEdicao($nota, '2')) {
+                continue;
+            }
 
             $nota->update([
                 'mac2' => $notaData['mac2'] ?? null,
@@ -378,7 +384,10 @@ public function secretariaIndex(Request $request)
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
             }
-               $this->validarBloqueioFinalizacao($nota, '3');
+
+            if ($this->notaBloqueadaParaEdicao($nota, '3')) {
+                continue;
+            }
 
             $nota->update([
                 'mac3' => $notaData['mac3'] ?? null,
@@ -423,7 +432,10 @@ public function secretariaIndex(Request $request)
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
             }
-            $this->validarBloqueioFinalizacao($nota, '3');
+
+            if ($this->notaBloqueadaParaEdicao($nota, '3')) {
+                continue;
+            }
 
             $nota->update(['pg' => $notaData['pg'] ?? null]);
 
@@ -655,13 +667,28 @@ public function secretariaIndex(Request $request)
             if ($trimestre) {
                 $campo = "bloqueado_t{$trimestre}";
 
-            if (!$nota->{$campo}) {
+        $precisaDesbloquearTrimestre = (bool) $nota->{$campo};
+            $precisaReabrirStatus = $nota->status === 'finalizado';
+
+                // Quando a nota está finalizada geral, apenas desbloquear o trimestre
+                // não resolve (a validação também bloqueia por status). Por isso,
+                // ao reabrir por trimestre, também reabrimos o status se necessário.
+            if (!$precisaDesbloquearTrimestre && !$precisaReabrirStatus) {
                 $jaAbertas++;
                 continue;
             }
 
-            $nota->update([$campo => false]);
-            $reabertas++;
+            $dadosAtualizacao = [];
+                if ($precisaDesbloquearTrimestre) {
+                    $dadosAtualizacao[$campo] = false;
+                }
+                if ($precisaReabrirStatus) {
+                    $dadosAtualizacao['status'] = 'em_lancamento';
+                }
+
+                $nota->update($dadosAtualizacao);
+                $reabertas++;
+
             } else {
                 if ($nota->status !== 'finalizado') {
                     $jaAbertas++;
@@ -722,26 +749,41 @@ public function secretariaIndex(Request $request)
      * Bloqueia edição se a nota estiver finalizada e o utilizador não tiver
      * permissão de reabertura.
      */
-    private function validarBloqueioFinalizacao(Nota $nota, ?string $trimestre = null): void
+    private function notaBloqueadaParaEdicao(Nota $nota, ?string $trimestre = null): bool
     {
         
 
         // BUG CORRIGIDO 4 (mesmo padrão): substituído por can() em vez de
         // $user->role->hasPermission() que pode não existir no model Role.
         if (auth()->user()->can('notas.reabrir')) {
-            return;
+            return false;
         }
         if ($trimestre) {
             $campo = "bloqueado_t{$trimestre}";
             if (($nota->{$campo} ?? false) === true) {
-                abort(403, "Este {$trimestre}º trimestre está finalizado e bloqueado para edição.");
+                return true;
             }
         }
 
-        if ($nota->status === 'finalizado') {
-            abort(403, 'Esta nota já foi finalizada e está bloqueada para edição.');
-        }
+        return $nota->status === 'finalizado';
     }
+
+    /**
+     * Bloqueia edição se a nota estiver finalizada e o utilizador não tiver
+     * permissão de reabertura.
+     */
+    private function validarBloqueioFinalizacao(Nota $nota, ?string $trimestre = null): void
+    {
+        if (!$this->notaBloqueadaParaEdicao($nota, $trimestre)) {
+            return;
+        }
+
+        if ($trimestre && (($nota->{"bloqueado_t{$trimestre}"} ?? false) === true)) {
+            abort(403, "Este {$trimestre}º trimestre está finalizado e bloqueado para edição.");
+        }
+            abort(403, 'Esta nota já foi finalizada e está bloqueada para edição.');
+    }
+    
 
     /**
      * Redireciona o utilizador quando não há ano letivo ativo,

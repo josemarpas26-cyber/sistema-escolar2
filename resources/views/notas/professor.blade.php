@@ -50,6 +50,12 @@
     $podeReabrirNotas = auth()->user()->can('notas.reabrir');
     $podeFinalizarNotas = auth()->user()->can('notas.editar');
     $opcoesAlunosOperacao = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
+    $haNotasBloqueadasOuFinalizadas = $notas->contains(fn($nota) =>
+        $nota->status === 'finalizado'
+        || $nota->bloqueado_t1
+        || $nota->bloqueado_t2
+        || $nota->bloqueado_t3
+    );
 @endphp
 <!-- Info da Turma/Disciplina -->
 <div class="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
@@ -102,7 +108,7 @@
                                 </select>
 
                     <button type="submit" class="btn btn-primary"
-                            {{ $notas->isEmpty() || $notas->every(fn($nota) => $nota->status === 'finalizado') ? 'disabled' : '' }}>
+                            {{ $notas->isEmpty() || !$haNotasBloqueadasOuFinalizadas ? 'disabled' : '' }}>
                         <i class="fas fa-lock mr-2"></i>
                             Finalizar/Bloquear
                     </button>
