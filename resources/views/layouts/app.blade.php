@@ -188,9 +188,15 @@
                     </button>
 
                     <!-- Page Title -->
-                    <div class="flex-1">
-                        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">@yield('page-title', 'Dashboard')</h1>
-                    </div>
+        <div class="flex-1">
+            <div class="relative">
+                <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+                    @yield('page-title', 'Dashboard')
+                </h1>
+
+                <div class="mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-500"></div>
+            </div>
+        </div>
 
                     <!-- Right Actions -->
                     <div class="flex items-center space-x-4">

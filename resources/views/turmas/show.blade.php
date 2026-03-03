@@ -2,8 +2,13 @@
 
 @section('page-title', $turma->nome_completo)
 
+@php
+    $canManageTurma = auth()->check() && auth()->user()->role_id <= 2;
+@endphp
+
 @section('header-actions')
 <div class="flex space-x-2">
+        @if($canManageTurma)
     <a href="{{ route('turmas.edit', $turma) }}" class="btn btn-primary">
         <i class="fas fa-edit mr-2"></i>
         Editar
@@ -17,6 +22,7 @@
             Promover Turma
         </button>
     </form>
+    @endif
     @endif
 </div>
 @endsection
@@ -74,11 +80,14 @@
                 <div x-show="tab === 'alunos'">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">Alunos Matriculados</h3>
+                        
+                        @if($canManageTurma)
                         <button onclick="toggleModal('matricularModal')" 
                                 class="btn btn-primary btn-sm">
                             <i class="fas fa-user-plus mr-2"></i>
                             Matricular Aluno
                         </button>
+                        @endif
                     </div>
 
                     @if($turma->alunos->where('pivot.status', 'matriculado')->count() > 0)
@@ -90,7 +99,9 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nº Processo</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data Matrícula</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        @if($canManageTurma)
                                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                        @endif                
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
@@ -108,6 +119,7 @@
                                     <td class="px-6 py-4 text-center">
                                         <x-badge type="success">{{ ucfirst($aluno->pivot->status) }}</x-badge>
                                     </td>
+                                        @if($canManageTurma)
                                     <td class="px-6 py-4 text-right">
                                         <form method="POST" action="{{ route('turmas.remover-aluno', [$turma, $aluno]) }}" class="inline">
                                             @csrf
@@ -118,6 +130,7 @@
                                             </button>
                                         </form>
                                     </td>
+                                @endif
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -127,11 +140,13 @@
                     <div class="text-center py-8">
                         <i class="fas fa-users text-4xl text-gray-300 mb-3"></i>
                         <p class="text-gray-500">Nenhum aluno matriculado</p>
+                           @if($canManageTurma)
                         <button onclick="toggleModal('matricularModal')" 
                                 class="btn btn-primary mt-4">
                             <i class="fas fa-user-plus mr-2"></i>
                             Matricular Primeiro Aluno
                         </button>
+                    @endif
                     </div>
                     @endif
                 </div>
@@ -168,11 +183,13 @@
                 <div x-show="tab === 'professores'" x-cloak>
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">Atribuições de Professores</h3>
+                            @if($canManageTurma)
                         <button onclick="toggleModal('atribuirModal')" 
                                 class="btn btn-primary btn-sm">
                             <i class="fas fa-user-plus mr-2"></i>
                             Atribuir Professor
                         </button>
+                            @endif
                     </div>
 
                     @if($turma->atribuicoes->count() > 0)
@@ -182,7 +199,9 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Professor</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Disciplina</th>
+                                        @if($canManageTurma)
                                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                        @endif
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
@@ -194,6 +213,7 @@
                                         </a>
                                     </td>
                                     <td class="px-6 py-4">{{ $atrib->disciplina->nome }}</td>
+                                        @if($canManageTurma)
                                     <td class="px-6 py-4 text-right">
                                         <form method="POST" action="{{ route('turmas.remover-professor', [$turma, $atrib->id]) }}" class="inline">
                                             @csrf
@@ -204,6 +224,7 @@
                                             </button>
                                         </form>
                                     </td>
+                                        @endif
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -322,6 +343,7 @@
         <span>Consolidado</span>
     </a>
 
+    @if($canManageTurma)
     {{-- ATIVAR / DESATIVAR --}}
     <form method="POST" action="{{ route('turmas.toggle-status', $turma) }}">
         @csrf
@@ -332,7 +354,15 @@
             <span>{{ $turma->ativo ? 'Desativar' : 'Ativar' }}</span>
         </button>
     </form>
-
+            <form method="POST" action="{{ route('turmas.destroy', $turma) }}" onsubmit="return confirm('Tem certeza que deseja deletar esta turma?');">
+            @csrf
+                @method('DELETE')
+                    <button type="submit" class="btn btn-danger w-full">
+                        <i class="fas fa-trash mr-2"></i>
+                        Deletar
+                    </button>
+                </form>
+                @endif
 </div>
         </x-card>
 
@@ -340,6 +370,7 @@
 
 </div>
 
+@if($canManageTurma)
 <!-- Modal Matricular Aluno -->
 <div id="matricularModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onclick="if(event.target === this) toggleModal('matricularModal')">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -408,6 +439,7 @@
         </form>
     </div>
 </div>
+@endif
 
 @endsection
 

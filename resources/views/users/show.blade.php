@@ -210,26 +210,49 @@
         <!-- Ações Rápidas -->
         <x-card title="Ações" icon="fas fa-bolt">
             <div class="space-y-2">
-                <a href="{{ route('users.edit', $user) }}" class="btn btn-primary w-full">
-                    <i class="fas fa-edit mr-2"></i>
-                    Editar
+                <a href="{{ route('users.edit', $user) }}"
+                class="w-full inline-flex items-center justify-center gap-2 
+                        px-4 py-2.5 rounded-xl
+                        bg-gradient-to-r from-indigo-600 to-purple-600 
+                        hover:from-indigo-700 hover:to-purple-700
+                        text-white font-semibold shadow-md
+                        transition-all duration-200 ease-in-out
+                        hover:scale-[1.02] active:scale-[0.98]">
+                    
+                    <i class="fas fa-edit text-sm"></i>
+                    <span>Editar</span>
                 </a>
-                    <br>
-                    <br>
+
                 @if($user->isAluno())
-                <a href="{{ route('relatorios.boletim', $user) }}" class="btn btn-outline w-full">
-                    <i class="fas fa-file-pdf mr-2"></i>
-                    Ver Boletim
-                </a>
+                    <a href="{{ route('relatorios.boletim', $user) }}"
+                    class="w-full inline-flex items-center justify-center gap-2
+                            px-4 py-2.5 rounded-xl
+                            bg-blue-600 hover:bg-blue-700
+                            text-white font-semibold shadow-sm
+                            transition-all duration-200
+                            hover:scale-[1.02] active:scale-[0.98]">
+                        
+                        <i class="fas fa-file-pdf text-sm"></i>
+                        <span>Ver Boletim</span>
+                    </a>
                 @endif
 
-                <form method="POST" action="{{ route('users.toggle-status', $user) }}">
-                    @csrf
-                    <button type="submit" class="btn btn-outline w-full {{ $user->ativo ? 'text-yellow-600' : 'text-green-600' }}">
-                        <i class="fas fa-{{ $user->ativo ? 'ban' : 'check' }} mr-2"></i>
-                        {{ $user->ativo ? 'Desativar' : 'Ativar' }}
-                    </button>
-                </form>
+            <form method="POST" action="{{ route('users.toggle-status', $user) }}">
+    @csrf
+            <button type="submit"
+                class="w-full inline-flex items-center justify-center gap-2
+                    px-4 py-2.5 rounded-xl
+                    font-semibold text-white shadow-sm
+                    transition-all duration-200
+                    hover:scale-[1.02] active:scale-[0.98]
+                    {{ $user->ativo 
+                            ? 'bg-yellow-500 hover:bg-yellow-600' 
+                            : 'bg-green-600 hover:bg-green-700' }}">
+                
+                    <i class="fas fa-{{ $user->ativo ? 'ban' : 'check' }} text-sm"></i>
+                    <span>{{ $user->ativo ? 'Desativar' : 'Ativar' }}</span>
+            </button>
+        </form>
 
                 @if($user->id !== auth()->id())
                 <button onclick="confirmDelete('delete-form', 'Deseja deletar {{ $user->name }}?')" 
