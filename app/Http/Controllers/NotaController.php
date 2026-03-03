@@ -150,75 +150,71 @@ class NotaController extends Controller
             ->with('success', "Pauta inicializada. {$criados} registros criados.");
     }
 
-/**
- * Painel da secretaria/admin
- */
-public function secretariaIndex(Request $request)
-{
-    $this->checkPermission('notas.view_all');
+    /**
+     * Painel da secretaria/admin
+     */
+    public function secretariaIndex(Request $request)
+    {
+        $this->checkPermission('notas.view_all');
 
-    $anoLetivo = AnoLetivo::ativo()->first();
+        $anoLetivo = AnoLetivo::ativo()->first();
 
-    if (!$anoLetivo) {
-        return $this->redirectSemAnoLetivoAtivo();
+        if (!$anoLetivo) {
+            return $this->redirectSemAnoLetivoAtivo();
+        }
+
+        $turmas      = Turma::anoAtivo()->with('curso')->get();
+        $disciplinas = collect();
+
+        $turmaId      = $request->turma_id;
+        $disciplinaId = $request->disciplina_id;
+
+        $notas                 = null;
+        $notasAgrupadas        = null;
+        $turmaSelecionada      = null;
+        $disciplinaSelecionada = null;
+
+        if ($turmaId) {
+            $turmaSelecionada = Turma::findOrFail($turmaId);
+            $disciplinas      = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
+
+            $query = Nota::where('turma_id',      $turmaSelecionada->id)
+                         ->where('ano_letivo_id', $anoLetivo->id)
+                         ->with(['aluno', 'disciplina']);
+
+            if ($disciplinaId) {
+                $disciplinaSelecionada = Disciplina::findOrFail($disciplinaId);
+                $query->where('disciplina_id', $disciplinaSelecionada->id);
+            }
+
+            if ($request->filled('aluno')) {
+                $query->whereHas('aluno', fn($q) => $q
+                    ->where('name',              'like', "%{$request->aluno}%")
+                    ->orWhere('numero_processo', 'like', "%{$request->aluno}%")
+                );
+            }
+
+            $notas = $query->get();
+
+            if (!$disciplinaSelecionada) {
+                $notasAgrupadas = $notas
+                    ->groupBy('aluno_id')
+                    ->map(fn($grupo) => [
+                        'aluno' => $grupo->first()->aluno,
+                        'notas' => $grupo->keyBy('disciplina_id'),
+                    ]);
+            }
+        }
+
+        return view('notas.secretaria', compact(
+            'turmas',
+            'disciplinas',
+            'notas',
+            'notasAgrupadas',
+            'turmaSelecionada',
+            'disciplinaSelecionada'
+        ));
     }
-
-    $turmas      = Turma::anoAtivo()->with('curso')->get();
-    $disciplinas = collect();
-
-    $turmaId      = $request->turma_id;
-    $disciplinaId = $request->disciplina_id;
-
-    $notas                 = null;
-    $notasAgrupadas        = null; // aluno_id => ['aluno' => User, 'notas' => [disciplina_id => Nota]]
-    $turmaSelecionada      = null;
-    $disciplinaSelecionada = null;
-
-    if ($turmaId) {
-        $turmaSelecionada = Turma::findOrFail($turmaId);
-
-        // Disciplinas da turma para o filtro e para montar as colunas
-        $disciplinas = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
-
-        $query = Nota::where('turma_id',      $turmaSelecionada->id)
-                     ->where('ano_letivo_id', $anoLetivo->id)
-                     ->with(['aluno', 'disciplina']);
-
-        if ($disciplinaId) {
-            $disciplinaSelecionada = Disciplina::findOrFail($disciplinaId);
-            $query->where('disciplina_id', $disciplinaSelecionada->id);
-        }
-
-        if ($request->filled('aluno')) {
-            $query->whereHas('aluno', fn($q) => $q
-                ->where('name',              'like', "%{$request->aluno}%")
-                ->orWhere('numero_processo', 'like', "%{$request->aluno}%")
-            );
-        }
-
-        $notas = $query->get();
-
-        // Quando não há disciplina específica, agrupamos por aluno
-        // para renderizar uma linha por aluno com colunas por disciplina
-        if (!$disciplinaSelecionada) {
-            $notasAgrupadas = $notas
-                ->groupBy('aluno_id')
-                ->map(fn($grupo) => [
-                    'aluno' => $grupo->first()->aluno,
-                    'notas' => $grupo->keyBy('disciplina_id'),
-                ]);
-        }
-    }
-
-    return view('notas.secretaria', compact(
-        'turmas',
-        'disciplinas',
-        'notas',
-        'notasAgrupadas',
-        'turmaSelecionada',
-        'disciplinaSelecionada'
-    ));
-}
 
     /**
      * Painel do aluno
@@ -239,11 +235,7 @@ public function secretariaIndex(Request $request)
             ->with(['disciplina', 'turma'])
             ->get();
 
-        $turmaAtual = $notas->first()?->turma;
-
-        // BUG CORRIGIDO 1: round() e ?? sobre avg() de coleção vazia retorna null,
-        // não 0, e round(null) devolve 0 silenciosamente mas é impreciso.
-        // Calculamos apenas sobre notas com cfd não-nulo para evitar distorção.
+        $turmaAtual  = $notas->first()?->turma;
         $notasComCfd = $notas->whereNotNull('cfd');
         $mediaGeral  = $notasComCfd->isNotEmpty()
             ? round($notasComCfd->avg('cfd'), 2)
@@ -275,11 +267,11 @@ public function secretariaIndex(Request $request)
         }
 
         $validated = $request->validate([
-            'notas'          => 'required|array',
-            'notas.*.id'     => 'required|exists:notas,id',
-            'notas.*.mac1'   => 'nullable|numeric|min:0|max:20',
-            'notas.*.pp1'    => 'nullable|numeric|min:0|max:20',
-            'notas.*.pt1'    => 'nullable|numeric|min:0|max:20',
+            'notas'        => 'required|array',
+            'notas.*.id'   => 'required|exists:notas,id',
+            'notas.*.mac1' => 'nullable|numeric|min:0|max:20',
+            'notas.*.pp1'  => 'nullable|numeric|min:0|max:20',
+            'notas.*.pt1'  => 'nullable|numeric|min:0|max:20',
         ]);
 
         foreach ($validated['notas'] as $notaData) {
@@ -320,11 +312,11 @@ public function secretariaIndex(Request $request)
         }
 
         $validated = $request->validate([
-            'notas'          => 'required|array',
-            'notas.*.id'     => 'required|exists:notas,id',
-            'notas.*.mac2'   => 'nullable|numeric|min:0|max:20',
-            'notas.*.pp2'    => 'nullable|numeric|min:0|max:20',
-            'notas.*.pt2'    => 'nullable|numeric|min:0|max:20',
+            'notas'        => 'required|array',
+            'notas.*.id'   => 'required|exists:notas,id',
+            'notas.*.mac2' => 'nullable|numeric|min:0|max:20',
+            'notas.*.pp2'  => 'nullable|numeric|min:0|max:20',
+            'notas.*.pt2'  => 'nullable|numeric|min:0|max:20',
         ]);
 
         foreach ($validated['notas'] as $notaData) {
@@ -353,12 +345,6 @@ public function secretariaIndex(Request $request)
 
     /**
      * Lançar notas do 3º Trimestre
-     *
-     * BUG CORRIGIDO 2: o método aceitava e gravava `pg` (Prova Global) junto com
-     * mac3/pp3 como se fosse parte do lançamento trimestral. Mas `pg` é lançada
-     * separadamente após o 3º trimestre. Aqui deve-se gravar apenas mac3 e pp3;
-     * mt3 é calculado automaticamente por recalcular(). `pg` tem o seu próprio
-     * método (ver lancarProvaglobal abaixo).
      */
     public function lancarTrimestre3(Request $request)
     {
@@ -371,11 +357,10 @@ public function secretariaIndex(Request $request)
         }
 
         $validated = $request->validate([
-            'notas'          => 'required|array',
-            'notas.*.id'     => 'required|exists:notas,id',
-            'notas.*.mac3'   => 'nullable|numeric|min:0|max:20',
-            'notas.*.pp3'    => 'nullable|numeric|min:0|max:20',
-            // BUG CORRIGIDO: pg removida daqui — lançada separadamente
+            'notas'        => 'required|array',
+            'notas.*.id'   => 'required|exists:notas,id',
+            'notas.*.mac3' => 'nullable|numeric|min:0|max:20',
+            'notas.*.pp3'  => 'nullable|numeric|min:0|max:20',
         ]);
 
         foreach ($validated['notas'] as $notaData) {
@@ -392,7 +377,6 @@ public function secretariaIndex(Request $request)
             $nota->update([
                 'mac3' => $notaData['mac3'] ?? null,
                 'pp3'  => $notaData['pp3']  ?? null,
-                // pg NÃO é gravada aqui
             ]);
 
             $nota->recalcular();
@@ -404,11 +388,6 @@ public function secretariaIndex(Request $request)
 
     /**
      * Lançar Prova Global (pg) — separado do 3º trimestre
-     *
-     * BUG CORRIGIDO 3: pg estava misturada com lancarTrimestre3(). Agora tem o
-     * seu próprio método. Lembre-se de adicionar a rota correspondente em web.php:
-     *   Route::post('notas/prova-global', [NotaController::class, 'lancarProvaGlobal'])
-     *       ->name('notas.prova-global');
      */
     public function lancarProvaGlobal(Request $request)
     {
@@ -421,9 +400,9 @@ public function secretariaIndex(Request $request)
         }
 
         $validated = $request->validate([
-            'notas'        => 'required|array',
-            'notas.*.id'   => 'required|exists:notas,id',
-            'notas.*.pg'   => 'nullable|numeric|min:0|max:20',
+            'notas'      => 'required|array',
+            'notas.*.id' => 'required|exists:notas,id',
+            'notas.*.pg' => 'nullable|numeric|min:0|max:20',
         ]);
 
         foreach ($validated['notas'] as $notaData) {
@@ -523,10 +502,6 @@ public function secretariaIndex(Request $request)
         $turma      = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
 
-        // BUG CORRIGIDO 4: o original chamava hasPermission() directamente sobre
-        // $user->role sem verificar se o método existe nesse model. O padrão
-        // do projecto usa checkPermission() ou hasPermission() no User/Controller.
-        // Substituído por uma verificação consistente com o resto do código.
         $permitirFinalizado = auth()->user()->can('notas.reabrir');
 
         $resultado = $this->notaService->importarCAsParaTurma(
@@ -539,11 +514,11 @@ public function secretariaIndex(Request $request)
     }
 
     /**
-     * Finalizar lançamento de notas
+     * Finalizar lançamento de notas.
      *
-     * BUG CORRIGIDO 5: o NotaLog era criado com valor_anterior e valor_novo
-     * sempre null, o que torna o log inútil para auditoria. Agora grava o
-     * status anterior ('em_lancamento') e o novo ('finalizado').
+     * CORREÇÃO: a finalização geral agora também força bloqueado_t1/t2/t3 = true,
+     * garantindo estado consistente independente de bloqueios parciais anteriores.
+     * Da mesma forma, a finalização por trimestre não toca no status geral.
      */
     public function finalizar(Request $request)
     {
@@ -562,10 +537,10 @@ public function secretariaIndex(Request $request)
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $notas = Nota::where('turma_id', $validated['turma_id'])
+        $notas = Nota::where('turma_id',      $validated['turma_id'])
             ->where('disciplina_id', $validated['disciplina_id'])
             ->where('ano_letivo_id', $anoLetivo->id)
-            ->when($validated['aluno_id'] ?? null, fn($q, $alunoId) => $q->where('aluno_id', $alunoId))
+            ->when($validated['aluno_id'] ?? null, fn($q, $id) => $q->where('aluno_id', $id))
             ->get();
 
         if ($notas->isEmpty()) {
@@ -574,28 +549,43 @@ public function secretariaIndex(Request $request)
 
         $finalizadas   = 0;
         $jaFinalizadas = 0;
+        $trimestre     = $validated['trimestre'] ?? null;
 
-        $trimestre = $validated['trimestre'] ?? null;
         foreach ($notas as $nota) {
             if ($trimestre) {
+                // ── Bloqueio por trimestre ──────────────────────────────────
                 $campo = "bloqueado_t{$trimestre}";
 
-            if ($nota->{$campo}) {
+                if ($nota->{$campo}) {
                     $jaFinalizadas++;
                     continue;
                 }
 
                 $nota->update([$campo => true]);
-                $finalizadas++;
+
             } else {
-                if ($nota->status === 'finalizado') {
+                // ── Finalização geral ───────────────────────────────────────
+                // CORREÇÃO: força os três flags de trimestre para true junto com
+                // o status, eliminando qualquer inconsistência de estado misto
+                // que viesse de bloqueios/desbloqueios parciais anteriores.
+                if ($nota->status === 'finalizado'
+                    && $nota->bloqueado_t1
+                    && $nota->bloqueado_t2
+                    && $nota->bloqueado_t3
+                ) {
                     $jaFinalizadas++;
                     continue;
                 }
 
-                $nota->update(['status' => 'finalizado']);
-                $finalizadas++;
+                $nota->update([
+                    'status'      => 'finalizado',
+                    'bloqueado_t1' => true,
+                    'bloqueado_t2' => true,
+                    'bloqueado_t3' => true,
+                ]);
             }
+
+            $finalizadas++;
 
             NotaLog::create([
                 'nota_id'        => $nota->id,
@@ -605,31 +595,32 @@ public function secretariaIndex(Request $request)
                 'disciplina_id'  => $nota->disciplina_id,
                 'acao'           => 'edicao',
                 'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'status',
-                // BUG CORRIGIDO: antes ambos eram null — sem valor, o log é inútil
-                'valor_anterior' => null,   // string, não numérico (status é enum)
-                'valor_novo'     => null,   // o campo é decimal(5,2) na migration
-                // NOTA: a coluna valor_anterior/valor_novo é decimal(5,2) na migration
-                // e não comporta texto. Para logar a mudança de status de forma
-                // auditável, a solução mais correcta é adicionar uma coluna
-                // `observacoes` à tabela notas_logs ou usar o campo `motivo`.
+                'valor_anterior' => null,
+                'valor_novo'     => null,
                 'trimestre'      => $trimestre,
-                'motivo'         => $validated['motivo'] ?? ($trimestre ? "Finalização do {$trimestre}º trimestre" : 'Finalização de lançamento de notas'),
+                'motivo'         => $validated['motivo'] ?? ($trimestre
+                    ? "Finalização do {$trimestre}º trimestre"
+                    : 'Finalização geral de lançamento de notas'),
                 'ip_address'     => request()->ip(),
                 'data_alteracao' => now(),
             ]);
         }
+
         $escopoAluno = ($validated['aluno_id'] ?? null) ? ' para o aluno selecionado' : '';
-        return back()->with(
-            'success',
-            ($trimestre
-                ? "Finalização do {$trimestre}º trimestre{$escopoAluno} concluída: {$finalizadas} notas bloqueadas e {$jaFinalizadas} já estavam bloqueadas."
-                : "Finalização geral{$escopoAluno} concluída: {$finalizadas} notas finalizadas e {$jaFinalizadas} já estavam finalizadas.")            
+
+        return back()->with('success', $trimestre
+            ? "Finalização do {$trimestre}º trimestre{$escopoAluno} concluída: {$finalizadas} notas bloqueadas e {$jaFinalizadas} já estavam bloqueadas."
+            : "Finalização geral{$escopoAluno} concluída: {$finalizadas} notas finalizadas e {$jaFinalizadas} já estavam finalizadas."
         );
     }
 
-
-       /**
-     * Reabre lançamento de notas finalizadas
+    /**
+     * Reabre lançamento de notas finalizadas.
+     *
+     * CORREÇÃO: a reabertura geral agora também zera bloqueado_t1/t2/t3,
+     * eliminando o estado inconsistente onde um aluno com trimestre bloqueado
+     * individualmente ficaria com flags em conflito após uma reabertura geral.
+     * A reabertura por trimestre continua funcionando de forma independente.
      */
     public function reabrir(Request $request)
     {
@@ -648,10 +639,10 @@ public function secretariaIndex(Request $request)
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $notas = Nota::where('turma_id', $validated['turma_id'])
+        $notas = Nota::where('turma_id',      $validated['turma_id'])
             ->where('disciplina_id', $validated['disciplina_id'])
             ->where('ano_letivo_id', $anoLetivo->id)
-            ->when($validated['aluno_id'] ?? null, fn($q, $alunoId) => $q->where('aluno_id', $alunoId))
+            ->when($validated['aluno_id'] ?? null, fn($q, $id) => $q->where('aluno_id', $id))
             ->get();
 
         if ($notas->isEmpty()) {
@@ -660,44 +651,60 @@ public function secretariaIndex(Request $request)
 
         $reabertas = 0;
         $jaAbertas = 0;
-
         $trimestre = $validated['trimestre'] ?? null;
 
         foreach ($notas as $nota) {
             if ($trimestre) {
+                // ── Desbloqueio por trimestre ───────────────────────────────
                 $campo = "bloqueado_t{$trimestre}";
 
-        $precisaDesbloquearTrimestre = (bool) $nota->{$campo};
-            $precisaReabrirStatus = $nota->status === 'finalizado';
+                $precisaDesbloquearTrimestre = (bool) $nota->{$campo};
+                $precisaReabrirStatus        = $nota->status === 'finalizado';
 
-                // Quando a nota está finalizada geral, apenas desbloquear o trimestre
-                // não resolve (a validação também bloqueia por status). Por isso,
-                // ao reabrir por trimestre, também reabrimos o status se necessário.
-            if (!$precisaDesbloquearTrimestre && !$precisaReabrirStatus) {
-                $jaAbertas++;
-                continue;
-            }
+                if (!$precisaDesbloquearTrimestre && !$precisaReabrirStatus) {
+                    $jaAbertas++;
+                    continue;
+                }
 
-            $dadosAtualizacao = [];
+                $dadosAtualizacao = [];
+
                 if ($precisaDesbloquearTrimestre) {
                     $dadosAtualizacao[$campo] = false;
                 }
+
+                // Se o status estava finalizado, reabre — mas preserva os
+                // outros trimestres que estejam bloqueados individualmente.
                 if ($precisaReabrirStatus) {
                     $dadosAtualizacao['status'] = 'em_lancamento';
                 }
 
                 $nota->update($dadosAtualizacao);
-                $reabertas++;
 
             } else {
-                if ($nota->status !== 'finalizado') {
+                // ── Reabertura geral ────────────────────────────────────────
+                // CORREÇÃO: além de reverter o status, zera os três flags de
+                // trimestre. Sem isso, um aluno que tinha bloqueado_t1 = true
+                // individualmente continuaria com T1 bloqueado após a reabertura
+                // geral — o que é o comportamento errado relatado.
+                $jaEstaAberto = $nota->status !== 'finalizado'
+                    && ! $nota->bloqueado_t1
+                    && ! $nota->bloqueado_t2
+                    && ! $nota->bloqueado_t3;
+
+                if ($jaEstaAberto) {
                     $jaAbertas++;
                     continue;
                 }
 
-                $nota->update(['status' => 'em_lancamento']);
-                $reabertas++;
+                $nota->update([
+                    'status'       => 'em_lancamento',
+                    'bloqueado_t1' => false,
+                    'bloqueado_t2' => false,
+                    'bloqueado_t3' => false,
+                ]);
             }
+
+            $reabertas++;
 
             NotaLog::create([
                 'nota_id'        => $nota->id,
@@ -706,29 +713,28 @@ public function secretariaIndex(Request $request)
                 'turma_id'       => $nota->turma_id,
                 'disciplina_id'  => $nota->disciplina_id,
                 'acao'           => 'edicao',
-                'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'status',                
+                'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'status',
                 'valor_anterior' => null,
                 'valor_novo'     => null,
                 'trimestre'      => $trimestre,
-                'motivo'         => $validated['motivo'] ?? ($trimestre ? "Reabertura do {$trimestre}º trimestre" : 'Reabertura de lançamento de notas'),                
+                'motivo'         => $validated['motivo'] ?? ($trimestre
+                    ? "Reabertura do {$trimestre}º trimestre"
+                    : 'Reabertura geral de lançamento de notas'),
                 'ip_address'     => request()->ip(),
                 'data_alteracao' => now(),
             ]);
         }
+
         $escopoAluno = ($validated['aluno_id'] ?? null) ? ' para o aluno selecionado' : '';
-        return back()->with(
-            'success',
-            ($trimestre
-                ? "Reabertura do {$trimestre}º trimestre{$escopoAluno} concluída: {$reabertas} notas desbloqueadas e {$jaAbertas} já estavam desbloqueadas."
-                : "Reabertura geral{$escopoAluno} concluída: {$reabertas} notas reabertas e {$jaAbertas} já estavam em lançamento.")   
+
+        return back()->with('success', $trimestre
+            ? "Reabertura do {$trimestre}º trimestre{$escopoAluno} concluída: {$reabertas} notas desbloqueadas e {$jaAbertas} já estavam desbloqueadas."
+            : "Reabertura geral{$escopoAluno} concluída: {$reabertas} notas reabertas e {$jaAbertas} já estavam em lançamento."
         );
     }
 
     /**
      * Verifica se o professor autenticado tem atribuição para a nota em questão.
-     *
-     * BUG CORRIGIDO 6: este método era public mas deveria ser private — é um
-     * helper interno e não deve ser acessível como action de rota.
      */
     private function verificarPermissaoProfessor(Nota $nota): void
     {
@@ -746,18 +752,14 @@ public function secretariaIndex(Request $request)
     }
 
     /**
-     * Bloqueia edição se a nota estiver finalizada e o utilizador não tiver
-     * permissão de reabertura.
+     * Retorna true se a nota estiver bloqueada para edição naquele trimestre.
      */
     private function notaBloqueadaParaEdicao(Nota $nota, ?string $trimestre = null): bool
     {
-        
-
-        // BUG CORRIGIDO 4 (mesmo padrão): substituído por can() em vez de
-        // $user->role->hasPermission() que pode não existir no model Role.
         if (auth()->user()->can('notas.reabrir')) {
             return false;
         }
+
         if ($trimestre) {
             $campo = "bloqueado_t{$trimestre}";
             if (($nota->{$campo} ?? false) === true) {
@@ -769,8 +771,7 @@ public function secretariaIndex(Request $request)
     }
 
     /**
-     * Bloqueia edição se a nota estiver finalizada e o utilizador não tiver
-     * permissão de reabertura.
+     * Aborta com 403 se a nota estiver bloqueada para edição.
      */
     private function validarBloqueioFinalizacao(Nota $nota, ?string $trimestre = null): void
     {
@@ -781,13 +782,12 @@ public function secretariaIndex(Request $request)
         if ($trimestre && (($nota->{"bloqueado_t{$trimestre}"} ?? false) === true)) {
             abort(403, "Este {$trimestre}º trimestre está finalizado e bloqueado para edição.");
         }
-            abort(403, 'Esta nota já foi finalizada e está bloqueada para edição.');
+
+        abort(403, 'Esta nota já foi finalizada e está bloqueada para edição.');
     }
-    
 
     /**
-     * Redireciona o utilizador quando não há ano letivo ativo,
-     * com mensagem adequada ao seu papel.
+     * Redireciona o utilizador quando não há ano letivo ativo.
      */
     private function redirectSemAnoLetivoAtivo(): RedirectResponse
     {

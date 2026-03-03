@@ -231,6 +231,7 @@
                             <th class="nr-th-c">MT3</th>
                             <th class="nr-th-c nr-th-cfd">CFD</th>
                             <th class="nr-th-c" style="width:110px">Status</th>
+                            <th class="nr-th-c" style="width:150px">Trimestres</th>
                             <th class="nr-th-c" style="width:54px">Ações</th>
                         </tr>
                     </thead>
@@ -241,6 +242,13 @@
                             $temCfd = !is_null($nota->cfd ?? null);
                             $aprov  = $temCfd && $nota->isAprovado();
                             $locked = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
+
+                            // Determina estado de bloqueio por trimestre
+                            $t1Bloqueado = $nota->bloqueado_t1 ?? false;
+                            $t2Bloqueado = $nota->bloqueado_t2 ?? false;
+                            $t3Bloqueado = $nota->bloqueado_t3 ?? false;
+                            $algumBloqueado = $t1Bloqueado || $t2Bloqueado || $t3Bloqueado;
+                            $todosDesbloqueados = !$algumBloqueado && ($nota->status ?? '') !== 'finalizado';
                         @endphp
                         <tr class="{{ $loop->odd ? 'nr-odd' : '' }}">
                             <td class="nr-td-c nr-muted">{{ $cnt++ }}</td>
@@ -269,6 +277,33 @@
                                     <span class="nr-badge nr-badge-pend"><i class="fas fa-hourglass-half"></i> Pendente</span>
                                 @endif
                             </td>
+
+                            {{-- ── COLUNA DE TRIMESTRES ── --}}
+                            <td class="nr-td-c">
+                                @if(($nota->status ?? '') === 'finalizado' && !$algumBloqueado)
+                                    {{-- Pauta totalmente finalizada/bloqueada --}}
+                                    <div class="nr-tri-wrap">
+                                        <span class="nr-tri nr-tri-lock" title="1º Trimestre bloqueado">T1</span>
+                                        <span class="nr-tri nr-tri-lock" title="2º Trimestre bloqueado">T2</span>
+                                        <span class="nr-tri nr-tri-lock" title="3º Trimestre bloqueado">T3</span>
+                                    </div>
+                                @elseif($algumBloqueado)
+                                    {{-- Bloqueio parcial por trimestre --}}
+                                    <div class="nr-tri-wrap">
+                                        <span class="nr-tri {{ $t1Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="1º Trimestre {{ $t1Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T1</span>
+                                        <span class="nr-tri {{ $t2Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="2º Trimestre {{ $t2Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T2</span>
+                                        <span class="nr-tri {{ $t3Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="3º Trimestre {{ $t3Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T3</span>
+                                    </div>
+                                @else
+                                    {{-- Totalmente desbloqueado / em lançamento --}}
+                                    <div class="nr-tri-wrap">
+                                        <span class="nr-tri nr-tri-open" title="1º Trimestre desbloqueado">T1</span>
+                                        <span class="nr-tri nr-tri-open" title="2º Trimestre desbloqueado">T2</span>
+                                        <span class="nr-tri nr-tri-open" title="3º Trimestre desbloqueado">T3</span>
+                                    </div>
+                                @endif
+                            </td>
+
                             <td class="nr-td-c">
                                 @if($locked)
                                     <span class="nr-act-lock" title="Finalizado"><i class="fas fa-lock"></i></span>
@@ -278,7 +313,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="9" class="nr-empty">
+                        <tr><td colspan="10" class="nr-empty">
                             <i class="fas fa-clipboard-list" style="font-size:2rem;color:#cbd5e1;display:block;margin-bottom:10px"></i>
                             Nenhuma nota encontrada para os filtros selecionados
                         </td></tr>
@@ -324,7 +359,6 @@
 #notas-root {
     width: 100%;
     min-width: 0;
-    /* CORREÇÃO 1: contém qualquer vazamento horizontal */
     overflow-x: hidden;
 }
 
@@ -335,8 +369,6 @@
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    /* CORREÇÃO 2: era overflow:hidden — quebrava o scroll interno;
-       overflow:clip faz o mesmo clipping visual sem criar novo scroll context */
     overflow: clip;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
     width: 100%;
@@ -394,7 +426,6 @@
 }
 .nr-input.nr-disabled, .nr-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
 
-/* CORREÇÃO 3: select inline nas operações — largura auto sem forçar expansão */
 .nr-input-inline {
     width: auto;
     display: inline-block;
@@ -408,7 +439,7 @@
     font-size: .82rem; font-weight: 600; text-decoration: none;
     border: none; cursor: pointer; white-space: nowrap;
     transition: opacity .15s, background .15s;
-    flex-shrink: 0;   /* CORREÇÃO 4: botões não encolhem e não forçam expansão */
+    flex-shrink: 0;
 }
 .nr-btn-primary { background: #3b82f6; color: #fff; box-shadow: 0 2px 5px rgba(59,130,246,.3); }
 .nr-btn-primary:hover { background: #1d4ed8; }
@@ -432,7 +463,6 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
     width: 100%;
     min-width: 0;
-    /* CORREÇÃO 5: contém filhos que possam vazar lateralmente */
     overflow: hidden;
 }
 .nr-sel-title {
@@ -441,7 +471,6 @@
 }
 .nr-sel-sub { font-size: .78rem; color: #64748b; margin-top: 4px; }
 
-/* CORREÇÃO 6: container dos botões/forms de ação — flex wrap para não estourar */
 .nr-sel-actions {
     display: flex;
     flex-wrap: wrap;
@@ -451,7 +480,6 @@
     max-width: 100%;
 }
 
-/* CORREÇÃO 7: forms inline também precisam de flex wrap */
 .nr-op-form {
     display: inline-flex;
     flex-wrap: wrap;
@@ -665,6 +693,42 @@
 .nr-empty {
     text-align: center; padding: 48px 20px !important;
     color: #94a3b8; background: #fff !important; font-size: .875rem;
+}
+
+/* ─── Pílulas de Trimestre ─── */
+.nr-tri-wrap {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+}
+.nr-tri {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 22px;
+    border-radius: 5px;
+    font-size: .63rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    cursor: default;
+    transition: transform .1s;
+}
+.nr-tri:hover { transform: scale(1.12); }
+
+/* Bloqueado — vermelho/cadeado */
+.nr-tri-lock {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1.5px solid #fca5a5;
+}
+
+/* Desbloqueado — verde/aberto */
+.nr-tri-open {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1.5px solid #86efac;
 }
 </style>
 @endpush
