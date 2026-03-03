@@ -22,6 +22,7 @@ class Nota extends Model
         'cfd',
         'ca_10', 'ca_11',
         'status',
+        'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
         'observacoes',
     ];
 
@@ -33,6 +34,7 @@ class Nota extends Model
         'ca' => 'decimal:2',
         'cfd' => 'decimal:2',
         'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2',
+        'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
     ];
 
     // === RELACIONAMENTOS ===

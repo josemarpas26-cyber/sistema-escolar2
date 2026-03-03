@@ -103,6 +103,8 @@ Route::middleware(['auth'])->group(function () {
     // Finalizar
     Route::post('notas/finalizar', [NotaController::class, 'finalizar'])
         ->name('notas.finalizar');
+     Route::post('notas/reabrir', [NotaController::class, 'reabrir'])
+        ->name('notas.reabrir');
 
     // === ANOS LETIVOS ===
     Route::resource('anos-letivos', AnoLetivoController::class)

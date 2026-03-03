@@ -47,7 +47,9 @@
 
 @if($notas && $turma && $disciplina)
 @php
-    $podeReabrirNotas = auth()->user()->role->hasPermission('notas.reabrir');
+    $podeReabrirNotas = auth()->user()->can('notas.reabrir');
+    $podeFinalizarNotas = auth()->user()->can('notas.editar');
+    $opcoesAlunosOperacao = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
 @endphp
 <!-- Info da Turma/Disciplina -->
 <div class="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
@@ -68,15 +70,72 @@
         <p class="text-sm text-gray-600">
             Se não existirem notas para esta pauta, clique em <strong>Inicializar Pauta</strong> para criar os registos.
         </p>
-        <form method="POST" action="{{ route('notas.inicializar-pauta') }}">
-            @csrf
-            <input type="hidden" name="turma_id" value="{{ $turma->id }}">
-            <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
-            <button type="submit" class="btn btn-outline">
-                <i class="fas fa-plus-circle mr-2"></i>
-                Inicializar Pauta
-            </button>
-        </form>
+                <div class="flex items-center gap-2">
+            <form method="POST" action="{{ route('notas.inicializar-pauta') }}">
+                @csrf
+                <input type="hidden" name="turma_id" value="{{ $turma->id }}">
+                <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
+                <button type="submit" class="btn btn-outline">
+                    <i class="fas fa-plus-circle mr-2"></i>
+                    Inicializar Pauta
+                </button>
+            </form>
+
+            @if($podeFinalizarNotas)
+                <form method="POST" action="{{ route('notas.finalizar') }}" class="flex items-center gap-2">
+                    @csrf
+                    <input type="hidden" name="turma_id" value="{{ $turma->id }}">
+                    <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
+                                
+                                        <label class="text-xs text-gray-500">Escopo:</label><label class="text-xs text-gray-500">Escopo:</label><select name="trimestre" class="input" style="width:auto;display:inline-block">
+                                        <option value="">Finalização Geral</option>
+                                        <option value="1">Bloquear 1º Trimestre</option>
+                                        <option value="2">Bloquear 2º Trimestre</option>
+                                        <option value="3">Bloquear 3º Trimestre</option>
+                                    </select>
+                                    <label class="text-xs text-gray-500">Aluno:</label><select name="aluno_id" class="input" style="width:auto;display:inline-block">
+                                        
+                                    <option value="">Todos os alunos</option>
+                               @foreach($opcoesAlunosOperacao as $al)
+                                    <option value="{{ $al->id }}">{{ $al->name }}</option>
+                                @endforeach
+                                </select>
+
+                    <button type="submit" class="btn btn-primary"
+                            {{ $notas->isEmpty() || $notas->every(fn($nota) => $nota->status === 'finalizado') ? 'disabled' : '' }}>
+                        <i class="fas fa-lock mr-2"></i>
+                            Finalizar/Bloquear
+                    </button>
+                </form>
+            @endif
+
+            @if($podeReabrirNotas)
+            <form method="POST" action="{{ route('notas.reabrir') }}" class="flex items-center gap-2"
+            onsubmit="return confirm('Deseja reabrir esta pauta para edição?')">
+                    @csrf
+                    <input type="hidden" name="turma_id" value="{{ $turma->id }}">
+                    <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
+                            <select name="trimestre" class="input" style="width:auto;display:inline-block">
+                                    <option value="">Reabertura Geral</option>
+                                    <option value="1">Desbloquear 1º Trimestre</option>
+                                    <option value="2">Desbloquear 2º Trimestre</option>
+                                    <option value="3">Desbloquear 3º Trimestre</option>
+                            </select>
+                    <label class="text-xs text-gray-500">Aluno:</label><select name="aluno_id" class="input" style="width:auto;display:inline-block">
+                            <option value="">Todos os alunos</option>
+                            
+                            @foreach($opcoesAlunosOperacao as $al)
+                                <option value="{{ $al->id }}">{{ $al->name }}</option>
+                            @endforeach
+
+                            </select>
+                    <button type="submit" class="btn btn-outline"
+                            {{ $notas->isEmpty() || $notas->every(fn($nota) => $nota->status !== 'finalizado') ? 'disabled' : '' }}>
+                        <i class="fas fa-lock-open mr-2"></i>
+                        Reabrir/Desbloquear                    </button>
+                </form>
+            @endif
+        </div>
     </div>
 <!-- Tabs de Trimestres -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6" x-data="{ tab: '1' }">
@@ -197,7 +256,7 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ $nota->aluno->name }}
-                                                                        @if($nota->status === 'finalizado')
+                                    @if($nota->status === 'finalizado')
                                         <x-badge type="warning" class="ml-2">Somente leitura</x-badge>
                                     @endif
                                     <input type="hidden" name="notas[{{ $index }}][id]" value="{{ $nota->id }}">

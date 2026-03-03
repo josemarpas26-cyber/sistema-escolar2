@@ -5,7 +5,8 @@
 @section('content')
 
 @php
-    $podeReabrirNotas      = auth()->user()?->role?->hasPermission('notas.reabrir') ?? false;
+    $podeReabrirNotas      = auth()->user()?->can('notas.reabrir') ?? false;
+    $podeFinalizarNotas    = auth()->user()?->can('notas.editar') ?? false;
     $turmas                = $turmas                ?? collect();
     $disciplinas           = $disciplinas           ?? collect();
     $notas                 = $notas                 ?? collect();
@@ -18,6 +19,10 @@
     $totalAprovados  = $notasComCfd->filter(fn($n) => $n->isAprovado())->count();
     $totalReprovados = $notasComCfd->filter(fn($n) => !$n->isAprovado())->count();
     $totalPendentes  = $notas->whereNull('cfd')->count();
+
+    $totalFinalizadas  = $notas->where('status', 'finalizado')->count();
+    $totalEmLancamento = $notas->where('status', '!=', 'finalizado')->count();
+    $opcoesAlunosOperacao = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
 @endphp
 
 <div id="notas-root">
@@ -109,7 +114,7 @@
                 </div>
             </div>
             @if($disciplinaSelecionada)
-                <div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0">
+                <div class="nr-sel-actions">
                     <a href="{{ route('relatorios.pauta', [$turmaSelecionada, $disciplinaSelecionada]) }}"
                        class="nr-btn nr-btn-ghost" target="_blank">
                         <i class="fas fa-file-alt"></i> Ver Pauta
@@ -118,6 +123,61 @@
                        class="nr-btn nr-btn-pdf">
                         <i class="fas fa-file-pdf"></i> Baixar PDF
                     </a>
+
+                    @if($podeFinalizarNotas)
+                        <form method="POST" action="{{ route('notas.finalizar') }}" class="nr-op-form">
+                            @csrf
+                            <input type="hidden" name="turma_id" value="{{ $turmaSelecionada->id }}">
+                            <input type="hidden" name="disciplina_id" value="{{ $disciplinaSelecionada->id }}">
+                            <span class="nr-op-label">Escopo:</span>
+                            <select name="trimestre" class="nr-input nr-input-inline">
+                                <option value="">Finalização Geral</option>
+                                <option value="1">Bloquear 1º Tri</option>
+                                <option value="2">Bloquear 2º Tri</option>
+                                <option value="3">Bloquear 3º Tri</option>
+                            </select>
+                            <span class="nr-op-label">Aluno:</span>
+                            <select name="aluno_id" class="nr-input nr-input-inline">
+                                <option value="">Todos os alunos</option>
+                                @foreach($opcoesAlunosOperacao as $al)
+                                    <option value="{{ $al->id }}">{{ $al->name }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="nr-btn nr-btn-primary"
+                                    {{ $notas->isEmpty() || $totalEmLancamento === 0 ? 'disabled' : '' }}
+                                    title="Finalizar e bloquear edição desta pauta">
+                                <i class="fas fa-lock"></i> Finalizar/Bloquear
+                            </button>
+                        </form>
+                    @endif
+
+                    @if($podeReabrirNotas)
+                        <form method="POST" action="{{ route('notas.reabrir') }}" class="nr-op-form"
+                              onsubmit="return confirm('Deseja reabrir esta pauta para edição?')">
+                            @csrf
+                            <input type="hidden" name="turma_id" value="{{ $turmaSelecionada->id }}">
+                            <input type="hidden" name="disciplina_id" value="{{ $disciplinaSelecionada->id }}">
+                            <span class="nr-op-label">Escopo:</span>
+                            <select name="trimestre" class="nr-input nr-input-inline">
+                                <option value="">Reabertura Geral</option>
+                                <option value="1">Desbloq 1º Tri</option>
+                                <option value="2">Desbloq 2º Tri</option>
+                                <option value="3">Desbloq 3º Tri</option>
+                            </select>
+                            <span class="nr-op-label">Aluno:</span>
+                            <select name="aluno_id" class="nr-input nr-input-inline">
+                                <option value="">Todos os alunos</option>
+                                @foreach($opcoesAlunosOperacao as $al)
+                                    <option value="{{ $al->id }}">{{ $al->name }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="nr-btn nr-btn-ghost"
+                                    {{ $notas->isEmpty() || $totalFinalizadas === 0 ? 'disabled' : '' }}
+                                    title="Reabrir pauta finalizada">
+                                <i class="fas fa-lock-open"></i> Reabrir/Desbloquear
+                            </button>
+                        </form>
+                    @endif
                 </div>
             @endif
         </div>
@@ -258,22 +318,15 @@
 
 @push('styles')
 <style>
-/* ═══════════════════════════════════════════════════════════════
-   RESET DE BOX-SIZING — garante que padding/border não aumentam largura
-═══════════════════════════════════════════════════════════════ */
 #notas-root, #notas-root * { box-sizing: border-box; }
 
-/* ═══════════════════════════════════════════════════════════════
-   ROOT
-   - width:100% sem max-width artificial
-   - SEM overflow:hidden (não bloqueia scroll interno)
-═══════════════════════════════════════════════════════════════ */
 #notas-root {
     width: 100%;
     min-width: 0;
+    /* CORREÇÃO 1: contém qualquer vazamento horizontal */
+    overflow-x: hidden;
 }
 
-/* ─── Utilitários ─── */
 .nr-mb { margin-bottom: 16px; }
 
 /* ─── Cards ─── */
@@ -281,7 +334,9 @@
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    overflow: hidden;          /* clip visual dos cantos arredondados */
+    /* CORREÇÃO 2: era overflow:hidden — quebrava o scroll interno;
+       overflow:clip faz o mesmo clipping visual sem criar novo scroll context */
+    overflow: clip;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
     width: 100%;
     min-width: 0;
@@ -336,8 +391,14 @@
     25%      { transform: translateX(-4px); }
     75%      { transform: translateX(4px); }
 }
-
 .nr-input.nr-disabled, .nr-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+
+/* CORREÇÃO 3: select inline nas operações — largura auto sem forçar expansão */
+.nr-input-inline {
+    width: auto;
+    display: inline-block;
+    padding: .45rem .6rem;
+}
 
 /* ─── Botões ─── */
 .nr-btn {
@@ -346,6 +407,7 @@
     font-size: .82rem; font-weight: 600; text-decoration: none;
     border: none; cursor: pointer; white-space: nowrap;
     transition: opacity .15s, background .15s;
+    flex-shrink: 0;   /* CORREÇÃO 4: botões não encolhem e não forçam expansão */
 }
 .nr-btn-primary { background: #3b82f6; color: #fff; box-shadow: 0 2px 5px rgba(59,130,246,.3); }
 .nr-btn-primary:hover { background: #1d4ed8; }
@@ -353,14 +415,24 @@
 .nr-btn-ghost:hover { border-color: #3b82f6; color: #3b82f6; }
 .nr-btn-pdf { background: #dc2626; color: #fff; }
 .nr-btn-pdf:hover { opacity: .86; }
+.nr-btn:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ─── Cabeçalho da seleção ─── */
 .nr-sel-header {
-    display: flex; align-items: center;
-    justify-content: space-between; flex-wrap: wrap; gap: 12px;
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-    padding: 14px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    width: 100%; min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    width: 100%;
+    min-width: 0;
+    /* CORREÇÃO 5: contém filhos que possam vazar lateralmente */
+    overflow: hidden;
 }
 .nr-sel-title {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -368,11 +440,35 @@
 }
 .nr-sel-sub { font-size: .78rem; color: #64748b; margin-top: 4px; }
 
+/* CORREÇÃO 6: container dos botões/forms de ação — flex wrap para não estourar */
+.nr-sel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+    max-width: 100%;
+}
+
+/* CORREÇÃO 7: forms inline também precisam de flex wrap */
+.nr-op-form {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+.nr-op-label {
+    font-size: .7rem;
+    color: #64748b;
+    white-space: nowrap;
+}
+
 /* ─── Estatísticas ─── */
 .nr-stats {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 10px; width: 100%;
+    gap: 10px;
+    width: 100%;
 }
 @media (max-width: 1080px) { .nr-stats { grid-template-columns: repeat(3,1fr); } }
 @media (max-width: 600px)  { .nr-stats { grid-template-columns: repeat(2,1fr); } }
@@ -405,11 +501,7 @@
 
 /* ═══════════════════════════════════════════════════════════════
    CONTENTOR DA TABELA
-   Este elemento faz TODO o scroll — horizontal e vertical.
-   Nunca deve ser mais largo que o card pai.
-   A tabela dentro PODE ser mais larga (ela faz o conteúdo crescer).
 ═══════════════════════════════════════════════════════════════ */
-/* ── Barra de scroll superior (espelho) ── */
 .nr-tbl-scroll-top {
     display: block;
     width: 100%;
@@ -426,19 +518,15 @@
 .nr-tbl-scroll-top::-webkit-scrollbar-thumb  { background: #64748b; border-radius: 4px; }
 .nr-tbl-scroll-top-inner { height: 1px; display: block; }
 
-/* ── Wrapper principal da tabela ── */
 .nr-tbl-wrap {
     display: block;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-
     overflow-x: auto;
     overflow-y: auto;
     max-height: 520px;
-
     -webkit-overflow-scrolling: touch;
-
     scrollbar-width: auto;
     scrollbar-color: #64748b #dde3ea;
 }
@@ -448,21 +536,18 @@
 .nr-tbl-wrap::-webkit-scrollbar-thumb:hover { background: #334155; }
 .nr-tbl-wrap::-webkit-scrollbar-corner  { background: #dde3ea; }
 
-/* ─── Tabela base ─── */
 .nr-tbl {
     border-collapse: separate;
     border-spacing: 0;
     font-size: .82rem;
     color: #0f172a;
-    width: 100%;          /* vista simples: preenche o wrapper */
+    width: 100%;
 }
-/* Vista geral: a tabela define a sua largura pelo conteúdo */
 .nr-tbl-wide {
     width: max-content;
-    min-width: 100%;      /* mas nunca menor que o wrapper */
+    min-width: 100%;
 }
 
-/* Cabeçalho sticky (scroll vertical) */
 .nr-tbl thead th {
     position: sticky;
     top: 0;
@@ -477,7 +562,6 @@
     white-space: nowrap;
     border-bottom: 2px solid #e2e8f0;
 }
-/* Linhas */
 .nr-tbl tbody tr td {
     padding: 10px 12px;
     border-bottom: 1px solid #f1f5f9;
@@ -488,18 +572,10 @@
 .nr-tbl tbody tr:hover td   { background: #eff6ff !important; transition: background .1s; }
 .nr-tbl tbody tr:last-child td { border-bottom: none; }
 
-/* Células centradas */
 .nr-th-c, .nr-td-c { text-align: center; width: 68px; }
 .nr-th-bold, .nr-td-bold { font-weight: 700; color: #0f172a; }
 .nr-th-cfd { width: 72px; }
 
-/* ── Colunas sticky na vista geral ──
-   Nº  : left:0, largura fixa 44px
-   Aluno: left:44px, min-width 160px
-   IMPORTANTE: thead e tbody sticky precisam de z-index diferentes
-   para o cabeçalho ficar sempre por cima. */
-
-/* Nº */
 .nr-th-st-num {
     position: sticky; left: 0; z-index: 7;
     width: 44px; min-width: 44px; text-align: center;
@@ -512,7 +588,6 @@
     background: inherit;
     box-shadow: 2px 0 4px rgba(0,0,0,.05);
 }
-/* Aluno */
 .nr-th-st-aluno {
     position: sticky; left: 44px; z-index: 7;
     min-width: 160px; max-width: 200px;
@@ -527,13 +602,11 @@
     box-shadow: 3px 0 6px rgba(0,0,0,.05);
     border-right: 1px solid #f0f4ff;
 }
-/* Garante que linhas ímpares/hover não quebrem o sticky */
 .nr-tbl tbody tr.nr-odd .nr-td-st-num,
 .nr-tbl tbody tr.nr-odd .nr-td-st-aluno { background: #fafbfd; }
 .nr-tbl tbody tr:hover .nr-td-st-num,
 .nr-tbl tbody tr:hover .nr-td-st-aluno  { background: #eff6ff !important; }
 
-/* Disciplinas agrupadas */
 .nr-th-disc {
     background: #eff6ff !important;
     color: #1d4ed8;
@@ -553,12 +626,10 @@
 .nr-td-sub { text-align: center; font-size: .81rem; }
 .nr-td-sub-first { border-left: 2px solid #f0f4ff; }
 
-/* ─── Cores ─── */
 .nr-ok   { color: #16a34a; }
 .nr-fail { color: #dc2626; }
 .nr-muted { color: #94a3b8; }
 
-/* ─── Badges ─── */
 .nr-badge {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 3px 8px; border-radius: 20px;
@@ -568,7 +639,6 @@
 .nr-badge-fail { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 .nr-badge-pend { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 
-/* ─── Link aluno ─── */
 .nr-aluno-link {
     display: block; font-weight: 600; color: #3b82f6;
     text-decoration: none; white-space: nowrap;
@@ -578,7 +648,6 @@
 .nr-aluno-link:hover { color: #1d4ed8; text-decoration: underline; }
 .nr-proc { display: block; font-size: .7rem; color: #94a3b8; margin-top: 1px; }
 
-/* ─── Ações ─── */
 .nr-act-edit {
     display: inline-flex; align-items: center; justify-content: center;
     width: 28px; height: 28px; border-radius: 6px;
@@ -592,7 +661,6 @@
     color: #cbd5e1; background: #f8fafc; cursor: not-allowed;
 }
 
-/* ─── Empty ─── */
 .nr-empty {
     text-align: center; padding: 48px 20px !important;
     color: #94a3b8; background: #fff !important; font-size: .875rem;
@@ -621,7 +689,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }, 2500);
             }
         });
-        /* Esconde erro ao selecionar */
         var discSel = form.querySelector('[name="disciplina_id"]');
         if (discSel) {
             discSel.addEventListener('change', function () {
@@ -636,19 +703,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function syncScrollBars(topEl, topInner, wrapEl) {
         if (!topEl || !topInner || !wrapEl) return;
 
-        /* Define a largura do div interno igual à da tabela */
         function setInnerWidth() {
             topInner.style.width = wrapEl.scrollWidth + 'px';
         }
         setInnerWidth();
 
-        /* Mostra a barra superior só quando há overflow horizontal */
         function toggleTop() {
             topEl.style.display = wrapEl.scrollWidth > wrapEl.clientWidth ? 'block' : 'none';
         }
         toggleTop();
 
-        /* Scroll bidirecional sem loop infinito */
         var syncing = false;
         topEl.addEventListener('scroll', function () {
             if (syncing) return;
@@ -663,28 +727,24 @@ document.addEventListener('DOMContentLoaded', function () {
             syncing = false;
         });
 
-        /* Atualiza ao redimensionar */
         new ResizeObserver(function () {
             setInnerWidth();
             toggleTop();
         }).observe(wrapEl);
     }
 
-    /* Vista por disciplina */
     syncScrollBars(
         document.getElementById('nr-stop-disc'),
         document.getElementById('nr-stop-disc-inner'),
         document.getElementById('nr-wrap-disc')
     );
 
-    /* Vista geral */
     syncScrollBars(
         document.getElementById('nr-stop-wide'),
         document.getElementById('nr-stop-wide-inner'),
         document.getElementById('nr-wrap-wide')
     );
 
-    /* Dica de scroll mobile */
     var hint = document.getElementById('nr-scroll-hint');
     if (hint) {
         var wrap = document.getElementById('nr-wrap-wide');
