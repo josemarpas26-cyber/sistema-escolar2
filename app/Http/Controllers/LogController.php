@@ -37,6 +37,34 @@ class LogController extends Controller
             $query->where('disciplina_id', $request->disciplina_id);
         }
 
+         if ($request->filled('aluno')) {
+            $query->whereHas('aluno', function ($alunoQuery) use ($request) {
+                $alunoQuery->where('name', 'like', '%' . $request->aluno . '%');
+            });
+        }
+
+        if ($request->filled('turma')) {
+            $query->whereHas('turma', function ($turmaQuery) use ($request) {
+                $turmaQuery
+                    ->where('nome', 'like', '%' . $request->turma . '%')
+                    ->orWhere('classe', 'like', '%' . $request->turma . '%');
+            });
+        }
+
+        if ($request->filled('curso')) {
+            $query->whereHas('turma.curso', function ($cursoQuery) use ($request) {
+                $cursoQuery->where('nome', 'like', '%' . $request->curso . '%');
+            });
+        }
+
+        if ($request->filled('disciplina')) {
+            $query->whereHas('disciplina', function ($disciplinaQuery) use ($request) {
+                $disciplinaQuery
+                    ->where('nome', 'like', '%' . $request->disciplina . '%')
+                    ->orWhere('codigo', 'like', '%' . $request->disciplina . '%');
+            });
+        }
+
         if ($request->filled('acao')) {
             $query->where('acao', $request->acao);
         }
@@ -53,8 +81,7 @@ class LogController extends Controller
             $query->whereDate('data_alteracao', '<=', $request->data_fim);
         }
 
-        $logs = $query->paginate(50);
-
+        $logs = $query->paginate(50)->withQueryString();
         // Para os filtros
         $usuarios = User::whereIn('id', 
             NotaLog::distinct('usuario_id')->pluck('usuario_id')
@@ -212,6 +239,54 @@ public function dashboard()
             $query->where('usuario_id', $request->usuario_id);
         }
 
+        if ($request->filled('aluno_id')) {
+            $query->where('aluno_id', $request->aluno_id);
+        }
+
+        if ($request->filled('turma_id')) {
+            $query->where('turma_id', $request->turma_id);
+        }
+
+        if ($request->filled('disciplina_id')) {
+            $query->where('disciplina_id', $request->disciplina_id);
+        }
+
+        if ($request->filled('acao')) {
+            $query->where('acao', $request->acao);
+        }
+
+        if ($request->filled('trimestre')) {
+            $query->where('trimestre', $request->trimestre);
+        }
+
+        if ($request->filled('aluno')) {
+            $query->whereHas('aluno', function ($alunoQuery) use ($request) {
+                $alunoQuery->where('name', 'like', '%' . $request->aluno . '%');
+            });
+        }
+
+        if ($request->filled('turma')) {
+            $query->whereHas('turma', function ($turmaQuery) use ($request) {
+                $turmaQuery
+                    ->where('nome', 'like', '%' . $request->turma . '%')
+                    ->orWhere('classe', 'like', '%' . $request->turma . '%');
+            });
+        }
+
+        if ($request->filled('curso')) {
+            $query->whereHas('turma.curso', function ($cursoQuery) use ($request) {
+                $cursoQuery->where('nome', 'like', '%' . $request->curso . '%');
+            });
+        }
+
+        if ($request->filled('disciplina')) {
+            $query->whereHas('disciplina', function ($disciplinaQuery) use ($request) {
+                $disciplinaQuery
+                    ->where('nome', 'like', '%' . $request->disciplina . '%')
+                    ->orWhere('codigo', 'like', '%' . $request->disciplina . '%');
+            });
+        }
+
         if ($request->filled('data_inicio')) {
             $query->whereDate('data_alteracao', '>=', $request->data_inicio);
         }
@@ -225,13 +300,14 @@ public function dashboard()
         // Gerar CSV
         $filename = 'logs-' . now()->format('Y-m-d-His') . '.csv';
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function() use ($logs) {
+            $callback = function () use ($logs) {
             $file = fopen('php://output', 'w');
-            
+        
+        fwrite($file, "\xEF\xBB\xBF");
             // Cabeçalho
             fputcsv($file, [
                 'Data/Hora',
@@ -245,23 +321,33 @@ public function dashboard()
                 'Valor Novo',
                 'Trimestre',
                 'IP',
-            ]);
+            ], ';');
 
             // Dados
             foreach ($logs as $log) {
+                 $valorAnterior = $log->valor_anterior !== null
+                    ? number_format((float) $log->valor_anterior, 2, ',', '.')
+                    : '-';
+
+                $valorNovo = $log->valor_novo !== null
+                    ? number_format((float) $log->valor_novo, 2, ',', '.')
+                    : '-';
+
+                $trimestre = $log->trimestre ? $log->trimestre . 'º' : '-';
+                
                 fputcsv($file, [
-                    $log->data_alteracao->format('d/m/Y H:i:s'),
-                    $log->usuario->name,
+                     optional($log->data_alteracao)->format('d/m/Y H:i:s') ?? '-',
+                    $log->usuario->name ?? '-',
                     $log->descricao_acao,
-                    $log->aluno->name,
-                    $log->turma->nome_completo,
-                    $log->disciplina->nome,
+                    $log->aluno->name ?? '-',
+                    $log->turma->nome_completo ?? '-',
+                    $log->disciplina->nome ?? '-',
                     $log->descricao_campo,
-                    $log->valor_anterior,
-                    $log->valor_novo,
-                    $log->trimestre,
-                    $log->ip_address,
-                ]);
+                    $valorAnterior,
+                    $valorNovo,
+                    $trimestre,
+                    $log->ip_address ?? '-',
+                ], ';');
             }
 
             fclose($file);

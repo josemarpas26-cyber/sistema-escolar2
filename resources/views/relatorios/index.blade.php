@@ -100,7 +100,7 @@
     </x-card>
 
     {{-- ================= PAUTA GERAL ================= --}}
-    <x-card title="Pauta Geral do Ano Letivo (turma)" icon="fas fa-list-check">
+    <x-card title="Pauta Geral do Ano Letivo" icon="fas fa-list-check">
         <form method="GET"
               id="form-pauta-geral"
               action="{{ route('relatorios.pauta', ['turma' => $turmas->first()?->id ?? 1]) }}"

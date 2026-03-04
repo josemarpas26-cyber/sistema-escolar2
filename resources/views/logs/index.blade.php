@@ -6,15 +6,20 @@
 @endsection
 @section('content')
 <x-card title="Filtros" icon="fas fa-filter" class="mb-6">
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar aluno..." class="input">
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <input type="text" name="aluno" value="{{ request('aluno') }}" placeholder="Pesquisar aluno" class="input">
+        <input type="text" name="turma" value="{{ request('turma') }}" placeholder="Pesquisar turma" class="input">
+        <input type="text" name="curso" value="{{ request('curso') }}" placeholder="Pesquisar curso" class="input">
+        <input type="text" name="disciplina" value="{{ request('disciplina') }}" placeholder="Pesquisar disciplina" class="input">
+        
         <select name="acao" class="input">
             <option value="">Todas as ações</option>
-            <option value="created">Criado</option>
-            <option value="updated">Atualizado</option>
-            <option value="deleted">Deletado</option>
+            <option value="criacao" @selected(request('acao') === 'criacao')>Criação</option>
+            <option value="edicao" @selected(request('acao') === 'edicao')>Edição</option>
+            <option value="exclusao" @selected(request('acao') === 'exclusao')>Exclusão</option>
         </select>
-        <input type="date" name="data" value="{{ request('data') }}" class="input">
+        <input type="date" name="data_inicio" value="{{ request('data_inicio') }}" class="input" placeholder="Data inicial">
+        <input type="date" name="data_fim" value="{{ request('data_fim') }}" class="input" placeholder="Data final">
         <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
 </x-card>
@@ -38,11 +43,11 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-3">{{ $log->data_alteracao->format('d/m/Y H:i') }}</td>
                     <td class="px-4 py-3">{{ $log->usuario->name }}</td>
-                    <td class="px-4 py-3"><x-badge type="{{ $log->acao == 'created' ? 'success' : ($log->acao == 'deleted' ? 'danger' : 'info') }}">{{ $log->acao }}</x-badge></td>
+                    <td class="px-4 py-3"><x-badge type="{{ $log->tipo_badge_acao }}">{{ $log->descricao_acao }}</x-badge></td>    
                     <td class="px-4 py-3">{{ $log->aluno->name }}</td>
                     <td class="px-4 py-3">{{ $log->disciplina->codigo }}</td>
-                    <td class="px-4 py-3">{{ $log->campo_alterado }}</td>
-                    <td class="px-4 py-3 text-xs">{{ $log->valor_anterior }} → {{ $log->valor_novo }}</td>
+                    <td class="px-4 py-3">{{ $log->descricao_campo }}</td>
+                    <td class="px-4 py-3 text-xs">{{ $log->resumo_alteracao }}</td>
                 </tr>
                 @endforeach
             </tbody>

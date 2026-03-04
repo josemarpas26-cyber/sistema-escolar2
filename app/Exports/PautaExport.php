@@ -44,6 +44,8 @@ class PautaExport implements FromCollection, WithHeadings, WithStyles, WithTitle
             $data->push([
                 $contador++,
                 $nota->aluno->name,
+                $nota->aluno->numero_processo ?? '-',
+                in_array($nota->aluno->genero, ['M', 'F']) ? $nota->aluno->genero : '-',
                 $nota->mac1 ? number_format($nota->mac1, 2) : '-',
                 $nota->pp1 ? number_format($nota->pp1, 2) : '-',
                 $nota->pt1 ? number_format($nota->pt1, 2) : '-',
@@ -79,6 +81,8 @@ class PautaExport implements FromCollection, WithHeadings, WithStyles, WithTitle
         return [
             'Nº',
             'Aluno',
+            'Nº Processo',
+            'Gênero',
             'MAC1',
             'PP1',
             'PT1',
@@ -129,7 +133,7 @@ class PautaExport implements FromCollection, WithHeadings, WithStyles, WithTitle
         return [
             'A' => 5,
             'B' => 30,
-            'C' => 8,
+            'C' => 14,
             'D' => 8,
             'E' => 8,
             'F' => 8,
@@ -144,7 +148,9 @@ class PautaExport implements FromCollection, WithHeadings, WithStyles, WithTitle
             'O' => 8,
             'P' => 8,
             'Q' => 8,
-            'R' => 10,
+            'R' => 8,
+            'S' => 8,
+            'T' => 10,
         ];
     }
 }

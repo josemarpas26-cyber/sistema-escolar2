@@ -218,7 +218,9 @@
         <thead>
             <tr>
                 <th width="3%">Nº</th>
-                <th width="25%">Nome do Aluno</th>
+                <th width="20%">Nome do Aluno</th>
+                <th width="10%">Nº Processo</th>
+                <th width="4%">Gênero</th>
 
                 @if($trimestre === '1')
                     <th>MAC1</th>
@@ -271,6 +273,8 @@
             <tr>
                 <td>{{ $contador++ }}</td>
                 <td class="nome-aluno">{{ $nota->aluno->name }}</td>
+                <td>{{ $nota->aluno->numero_processo ?? "-" }}</td>
+                <td>{{ in_array($nota->aluno->genero, ["M", "F"]) ? $nota->aluno->genero : "-" }}</td>
 
                 @if($trimestre === '1')
                     <td>{{ $nota->mac1 !== null ? number_format($nota->mac1, 1) : '-' }}</td>

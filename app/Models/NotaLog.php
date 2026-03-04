@@ -74,6 +74,14 @@ class NotaLog extends Model
         };
     }
 
+    public function getTipoBadgeAcaoAttribute(): string
+    {
+        return match($this->acao) {
+            'criacao' => 'success',
+            'exclusao' => 'danger',
+            default => 'info',
+        };
+    }
     public function getDescricaoCampoAttribute(): string
     {
         $campos = [
@@ -91,5 +99,17 @@ class NotaLog extends Model
         ];
 
         return $campos[$this->campo_alterado] ?? $this->campo_alterado;
+    }
+    public function getResumoAlteracaoAttribute(): string
+    {
+        if ($this->acao === 'criacao') {
+            return 'Registro criado';
+        }
+
+        if ($this->acao === 'exclusao') {
+            return 'Registro removido';
+        }
+
+        return sprintf('%s → %s', $this->valor_anterior ?? '-', $this->valor_novo ?? '-');
     }
 }

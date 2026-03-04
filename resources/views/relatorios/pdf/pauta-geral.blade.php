@@ -294,7 +294,9 @@
         {{-- Linha 1: Nº | Nome | [Código disciplina] agrupado --}}
         <tr>
             <th class="fix-col" style="width:2.5%" rowspan="2">Nº</th>
-            <th class="fix-col" style="width:12%" rowspan="2">Nome do Aluno</th>
+            <th class="fix-col" style="width:11%" rowspan="2">Nome do Aluno</th>
+            <th class="fix-col" style="width:7%" rowspan="2">Nº Processo</th>
+            <th class="fix-col" style="width:3%" rowspan="2">Gênero</th>
             @foreach($disciplinas as $disc)
                 <th class="disc-group" colspan="{{ $numCols }}">
                     {{ $disc->codigo ?? $disc->nome }}
@@ -332,7 +334,8 @@
         <tr>
             <td>{{ $contador++ }}</td>
             <td class="nome-aluno">{{ $aluno->name }}</td>
-
+            <td>{{ $aluno->numero_processo ?? "-" }}</td>
+            <td>{{ in_array($aluno->genero, ["M", "F"]) ? $aluno->genero : "-" }}</td>
             @foreach($disciplinas as $disc)
                 @php $nota = $notasAluno[$disc->id] ?? null; @endphp
                 @foreach($colsDisciplina as $col)
