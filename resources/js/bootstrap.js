@@ -11,3 +11,14 @@ if (token) {
 } else {
     console.error('CSRF token not found');
 }
+
+window.axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error?.response?.status === 403 && window.location.pathname !== '/forbidden') {
+            window.location.assign('/forbidden');
+        }
+
+        return Promise.reject(error);
+    }
+);

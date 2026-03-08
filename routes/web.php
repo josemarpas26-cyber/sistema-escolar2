@@ -24,6 +24,9 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+// Página padrão para erros de autorização
+Route::view('/forbidden', 'errors.forbidden')->name('forbidden');
+
 // Rotas protegidas (requerem autenticação)
 Route::middleware(['auth'])->group(function () {
     

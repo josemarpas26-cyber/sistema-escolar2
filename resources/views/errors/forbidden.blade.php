@@ -1,0 +1,1 @@
+<x-access-denied-page />
