@@ -15,14 +15,14 @@
       border-bottom: 3px solid #1a1a6e;
     }
     .header-left { display: flex; align-items: center; gap: 14px; }
-    .header-left img { height: 58px; width: auto; }
+    .header-left img { height: 72px; width: auto; }
     .school-info { line-height: 1.45; }
-    .school-name { font-size: 11px; font-weight: 700; color: #1a1a6e; text-transform: uppercase; }
-    .school-sub  { font-size: 9px; color: #555; text-transform: uppercase; }
-    .school-num  { font-size: 9px; color: #555; }
+    .school-name { font-size: 13px; font-weight: 700; color: #1a1a6e; text-transform: uppercase; }
+    .school-sub  { font-size: 10.5px; color: #555; text-transform: uppercase; }
+    .school-num  { font-size: 10.5px; color: #555; }
     .header-right { text-align: right; }
-    .doc-title { font-size: 18px; font-weight: 900; color: #1a1a6e; text-transform: uppercase; letter-spacing: 1px; }
-    .doc-subtitle { font-size: 8.5px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .doc-title { font-size: 22px; font-weight: 900; color: #1a1a6e; text-transform: uppercase; letter-spacing: 1px; }
+    .doc-subtitle { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
     .accent-bar { height: 4px; background: #1a1a6e; margin: 0 32px 0; opacity: .15; }
 
@@ -36,13 +36,13 @@
     .student-fields { flex: 1; }
     .field-row { display: flex; gap: 0; margin-bottom: 6px; }
     .field-label {
-      font-size: 8px; font-weight: 700; color: #555;
+      font-size: 9.5px; font-weight: 700; color: #555;
       text-transform: uppercase; letter-spacing: 0.4px;
-      width: 140px; padding-top: 1px;
+      width: 165px; padding-top: 1px;
     }
-    .field-value { font-size: 11px; font-weight: 600; color: #111; }
+    .field-value { font-size: 13px; font-weight: 600; color: #111; }
     .photo-box {
-      width: 80px; height: 95px;
+      width: 100px; height: 118px;
       border: 1.5px solid #cbd5e1;
       border-radius: 6px;
       display: flex; flex-direction: column;
@@ -67,13 +67,13 @@
     table { width: 100%; border-collapse: collapse; font-size: 10px; }
     thead tr { background: #1a1a6e; color: #fff; }
     thead th {
-      padding: 7px 10px; text-align: left;
-      font-weight: 600; font-size: 9px;
+      padding: 8px 12px; text-align: left;
+      font-weight: 600; font-size: 10.5px;
       text-transform: uppercase; letter-spacing: 0.3px;
     }
     tbody tr:nth-child(even) { background: #f8fafc; }
     tbody tr:nth-child(odd)  { background: #ffffff; }
-    tbody td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+    tbody td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11.5px; }
     .td-center { text-align: center; }
     .badge-aprovado  { color: #16a34a; font-weight: 700; }
     .badge-reprovado { color: #dc2626; font-weight: 700; }
@@ -83,11 +83,11 @@
       text-align: center; padding: 40px 20px; color: #94a3b8;
     }
     .empty-state svg {
-      width: 36px; height: 36px; margin: 0 auto 10px;
+      width: 44px; height: 44px; margin: 0 auto 10px;
       display: block; opacity: .4;
     }
-    .empty-title { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
-    .empty-sub { font-size: 10px; color: #94a3b8; }
+    .empty-title { font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .empty-sub { font-size: 11px; color: #94a3b8; }
 
     .signatures {
       display: flex;
@@ -95,9 +95,9 @@
       margin: 40px 32px 20px;
       padding-top: 10px;
     }
-    .sig-block { text-align: center; width: 160px; }
+    .sig-block { text-align: center; width: 190px; }
     .sig-line { border-top: 1.5px solid #1a1a1a; margin-bottom: 6px; }
-    .sig-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .sig-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
     .footer {
       background: #f8fafc;
@@ -106,9 +106,9 @@
       text-align: center;
       margin-top: 10px;
     }
-    .footer p { font-size: 8px; color: #64748b; line-height: 1.6; }
+    .footer p { font-size: 9px; color: #64748b; line-height: 1.6; }
     .footer .system-name {
-      color: #1a1a6e; font-weight: 700; font-size: 8.5px;
+      color: #1a1a6e; font-weight: 700; font-size: 10px;
     }
   </style>
 </head>
@@ -158,9 +158,40 @@
         </span>
       </div>
     </div>
-        <div class="photo-box">
-      @if(!empty($aluno->foto) || !empty($aluno->foto_perfil))
-        <img src="{{ public_path('storage/' . ($aluno->foto ?? $aluno->foto_perfil)) }}" alt="Foto">
+    <div class="photo-box">
+      @php
+        $fotoRelativa = $aluno->foto_perfil ?? $aluno->foto ?? null;
+      @endphp
+
+      @if($fotoRelativa)
+        @php
+          $fotoPath = null;
+          $storagePath = storage_path('app/public/' . $fotoRelativa);
+          $directPath = public_path('storage/' . $fotoRelativa);
+          $publicPath = public_path($fotoRelativa);
+
+          if (file_exists($storagePath)) {
+              $fotoPath = $storagePath;
+          } elseif (file_exists($directPath)) {
+              $fotoPath = $directPath;
+          } elseif (file_exists($publicPath)) {
+              $fotoPath = $publicPath;
+          }
+
+          $fotoSrc = request('formato') === 'pdf'
+              ? $fotoPath
+              : asset('storage/' . ltrim($fotoRelativa, '/'));
+        @endphp
+
+        @if($fotoSrc)
+          <img src="{{ $fotoSrc }}" alt="Foto do Aluno" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
+        @else
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Foto do Aluno</span>
+        @endif
       @else
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
