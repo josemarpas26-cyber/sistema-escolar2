@@ -71,59 +71,59 @@
                         @enderror
                     </div>
 
-                    <!-- Senha -->
-                    <div>
-                        <label class="label">Senha *</label>
-                        <input type="password" 
-                               name="password" 
-                               class="input" 
-                               required
-                               minlength="8"
-                               placeholder="Mínimo 8 caracteres">
-                        <p class="text-xs text-gray-500 mt-1">Mínimo 8 caracteres</p>
-                        @error('password')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                        
-                        <label class="mt-2 inline-flex items-center text-sm text-gray-600">
-                            <input type="checkbox" name="generate_random_password" value="1" class="mr-2 w-5 h-5 rounded-md border-gray-400 text-indigo-600 focus:ring-indigo-500" {{ old('generate_random_password') ? 'checked' : '' }} onchange="toggleAutoPassword(this)">
-                            Gerar senha aleatória automaticamente
-                        </label>
-                    </div>
+                     <div class="md:col-span-2" x-data="{ autoPass: {{ old('auto_password', true) ? 'true' : 'false' }} }">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Senha -->
+                            <div>
+                                <label class="label">Senha *</label>
+                                <input type="password"
+                                       name="password"
+                                       x-ref="senha"
+                                       :disabled="autoPass"
+                                       :required="!autoPass"
+                                       minlength="8"
+                                       placeholder="Mínimo 8 caracteres"
+                                       class="input transition-colors"
+                                       :class="autoPass
+                                        ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none'
+                                        : 'bg-white text-gray-900 border-gray-300 cursor-text'">
+                                <p class="text-xs mt-1 transition-colors"
+                                   :class="autoPass ? 'text-slate-300' : 'text-slate-500'">
+                                    Mínimo 8 caracteres
+                                </p>
+                                @error('password')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
 
-                    <!-- Confirmar Senha -->
-                    <div>
-                        <label class="label">Confirmar Senha *</label>
-                        <input type="password" 
-                               name="password_confirmation" 
-                               class="input" 
-                               required
-                               minlength="8"
-                               placeholder="Confirme a senha">
-                    </div>
+                                <label class="mt-2 inline-flex items-center text-sm text-gray-600">
+                                    <input type="checkbox"
+                                           id="auto_password"
+                                           name="auto_password"
+                                           value="1"
+                                           class="mr-2 w-5 h-5 rounded-md border-gray-400 text-indigo-600 focus:ring-indigo-500"
+                                           x-model="autoPass"
+                                           x-on:change="if (autoPass) { $refs.senha.value = ''; $refs.confirmar.value = ''; }"
+                                           {{ old('auto_password', true) ? 'checked' : '' }}>
+                                    Gerar senha aleatória automaticamente
+                                </label>
+                            </div>
 
-                    <!-- BI -->
-                    <div>
-                        <label class="label">Bilhete de Identidade</label>
-                        <input type="text" 
-                               name="bi" 
-                               value="{{ old('bi') }}" 
-                               class="input"
-                               placeholder="000000000LA000"
-                               maxlength="14">
-                        @error('bi')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Data Nascimento -->
-                    <div>
-                        <label class="label">Data de Nascimento</label>
-                        <input type="date" 
-                               name="data_nascimento" 
-                               value="{{ old('data_nascimento') }}" 
-                               class="input"
-                               max="{{ date('Y-m-d') }}">
+                            <!-- Confirmar Senha -->
+                            <div>
+                                <label class="label">Confirmar Senha *</label>
+                                <input type="password"
+                                       name="password_confirmation"
+                                       x-ref="confirmar"
+                                       :disabled="autoPass"
+                                       :required="!autoPass"
+                                       minlength="8"
+                                       placeholder="Confirme a senha"
+                                       class="input transition-colors"
+                                       :class="autoPass
+                                        ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none'
+                                        : 'bg-white text-gray-900 border-gray-300 cursor-text'">
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Género -->
@@ -348,31 +348,7 @@
 
 </form>
 
-<script>
-function toggleAutoPassword(checkbox) {
-    const passwordInput = document.querySelector('input[name="password"]');
-    const confirmationInput = document.querySelector('input[name="password_confirmation"]');
 
-    if (!passwordInput || !confirmationInput) return;
-
-    if (checkbox.checked) {
-        passwordInput.value = '';
-        confirmationInput.value = '';
-        passwordInput.required = false;
-        confirmationInput.required = false;
-    } else {
-        passwordInput.required = true;
-        confirmationInput.required = true;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    const checkbox = document.querySelector('input[name="generate_random_password"]');
-    if (checkbox) {
-        toggleAutoPassword(checkbox);
-    }
-});
-</script>
 
 @endsection
 

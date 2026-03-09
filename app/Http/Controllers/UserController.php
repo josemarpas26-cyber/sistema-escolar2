@@ -66,14 +66,15 @@ class UserController extends Controller
         $this->checkPermission('users.create');
 
         $selectedRole = Role::find($request->input('role_id'));
-        $shouldGeneratePassword = $request->boolean('generate_random_password')
+         $shouldGeneratePassword = $request->boolean('auto_password')
             || optional($selectedRole)->name === 'professor';
 
-        $passwordRules = ['nullable', 'string', 'min:6'];
+        $passwordRules = $request->boolean('auto_password')
+            ? ['nullable']
+            : ['required', 'string', 'min:8', 'confirmed'];
 
-        if (! $shouldGeneratePassword) {
-            $passwordRules[] = 'required';
-            $passwordRules[] = 'confirmed';
+         if (optional($selectedRole)->name === 'professor') {
+            $passwordRules = ['nullable'];
         }
 
         $validated = $request->validate([
@@ -81,7 +82,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => $passwordRules,
             'role_id' => 'required|exists:roles,id',
-            'generate_random_password' => 'nullable|boolean',
+            'auto_password' => 'nullable|boolean',
             'bi' => 'nullable|string|unique:users,bi',
             'data_nascimento' => 'nullable|date',
             'genero' => 'nullable|in:M,F',
@@ -93,15 +94,15 @@ class UserController extends Controller
             'contacto_encarregado' => 'nullable|string|max:20',
         ]);
 
-      $generatedPassword = null;
+             $generatedPassword = null;
 
-        if ($shouldGeneratePassword && empty($validated['password'])) {
-            $generatedPassword = Str::password(10);
+        if ($shouldGeneratePassword) {
+            $generatedPassword = Str::password(12);
             $validated['password'] = $generatedPassword;
         }
 
         $validated['password'] = Hash::make($validated['password']);
-        unset($validated['generate_random_password']);
+        unset($validated['auto_password']);
 
         // Upload de foto
         if ($request->hasFile('foto_perfil')) {
