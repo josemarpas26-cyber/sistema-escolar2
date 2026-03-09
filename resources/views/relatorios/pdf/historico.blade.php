@@ -1,296 +1,250 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Histórico Académico</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 11px;
-            color: #333;
-            padding: 20px;
-        }
+<meta charset="UTF-8">
+  <title>Histórico Académico</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; background: #fff; }
 
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-            border-bottom: 3px solid #3B82F6;
-            padding-bottom: 15px;
-        }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px 14px;
+      border-bottom: 3px solid #1a1a6e;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-left img { height: 58px; width: auto; }
+    .school-info { line-height: 1.45; }
+    .school-name { font-size: 11px; font-weight: 700; color: #1a1a6e; text-transform: uppercase; }
+    .school-sub  { font-size: 9px; color: #555; text-transform: uppercase; }
+    .school-num  { font-size: 9px; color: #555; }
+    .header-right { text-align: right; }
+    .doc-title { font-size: 18px; font-weight: 900; color: #1a1a6e; text-transform: uppercase; letter-spacing: 1px; }
+    .doc-subtitle { font-size: 8.5px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
-        .header h1 {
-            font-size: 22px;
-            color: #3B82F6;
-            margin-bottom: 5px;
-        }
+    .accent-bar { height: 4px; background: #1a1a6e; margin: 0 32px 0; opacity: .15; }
 
-        .info-section {
-            background: #F3F4F6;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
+    .student-section {
+      margin: 18px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .student-fields { flex: 1; }
+    .field-row { display: flex; gap: 0; margin-bottom: 6px; }
+    .field-label {
+      font-size: 8px; font-weight: 700; color: #555;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      width: 140px; padding-top: 1px;
+    }
+    .field-value { font-size: 11px; font-weight: 600; color: #111; }
+    .photo-box {
+      width: 80px; height: 95px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #94a3b8; font-size: 8px; text-align: center;
+      gap: 4px; flex-shrink: 0;
+      overflow: hidden;
+    }
+    .photo-box svg { width: 28px; height: 28px; opacity: .4; }
+    .photo-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 
-        .info-row {
-            display: flex;
-            margin-bottom: 8px;
-        }
+    .divider { border: none; border-top: 1px solid #e2e8f0; margin: 0 32px; }
 
-        .info-label {
-            font-weight: bold;
-            width: 150px;
-            color: #374151;
-        }
+    .section-wrap { margin: 16px 32px; }
+    .section-title {
+      font-size: 10px; font-weight: 700;
+      color: #1a1a6e; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 10px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid #1a1a6e;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    thead tr { background: #1a1a6e; color: #fff; }
+    thead th {
+      padding: 7px 10px; text-align: left;
+      font-weight: 600; font-size: 9px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr:nth-child(odd)  { background: #ffffff; }
+    tbody td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+    .td-center { text-align: center; }
+    .badge-aprovado  { color: #16a34a; font-weight: 700; }
+    .badge-reprovado { color: #dc2626; font-weight: 700; }
+    .badge-transito  { color: #d97706; font-weight: 700; }
 
-        .info-value {
-            color: #1F2937;
-        }
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: #94a3b8;
+    }
+    .empty-state svg {
+      width: 36px; height: 36px; margin: 0 auto 10px;
+      display: block; opacity: .4;
+    }
+    .empty-title { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .empty-sub { font-size: 10px; color: #94a3b8; }
 
-        .foto-perfil {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #3B82F6;
-            float: right;
-            margin-left: 15px;
-        }
+    .signatures {
+      display: flex;
+      justify-content: space-around;
+      margin: 40px 32px 20px;
+      padding-top: 10px;
+    }
+    .sig-block { text-align: center; width: 160px; }
+    .sig-line { border-top: 1.5px solid #1a1a1a; margin-bottom: 6px; }
+    .sig-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .ano-letivo {
-            margin-top: 25px;
-            page-break-inside: avoid;
-        }
-
-        .ano-letivo-header {
-            background: #3B82F6;
-            color: white;
-            padding: 10px;
-            border-radius: 5px 5px 0 0;
-            font-weight: bold;
-            font-size: 13px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-
-        th {
-            background: #E0E7FF;
-            color: #1E40AF;
-            padding: 8px 6px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #C7D2FE;
-            font-size: 10px;
-        }
-
-        td {
-            padding: 8px 6px;
-            border: 1px solid #E5E7EB;
-            text-align: center;
-            font-size: 10px;
-        }
-
-        tr:nth-child(even) {
-            background: #F9FAFB;
-        }
-
-        .disciplina {
-            text-align: left;
-            font-weight: bold;
-        }
-
-        .aprovado {
-            color: #10B981;
-            font-weight: bold;
-        }
-
-        .reprovado {
-            color: #EF4444;
-            font-weight: bold;
-        }
-
-        .summary-box {
-            background: #EFF6FF;
-            border: 2px solid #3B82F6;
-            padding: 10px;
-            border-radius: 0 0 5px 5px;
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-
-        .summary-item {
-            text-align: center;
-        }
-
-        .summary-label {
-            font-weight: bold;
-            color: #1E40AF;
-            font-size: 10px;
-        }
-
-        .summary-value {
-            font-weight: bold;
-            color: #1F2937;
-            font-size: 13px;
-            margin-top: 3px;
-        }
-
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 9px;
-            color: #6B7280;
-            border-top: 1px solid #E5E7EB;
-            padding-top: 10px;
-        }
-
-        .assinatura {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-around;
-        }
-
-        .assinatura-item {
-            text-align: center;
-            width: 40%;
-        }
-
-        .linha {
-            border-top: 1px solid #000;
-            margin-top: 30px;
-            margin-bottom: 5px;
-        }
-    </style>
+    .footer {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 12px 32px;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .footer p { font-size: 8px; color: #64748b; line-height: 1.6; }
+    .footer .system-name {
+      color: #1a1a6e; font-weight: 700; font-size: 8.5px;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Header -->
-    <div class="header">
-        <h1>📚 HISTÓRICO ACADÉMICO</h1>
-        <p style="font-size: 12px;">Documento Oficial de Aproveitamento Escolar</p>
+<div class="header">
+    <div class="header-left">
+      <img src="{{ asset('images/logo1.png') }}" alt="Logo">
+      <div class="school-info">
+        <div class="school-name">IPIKK - NV</div>
+        <div class="school-sub">Instituto Politécnico Industrial do Kilamba</div>
+        <div class="school-num">Nº 0050</div>
+      </div>
     </div>
-
-    <!-- Informações do Aluno -->
-    <div class="info-section">
-        <img src="{{ public_path($aluno->foto_perfil ?: 'storage/fotos_perfil/default.png') }}" alt="Foto" class="foto-perfil">
-        
-        <div class="info-row">
-            <span class="info-label">Nome Completo:</span>
-            <span class="info-value">{{ $aluno->name }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Nº Processo:</span>
-            <span class="info-value">{{ $aluno->numero_processo }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Bilhete de Identidade:</span>
-            <span class="info-value">{{ $aluno->bi ?? 'Não informado' }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Data de Nascimento:</span>
-            <span class="info-value">{{ $aluno->data_nascimento ? $aluno->data_nascimento->format('d/m/Y') : 'Não informado' }}</span>
-        </div>
-        @if($aluno->nome_encarregado)
-        <div class="info-row">
-            <span class="info-label">Encarregado de Educação:</span>
-            <span class="info-value">{{ $aluno->nome_encarregado }} - {{ $aluno->contacto_encarregado }}</span>
-        </div>
-        @endif
+    <div class="header-right">
+      <div class="doc-title">Histórico Académico</div>
+      <div class="doc-subtitle">Documento Oficial de Aproveitamento Escolar</div>
     </div>
+  </div>
+  <div class="accent-bar"></div>
 
-    <!-- Histórico por Ano Letivo -->
-    @foreach($historico as $anoLetivoId => $registros)
-        @php
-            $anoLetivo = $registros->first()->anoLetivo;
-            $turma = $registros->first()->turma;
-            $mediaGeral = $registros->avg('classificacao_final');
-            $aprovacoes = $registros->filter(fn($r) => $r->classificacao_final >= 10)->count();
-        @endphp
-
-        <div class="ano-letivo">
-            <div class="ano-letivo-header">
-                {{ $anoLetivo->nome }} - {{ $turma->nome_completo }} ({{ $turma->curso->nome }})
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th width="35%">Disciplina</th>
-                        <th width="20%">Classe</th>
-                        <th width="20%">Classificação Final</th>
-                        <th width="20%">Data de Conclusão</th>
-                        <th width="25%">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($registros as $registro)
-                    <tr>
-                        <td class="disciplina">{{ $registro->disciplina->nome }}</td>
-                        <td>{{ $registro->classe }}ª</td>
-                        <td><strong>{{ number_format($registro->classificacao_final, 2) }}</strong></td>
-                         <td>{{ optional($registro->data_conclusao)->format('d/m/Y') }}</td>
-                        <td class="{{ $registro->classificacao_final >= 10 ? 'aprovado' : 'reprovado' }}">
-                            {{ $registro->classificacao_final >= 10 ? 'Aprovado' : 'Reprovado' }}
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <div class="summary-box">
-                <div class="summary-item">
-                    <div class="summary-label">Média Geral</div>
-                    <div class="summary-value">{{ number_format($mediaGeral, 2) }}</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-label">Aprovações</div>
-                    <div class="summary-value" style="color: #10B981;">{{ $aprovacoes }}/{{ $registros->count() }}</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-label">Resultado</div>
-                    <div class="summary-value" style="color: {{ $aprovacoes == $registros->count() ? '#10B981' : '#EF4444' }};">
-                        {{ $aprovacoes == $registros->count() ? 'Aprovado' : 'Reprovado' }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endforeach
-
-    @if($historico->count() == 0)
-    <div style="text-align: center; padding: 40px; color: #6B7280;">
-        <p style="font-size: 16px;">Nenhum histórico disponível</p>
+  <div class="student-section">
+    <div class="student-fields">
+      <div class="field-row">
+        <span class="field-label">Nome Completo:</span>
+        <span class="field-value">{{ $aluno->name ?? '—' }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Nº Processo:</span>
+        <span class="field-value">{{ $aluno->numero_processo ?? '—' }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Bilhete de Identidade:</span>
+        <span class="field-value">{{ $aluno->bi ?? $aluno->bilhete_identidade ?? '—' }}</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Data de Nascimento:</span>
+        <span class="field-value">
+          {{ $aluno->data_nascimento ? \Carbon\Carbon::parse($aluno->data_nascimento)->format('d/m/Y') : '—' }}
+        </span>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Encarregado de Educação:</span>
+        <span class="field-value">
+          {{ $aluno->nome_encarregado ?? $aluno->encarregado ?? '—' }}
+          @if(!empty($aluno->contacto_encarregado)) - {{ $aluno->contacto_encarregado }} @endif
+        </span>
+      </div>
     </div>
+        <div class="photo-box">
+      @if(!empty($aluno->foto) || !empty($aluno->foto_perfil))
+        <img src="{{ public_path('storage/' . ($aluno->foto ?? $aluno->foto_perfil)) }}" alt="Foto">
+      @else
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Foto do Aluno</span>
+      @endif
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-wrap">
+    @if(isset($historico) && $historico->count() > 0)
+      <div class="section-title">Histórico Escolar</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Ano Letivo</th>
+            <th>Disciplina</th>
+            <th>Turma</th>
+            <th class="td-center">Classe</th>
+            <th class="td-center">CFD</th>
+            <th class="td-center">Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach($historico as $registros)
+            @foreach($registros as $row)
+              <tr>
+                <td>{{ $row->anoLetivo->nome ?? '—' }}</td>
+                <td>{{ $row->disciplina->nome ?? '—' }}</td>
+                <td>{{ $row->turma->nome_completo ?? $row->turma->nome ?? '—' }}</td>
+                <td class="td-center">{{ $row->classe ?? '—' }}</td>
+                <td class="td-center">{{ isset($row->classificacao_final) ? number_format($row->classificacao_final, 2, ',', '.') : '—' }}</td>
+                <td class="td-center">
+                  @php $r = strtolower($row->resultado ?? ''); @endphp
+                  @if(str_contains($r, 'aprovado') && !str_contains($r, 'reprovado'))
+                    <span class="badge-aprovado">Aprovado</span>
+                  @elseif(str_contains($r, 'reprovado'))
+                    <span class="badge-reprovado">Reprovado</span>
+                  @else
+                    <span class="badge-transito">{{ $row->resultado ?? '—' }}</span>
+                  @endif
+                </td>
+              </tr>
+            @endforeach
+          @endforeach
+        </tbody>
+      </table>
+    @else
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586 a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19 a2 2 0 01-2 2z"/>
+        </svg>
+        <div class="empty-title">Nenhum histórico disponível</div>
+        <div class="empty-sub">
+          As notas do aluno para o ano letivo atual não foram inseridas
+          ou processadas no sistema.
+        </div>
+      </div>
     @endif
-
-    <!-- Assinaturas -->
-    <div class="assinatura">
-        <div class="assinatura-item">
-            <div class="linha"></div>
-            <div>Secretaria Escolar</div>
-        </div>
-        <div class="assinatura-item">
-            <div class="linha"></div>
-            <div>Direção</div>
-        </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <p>Documento gerado em {{ now()->format('d/m/Y H:i') }}</p>
-        <p><strong>Este documento tem validade oficial</strong></p>
-        <p>Sistema de Gestão Escolar - NotasEscola 🇦🇴</p>
+  <div class="signatures">
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">Secretaria Escolar</div>
     </div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">Direção Geral</div>
+    </div>
+      </div>
+
+  <div class="footer">
+    <p>
+      DOCUMENTO GERADO ELECTRONICAMENTE EM
+      {{ now()->format('d/m/Y') }}
+      {{ now()->format('H:i') }}<br>
+      ESTE DOCUMENTO TEM VALIDADE OFICIAL QUANDO DEVIDAMENTE CARIMBADO E ASSINADO
+    </p>
+    <p class="system-name">SISTEMA DE GESTÃO ESCOLAR - IPIKK-NV</p>
+  </div>
 
 </body>
 </html>

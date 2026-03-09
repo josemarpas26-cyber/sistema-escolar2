@@ -154,7 +154,7 @@
                 </select>
 
                 <div class="flex gap-2">
-                    <button type="submit" class="btn btn-outline w-full">Ver</button>
+                    <button type="submit" formtarget="_blank" class="btn btn-outline w-full">Ver</button>
                     <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
                 </div>
 
