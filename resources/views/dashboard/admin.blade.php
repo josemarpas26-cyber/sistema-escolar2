@@ -48,7 +48,7 @@
         @if($ano_letivo_ativo)
         <div class="space-y-3 mb-6">
             <div class="flex justify-between items-center">
-                <span class="text-gray-600">Nome:</span>
+                <span class="text-gray-600">Periodo:</span>
                 <span class="font-semibold">{{ $ano_letivo_ativo->nome }}</span>
             </div>
             <div class="flex justify-between items-center">
