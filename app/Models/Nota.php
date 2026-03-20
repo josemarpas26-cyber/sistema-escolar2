@@ -71,7 +71,10 @@ class Nota extends Model
      */
     public function recalcular(): void
     {
-        $classe = $this->turma->classe;
+        if (!$this->relationLoaded('turma')) {
+            $this->load(['turma.curso', 'disciplina']);
+            $classe = $this->turma->classe;
+    }
 
         // 1º Trimestre
         if ($this->mac1 !== null && $this->pp1 !== null && $this->pt1 !== null) {
