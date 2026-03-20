@@ -164,24 +164,38 @@
       @endphp
 
       @if($fotoRelativa)
-        @php
-          $fotoPath = null;
-          $storagePath = storage_path('app/public/' . $fotoRelativa);
-          $directPath = public_path('storage/' . $fotoRelativa);
-          $publicPath = public_path($fotoRelativa);
+      @php
+          $fotoRelativa = $aluno->foto_perfil ?? $aluno->foto ?? null;
+          $fotoSrc = null;
 
-          if (file_exists($storagePath)) {
-              $fotoPath = $storagePath;
-          } elseif (file_exists($directPath)) {
-              $fotoPath = $directPath;
-          } elseif (file_exists($publicPath)) {
-              $fotoPath = $publicPath;
+          if ($fotoRelativa) {
+              $storagePath = storage_path('app/public/' . $fotoRelativa);
+              $directPath  = public_path('storage/' . $fotoRelativa);
+              $publicPath  = public_path($fotoRelativa);
+
+              if (request('formato') === 'pdf') {
+                  // PDF: caminho absoluto do disco, nunca URL HTTP
+                  if (file_exists($storagePath))     $fotoSrc = $storagePath;
+                  elseif (file_exists($directPath))  $fotoSrc = $directPath;
+                  elseif (file_exists($publicPath))  $fotoSrc = $publicPath;
+              } else {
+                  // Web: URL normal
+                  $fotoSrc = asset('storage/' . ltrim($fotoRelativa, '/'));
+              }
           }
+      @endphp
 
-          $fotoSrc = request('formato') === 'pdf'
-              ? $fotoPath
-              : asset('storage/' . ltrim($fotoRelativa, '/'));
-        @endphp
+      <div class="photo-box">
+          @if($fotoSrc)
+              <img src="{{ $fotoSrc }}" alt="Foto do Aluno">
+          @else
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Foto do Aluno</span>
+          @endif
+      </div>
 
         @if($fotoSrc)
           <img src="{{ $fotoSrc }}" alt="Foto do Aluno" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
