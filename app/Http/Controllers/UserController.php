@@ -86,13 +86,17 @@ class UserController extends Controller
             'bi' => 'nullable|string|unique:users,bi',
             'data_nascimento' => 'nullable|date',
             'genero' => 'nullable|in:M,F',
-            'telefone' => 'nullable|string|max:20',
+            'telefone' => ['nullable', 'string', 'min:7', 'max:15', 'regex:/^[0-9\s\+\-]+$/'],
             'endereco' => 'nullable|string|max:255',
             'foto_perfil' => 'nullable|image|max:2048',
             'numero_processo' => 'nullable|string|unique:users,numero_processo',
             'nome_encarregado' => 'nullable|string|max:255',
             'contacto_encarregado' => 'nullable|string|max:20',
-        ]);
+                ], [
+            'telefone.regex' => 'O campo telefone deve conter apenas números.',
+            'telefone.min' => 'O telefone deve ter pelo menos 7 dígitos.',
+            'telefone.max' => 'O telefone não pode ter mais de 15 dígitos.',    
+            ]);
 
              $generatedPassword = null;
 
@@ -161,13 +165,17 @@ class UserController extends Controller
             'bi' => ['nullable', 'string', Rule::unique('users')->ignore($user->id)],
             'data_nascimento' => 'nullable|date',
             'genero' => 'nullable|in:M,F',
-            'telefone' => 'nullable|string|max:20',
+            'telefone' => ['nullable', 'string', 'min:7', 'max:15', 'regex:/^[0-9\s\+\-]+$/'],
             'endereco' => 'nullable|string|max:255',
             'foto_perfil' => 'nullable|image|max:2048',
             'numero_processo' => ['nullable', 'string', Rule::unique('users')->ignore($user->id)],
             'nome_encarregado' => 'nullable|string|max:255',
             'contacto_encarregado' => 'nullable|string|max:20',
             'ativo' => 'boolean',
+                    ], [
+            'telefone.regex' => 'O campo telefone deve conter apenas números.',
+            'telefone.min' => 'O telefone deve ter pelo menos 7 dígitos.',
+            'telefone.max' => 'O telefone não pode ter mais de 15 dígitos.',
         ]);
 
         // Atualizar senha apenas se fornecida
