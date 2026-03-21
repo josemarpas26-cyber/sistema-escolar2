@@ -69,12 +69,19 @@ class Nota extends Model
     /**
      * Recalcula todas as médias da nota
      */
+// Nota.php — recalcular() com guard completo
     public function recalcular(): void
     {
-        if (!$this->relationLoaded('turma')) {
+        // Garantir que as relações necessárias estão carregadas
+        if (!$this->relationLoaded('turma') || !$this->turma) {
             $this->load(['turma.curso', 'disciplina']);
-            $classe = $this->turma->classe;
-    }
+        }
+        
+        if (!$this->turma) {
+            throw new \RuntimeException("Nota {$this->id} não possui turma associada.");
+        }
+
+        $classe = $this->turma->classe;
 
         // 1º Trimestre
         if ($this->mac1 !== null && $this->pp1 !== null && $this->pt1 !== null) {
@@ -91,14 +98,12 @@ class Nota extends Model
             $this->mft2 = round(($this->mt1 + $this->mt2) / 2, 2);
         }
 
-        // 3º Trimestre
-        if ($classe == '10') {
-            $this->calcularTrimestre3Classe10();
-        } elseif ($classe == '11') {
-            $this->calcularTrimestre3Classe11();
-        } elseif ($classe == '12') {
-            $this->calcularTrimestre3Classe12();
-        }
+        match ($classe) {
+            '10' => $this->calcularTrimestre3Classe10(),
+            '11' => $this->calcularTrimestre3Classe11(),
+            '12' => $this->calcularTrimestre3Classe12(),
+            default => null,
+        };
     }
 
     /**

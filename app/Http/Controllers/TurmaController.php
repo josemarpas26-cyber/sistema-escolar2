@@ -400,6 +400,12 @@ class TurmaController extends Controller
         // Promover alunos aprovados
         $alunosAprovados = $turma->alunos()
             ->wherePivot('status', 'matriculado')
+            ->whereHas('notas', fn($q) => $q
+                ->where('turma_id', $turma->id)
+                ->where('ano_letivo_id', $turma->ano_letivo_id)
+                ->whereNotNull('cfd')
+                ->where('cfd', '>=', 10)
+            )
             ->get();
 
         foreach ($alunosAprovados as $aluno) {

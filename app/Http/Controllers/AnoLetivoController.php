@@ -155,7 +155,10 @@ public function show(AnoLetivo $anoLetivo)
         return back()->with('error', 'Este ano letivo já está encerrado!');
     }
 
-    
+    $anoLetivo->load(['turmas.disciplinas', 'turmas.alunos' => fn($q) => 
+    $q->wherePivot('status', 'matriculado')
+    ]);
+
       foreach ($anoLetivo->turmas as $turma) {
 
         $totalAlunos = $turma->alunos()

@@ -325,13 +325,13 @@ public function dashboard()
 
             // Dados
             foreach ($logs as $log) {
-                 $valorAnterior = $log->valor_anterior !== null
+                 $valorAnterior = is_numeric($log->valor_anterior)
                     ? number_format((float) $log->valor_anterior, 2, ',', '.')
-                    : '-';
+                    : ($log->valor_anterior ?? '-');
 
-                $valorNovo = $log->valor_novo !== null
+                $valorNovo = is_numeric($log->valor_novo)
                     ? number_format((float) $log->valor_novo, 2, ',', '.')
-                    : '-';
+                    : ($log->valor_novo ?? '-');
 
                 $trimestre = $log->trimestre ? $log->trimestre . 'º' : '-';
                 

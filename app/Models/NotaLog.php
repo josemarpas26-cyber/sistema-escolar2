@@ -30,8 +30,8 @@ class NotaLog extends Model
     ];
 
     protected $casts = [
-        'valor_anterior' => 'decimal:2',
-        'valor_novo' => 'decimal:2',
+       // 'valor_anterior' => 'decimal:2',
+       // 'valor_novo' => 'decimal:2',
         'data_alteracao' => 'datetime',
     ];
 
@@ -102,14 +102,17 @@ class NotaLog extends Model
     }
     public function getResumoAlteracaoAttribute(): string
     {
-        if ($this->acao === 'criacao') {
-            return 'Registro criado';
-        }
+        if ($this->acao === 'criacao') return 'Registro criado';
+        if ($this->acao === 'exclusao') return 'Registro removido';
 
-        if ($this->acao === 'exclusao') {
-            return 'Registro removido';
-        }
+        $anterior = is_numeric($this->valor_anterior) 
+            ? number_format((float)$this->valor_anterior, 2) 
+            : ($this->valor_anterior ?? '-');
+        
+        $novo = is_numeric($this->valor_novo) 
+            ? number_format((float)$this->valor_novo, 2) 
+            : ($this->valor_novo ?? '-');
 
-        return sprintf('%s → %s', $this->valor_anterior ?? '-', $this->valor_novo ?? '-');
+        return "{$anterior} → {$novo}";
     }
 }
