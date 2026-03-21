@@ -137,14 +137,25 @@
                     </div>
 
                     <!-- Telefone -->
-                    <div>
-                        <label class="label">Telefone</label>
-                        <input type="text" 
-                               name="telefone" 
-                               value="{{ old('telefone') }}" 
-                               class="input"
+                    <div x-data="{ telError: false }">
+                        <label class="label" for="telefone">Telefone</label>
+                        <input type="tel"
+                               name="telefone"
+                               id="telefone"
+                               inputmode="numeric"
+                               pattern="[0-9\s\+\-]+"
+                               maxlength="15"
                                placeholder="923000000"
-                               maxlength="15">
+                               value="{{ old('telefone') }}"
+                               x-on:input="const sanitized = $event.target.value.replace(/[^0-9\s\+\-]/g, ''); telError = sanitized !== $event.target.value; $event.target.value = sanitized"
+                               :class="telError ? 'border-red-400 bg-red-50' : ''"
+                               class="input">
+                        <p x-show="telError" x-cloak class="text-xs text-red-500 mt-1">
+                            O telefone deve conter apenas números.
+                        </p>
+                        @error('telefone')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Endereço -->
