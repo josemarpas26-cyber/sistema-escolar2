@@ -274,18 +274,17 @@ class NotaController extends Controller
             'notas.*.pt1'  => 'nullable|numeric|min:0|max:20',
         ]);
 
-        // Carrega todas as notas de uma vez e usa no loop
-        $notas = Nota::whereIn('id', collect($validated['notas'])->pluck('id'))
+        $ids = collect($validated['notas'])->pluck('id');
+        
+        $notasMap = Nota::whereIn('id', $ids)
             ->with(['turma.curso', 'disciplina'])
             ->get()
             ->keyBy('id');
 
         foreach ($validated['notas'] as $notaData) {
-            $nota = $notas->get($notaData['id']); // sem query
-
-            if (!$nota) {
-                continue;
-            }
+            $nota = $notasMap->get($notaData['id']);
+            
+            if (!$nota) continue;
 
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
@@ -295,13 +294,11 @@ class NotaController extends Controller
                 continue;
             }
 
-            $nota->update([
-                'mac1' => $notaData['mac1'] ?? null,
-                'pp1'  => $notaData['pp1']  ?? null,
-                'pt1'  => $notaData['pt1']  ?? null,
-            ]);
-
-            $nota->recalcular();
+            $nota->mac1 = $notaData['mac1'] ?? null;
+            $nota->pp1  = $notaData['pp1']  ?? null;
+            $nota->pt1  = $notaData['pt1']  ?? null;
+            
+            $nota->recalcular(); // agora turma e disciplina já estão carregadas
             $nota->save();
         }
 
@@ -329,8 +326,17 @@ class NotaController extends Controller
             'notas.*.pt2'  => 'nullable|numeric|min:0|max:20',
         ]);
 
+        $ids = collect($validated['notas'])->pluck('id');
+        
+        $notasMap = Nota::whereIn('id', $ids)
+            ->with(['turma.curso', 'disciplina'])
+            ->get()
+            ->keyBy('id');
+
         foreach ($validated['notas'] as $notaData) {
-            $nota = Nota::findOrFail($notaData['id']);
+            $nota = $notasMap->get($notaData['id']);
+            
+            if (!$nota) continue;
 
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
@@ -340,13 +346,11 @@ class NotaController extends Controller
                 continue;
             }
 
-            $nota->update([
-                'mac2' => $notaData['mac2'] ?? null,
-                'pp2'  => $notaData['pp2']  ?? null,
-                'pt2'  => $notaData['pt2']  ?? null,
-            ]);
-
-            $nota->recalcular();
+            $nota->mac1 = $notaData['mac2'] ?? null;
+            $nota->pp1  = $notaData['pp2']  ?? null;
+            $nota->pt1  = $notaData['pt2']  ?? null;
+            
+            $nota->recalcular(); // agora turma e disciplina já estão carregadas
             $nota->save();
         }
 
@@ -373,8 +377,16 @@ class NotaController extends Controller
             'notas.*.pp3'  => 'nullable|numeric|min:0|max:20',
         ]);
 
+        // ✅ Busca todas as notas de uma vez com relações
+        $notasMap = Nota::whereIn('id', collect($validated['notas'])->pluck('id'))
+            ->with(['turma.curso', 'disciplina'])
+            ->get()
+            ->keyBy('id');
+
         foreach ($validated['notas'] as $notaData) {
-            $nota = Nota::findOrFail($notaData['id']);
+            $nota = $notasMap->get($notaData['id']); // ✅ sem query
+
+            if (!$nota) continue;
 
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
@@ -384,12 +396,10 @@ class NotaController extends Controller
                 continue;
             }
 
-            $nota->update([
-                'mac3' => $notaData['mac3'] ?? null,
-                'pp3'  => $notaData['pp3']  ?? null,
-            ]);
+            $nota->mac3 = $notaData['mac3'] ?? null;
+            $nota->pp3  = $notaData['pp3']  ?? null;
 
-            $nota->recalcular();
+            $nota->recalcular(); // turma e disciplina já carregadas
             $nota->save();
         }
 
@@ -415,8 +425,16 @@ class NotaController extends Controller
             'notas.*.pg' => 'nullable|numeric|min:0|max:20',
         ]);
 
+        // ✅ Eager load
+        $notasMap = Nota::whereIn('id', collect($validated['notas'])->pluck('id'))
+            ->with(['turma.curso', 'disciplina'])
+            ->get()
+            ->keyBy('id');
+
         foreach ($validated['notas'] as $notaData) {
-            $nota = Nota::findOrFail($notaData['id']);
+            $nota = $notasMap->get($notaData['id']); // ✅ sem query
+
+            if (!$nota) continue;
 
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
@@ -426,7 +444,7 @@ class NotaController extends Controller
                 continue;
             }
 
-            $nota->update(['pg' => $notaData['pg'] ?? null]);
+            $nota->pg = $notaData['pg'] ?? null;
 
             $nota->recalcular();
             $nota->save();

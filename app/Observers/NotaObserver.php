@@ -13,6 +13,7 @@ class NotaObserver
         $this->registrarLog($nota, 'criacao', 'todas', null, null);
     }
 
+// NotaObserver.php — adicionar verificação de tipo
     public function updating(Nota $nota): void
     {
         $camposMonitorados = [
@@ -21,22 +22,26 @@ class NotaObserver
             'mac3', 'pp3',
             'pg',
             'ca_10', 'ca_11',
-            // Campos de bloqueio/finalização — antes ausentes
-            'status',
-            'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
         ];
 
         foreach ($camposMonitorados as $campo) {
-            if ($nota->isDirty($campo)) {
-                $this->registrarLog(
-                    $nota,
-                    'edicao',
-                    $campo,
-                    $nota->getOriginal($campo),
-                    $nota->$campo,
-                    $this->determinarTrimestre($campo)
-                );
-            }
+            if (!$nota->isDirty($campo)) continue;
+
+            $valorAntigo = $nota->getOriginal($campo);
+            $valorNovo   = $nota->$campo;
+
+            // Guard: só logar se ambos forem numéricos ou null
+            if ($valorAntigo !== null && !is_numeric($valorAntigo)) continue;
+            if ($valorNovo   !== null && !is_numeric($valorNovo))   continue;
+
+            $this->registrarLog(
+                $nota,
+                'edicao',
+                $campo,
+                $valorAntigo !== null ? (float) $valorAntigo : null,
+                $valorNovo   !== null ? (float) $valorNovo   : null,
+                $this->determinarTrimestre($campo)
+            );
         }
     }
 
