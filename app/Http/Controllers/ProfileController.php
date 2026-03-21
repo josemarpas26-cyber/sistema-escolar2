@@ -1,6 +1,6 @@
 <?php
-
-namespace App\Http\Controllers\Auth;
+//pode remover...
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

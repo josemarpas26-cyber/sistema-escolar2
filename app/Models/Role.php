@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class Role extends Model
 {
@@ -14,6 +15,9 @@ class Role extends Model
         'display_name',
         'description',
     ];
+
+    // Cache em memória por instância — vive só durante o request
+    private ?Collection $permissionsCache = null;
 
     public function users()
     {
@@ -26,8 +30,30 @@ class Role extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Carrega todas as permissões do role numa única query
+     * e reutiliza o resultado durante o request inteiro.
+     */
     public function hasPermission(string $permissionName): bool
     {
-        return $this->permissions()->where('name', $permissionName)->exists();
+        if ($this->permissionsCache === null) {
+            // Se já foi eager-loaded (via ::with), usa sem nova query.
+            // Se não foi, carrega agora e armazena.
+            $this->permissionsCache = $this->relationLoaded('permissions')
+                ? $this->permissions
+                : $this->permissions()->pluck('name');
+        }
+
+        return $this->permissionsCache->contains($permissionName);
+    }
+
+    /**
+     * Invalida o cache em memória, se as permissões do role
+     * forem alteradas durante o mesmo request (ex: testes, seeds).
+     */
+    public function flushPermissionsCache(): void
+    {
+        $this->permissionsCache = null;
+        $this->unsetRelation('permissions');
     }
 }

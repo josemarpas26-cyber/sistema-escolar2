@@ -295,7 +295,7 @@ public function dashboard()
             $query->whereDate('data_alteracao', '<=', $request->data_fim);
         }
 
-        $logs = $query->get();
+        $logs = $query->cursor();
 
         // Gerar CSV
         $filename = 'logs-' . now()->format('Y-m-d-His') . '.csv';

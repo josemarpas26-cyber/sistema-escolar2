@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AnoLetivoController extends Controller
 {
@@ -60,11 +61,6 @@ class AnoLetivoController extends Controller
             'data_fim' => 'required|date|after:data_inicio',
         ]);
 
-        $validated = $request->validate([
-            'nome' => 'required|string|max:20|unique:anos_letivos,nome',
-            'data_inicio' => 'required|date',
-            'data_fim' => 'required|date|after:data_inicio',
-        ]);
 
         // Extrair anos do nome (ex: 2024/2025)
         [$anoInicio, $anoFim] = explode('/', $validated['nome']);
@@ -98,22 +94,25 @@ class AnoLetivoController extends Controller
     /**
      * Exibir ano letivo
      */
-    public function show(AnoLetivo $anoLetivo)
-    {
-        $this->checkPermission('anos.create');
+public function show(AnoLetivo $anoLetivo)
+{
+    $this->checkPermission('anos.create');
 
-        $anoLetivo->load(['turmas' => fn($q) => $q->with(['curso', 'alunos'])]);
+    $anoLetivo->load(['turmas.curso']);
 
-        $stats = [
-            'total_turmas' => $anoLetivo->turmas->count(),
-            'total_alunos' => $anoLetivo->turmas->sum(fn($t) => 
-                $t->alunos()->wherePivot('status', 'matriculado')->count()
-            ),
-            'total_notas' => $anoLetivo->notas()->count(),
-        ];
+    $turmaIds = $anoLetivo->turmas->pluck('id');
 
-        return view('anos-letivos.show', compact('anoLetivo', 'stats'));
-    }
+    $stats = [
+        'total_turmas' => $anoLetivo->turmas->count(),
+        'total_alunos' => DB::table('turma_aluno')
+            ->whereIn('turma_id', $turmaIds)
+            ->where('status', 'matriculado')
+            ->count(),
+        'total_notas'  => $anoLetivo->notas()->count(),
+    ];
+
+    return view('anos-letivos.show', compact('anoLetivo', 'stats'));
+}
 
     /**
      * Formulário de edição

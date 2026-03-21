@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -50,12 +50,11 @@ class AnoLetivo extends Model
     
     public static function encerrarAutomaticamente()
     {
-        self::where('encerrado', false)
+        DB::transaction(function () {
+            self::where('encerrado', false)
             ->whereDate('data_fim', '<=', today())
-            ->update([
-                'encerrado' => true,
-                'ativo' => false,
-            ]);
+            ->update(['encerrado' => true, 'ativo' => false]);
+        });
     }
 
 

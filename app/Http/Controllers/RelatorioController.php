@@ -400,7 +400,13 @@ class RelatorioController extends Controller
     private function gerarHistoricoPDF(array $dados)
     {
         $pdf = Pdf::loadView('relatorios.pdf.historico', $dados)
-            ->setPaper('a4', 'portrait');
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'isRemoteEnabled'    => false, // bloqueia requests HTTP externos
+                'isHtml5ParserEnabled' => true,
+                'defaultFont'        => 'Arial',
+                'chroot'             => storage_path('app/public'), // restringe acesso ao disco
+            ]);
 
         return $pdf->download('historico-' . $dados['aluno']->numero_processo . '.pdf');
     }

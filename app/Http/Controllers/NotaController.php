@@ -274,8 +274,18 @@ class NotaController extends Controller
             'notas.*.pt1'  => 'nullable|numeric|min:0|max:20',
         ]);
 
+        // Carrega todas as notas de uma vez e usa no loop
+        $notas = Nota::whereIn('id', collect($validated['notas'])->pluck('id'))
+            ->with(['turma.curso', 'disciplina'])
+            ->get()
+            ->keyBy('id');
+
         foreach ($validated['notas'] as $notaData) {
-            $nota = Nota::findOrFail($notaData['id']);
+            $nota = $notas->get($notaData['id']); // sem query
+
+            if (!$nota) {
+                continue;
+            }
 
             if ($user->isProfessor()) {
                 $this->verificarPermissaoProfessor($nota);
@@ -587,23 +597,6 @@ class NotaController extends Controller
 
             $finalizadas++;
 
-            NotaLog::create([
-                'nota_id'        => $nota->id,
-                'usuario_id'     => auth()->id(),
-                'aluno_id'       => $nota->aluno_id,
-                'turma_id'       => $nota->turma_id,
-                'disciplina_id'  => $nota->disciplina_id,
-                'acao'           => 'edicao',
-                'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'status',
-                'valor_anterior' => null,
-                'valor_novo'     => null,
-                'trimestre'      => $trimestre,
-                'motivo'         => $validated['motivo'] ?? ($trimestre
-                    ? "Finalização do {$trimestre}º trimestre"
-                    : 'Finalização geral de lançamento de notas'),
-                'ip_address'     => request()->ip(),
-                'data_alteracao' => now(),
-            ]);
         }
 
         $escopoAluno = ($validated['aluno_id'] ?? null) ? ' para o aluno selecionado' : '';
@@ -706,23 +699,6 @@ class NotaController extends Controller
 
             $reabertas++;
 
-            NotaLog::create([
-                'nota_id'        => $nota->id,
-                'usuario_id'     => auth()->id(),
-                'aluno_id'       => $nota->aluno_id,
-                'turma_id'       => $nota->turma_id,
-                'disciplina_id'  => $nota->disciplina_id,
-                'acao'           => 'edicao',
-                'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'status',
-                'valor_anterior' => null,
-                'valor_novo'     => null,
-                'trimestre'      => $trimestre,
-                'motivo'         => $validated['motivo'] ?? ($trimestre
-                    ? "Reabertura do {$trimestre}º trimestre"
-                    : 'Reabertura geral de lançamento de notas'),
-                'ip_address'     => request()->ip(),
-                'data_alteracao' => now(),
-            ]);
         }
 
         $escopoAluno = ($validated['aluno_id'] ?? null) ? ' para o aluno selecionado' : '';
