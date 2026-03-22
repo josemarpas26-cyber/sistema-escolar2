@@ -99,7 +99,7 @@ class RolePermissionSeeder extends Seeder
         $professor->permissions()->sync(Permission::whereIn('name', [
             'notas.lancar', 'notas.view_turma',
             'turmas.view',
-            'disciplinas.view',
+            'disciplinas.view','relatorios.boletins', "relatorios.pautas",
         ])->pluck('id'));
 
         // 4. Aluno
