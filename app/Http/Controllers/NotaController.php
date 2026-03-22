@@ -375,16 +375,18 @@ class NotaController extends Controller
             'notas.*.id'   => 'required|exists:notas,id',
             'notas.*.mac3' => 'nullable|numeric|min:0|max:20',
             'notas.*.pp3'  => 'nullable|numeric|min:0|max:20',
+            'notas.*.pg'   => 'nullable|numeric|min:0|max:20', // ← ADICIONAR
         ]);
 
-        // ✅ Busca todas as notas de uma vez com relações
-        $notasMap = Nota::whereIn('id', collect($validated['notas'])->pluck('id'))
+        $ids = collect($validated['notas'])->pluck('id');
+
+        $notasMap = Nota::whereIn('id', $ids)
             ->with(['turma.curso', 'disciplina'])
             ->get()
             ->keyBy('id');
 
         foreach ($validated['notas'] as $notaData) {
-            $nota = $notasMap->get($notaData['id']); // ✅ sem query
+            $nota = $notasMap->get($notaData['id']);
 
             if (!$nota) continue;
 
@@ -398,8 +400,9 @@ class NotaController extends Controller
 
             $nota->mac3 = $notaData['mac3'] ?? null;
             $nota->pp3  = $notaData['pp3']  ?? null;
+            $nota->pg   = $notaData['pg']   ?? null; // ← ADICIONAR
 
-            $nota->recalcular(); // turma e disciplina já carregadas
+            $nota->recalcular();
             $nota->save();
         }
 

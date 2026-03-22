@@ -121,12 +121,27 @@ class Nota extends Model
             $this->cf = round(($this->mft2 + $this->mt3) / 2, 2);
         }
 
-        // CA10ª = 0.6 × CF + 0.4 × PG
+        // CA = 0.6 × CF + 0.4 × PG
         if ($this->cf !== null && $this->pg !== null) {
             $this->ca = round((0.6 * $this->cf) + (0.4 * $this->pg), 2);
         }
 
-        $this->aplicarRegraTerminalPorCurso(10);
+        // Verificar se é disciplina terminal nesta classe/curso
+        $anoTerminal = $this->disciplina?->anoTerminalParaCurso($this->turma?->curso_id);
+
+        if ($anoTerminal === 10) {
+            // Disciplina termina na 10ª — CFD = CA
+            if ($this->ca !== null) {
+                $this->cfd = $this->ca;
+            }
+        } else {
+            // Disciplina continua nas classes seguintes
+            // CFD ainda não é final, mas salvamos CA para uso futuro
+            // CFD na 10ª para disciplinas não-terminais = CA (classificação do ano)
+            if ($this->ca !== null) {
+                $this->cfd = $this->ca; // provisório, será recalculado na 11ª/12ª
+            }
+        }
     }
 
     /**

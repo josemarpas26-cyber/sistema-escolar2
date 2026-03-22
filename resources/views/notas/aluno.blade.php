@@ -30,7 +30,7 @@
             </div>
         </div>
     </x-card>
-
+<br>
     <!-- Estatísticas -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <x-stat-card 
