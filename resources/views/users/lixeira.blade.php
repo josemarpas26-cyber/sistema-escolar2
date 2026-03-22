@@ -28,7 +28,7 @@
         @endif
     </form>
 </x-card>
-
+<br>
 <x-card>
 
     {{-- Aviso informativo --}}

@@ -164,7 +164,7 @@
         </x-card>
 
         <x-card title="Histórico de Turmas do Professor" icon="fas fa-chalkboard-teacher">
-            <form method="GET" action="{{ route('relatorios.historico-professor') }}" class="space-y-3">
+            <form method="GET" action="{{ route('relatorios.historico-professor') }}" target="_blank" class="space-y-3">
     @csrf
 
                 <select name="professor_id" class="form-input" required>

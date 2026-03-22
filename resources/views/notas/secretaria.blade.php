@@ -53,10 +53,10 @@
 
                     <div class="nr-field">
                         <label class="nr-label"><i class="fas fa-book-open"></i> Disciplina <span style="color:#dc2626">*</span></label>
-                        <select name="disciplina_id" class="nr-input {{ !request('turma_id') ? 'nr-disabled' : '' }}"
-                                {{ !request('turma_id') ? 'disabled' : '' }}
-                                onchange="this.form.submit()">
-                            <option value="" disabled {{ !request('disciplina_id') ? 'selected' : '' }}>Selecione uma disciplina</option>
+                            <select name="disciplina_id" class="nr-input {{ !request('turma_id') ? 'nr-disabled' : '' }}"
+                                    {{ !request('turma_id') ? 'disabled' : '' }}
+                                    onchange="this.form.submit()">
+                                <option value="" {{ !request('disciplina_id') ? 'selected' : '' }}>Todas as disciplinas</option>
                             @if(request('turma_id') && $disciplinas->isNotEmpty())
                                 @foreach($disciplinas as $disciplina)
                                     <option value="{{ $disciplina->id }}" {{ request('disciplina_id') == $disciplina->id ? 'selected' : '' }}>
@@ -65,9 +65,8 @@
                                 @endforeach
                             @endif
                         </select>
-                        <p id="nr-disc-error" style="display:none;align-items:center;gap:5px;font-size:.72rem;color:#dc2626;margin:3px 0 0">
-                            <i class="fas fa-exclamation-circle"></i> Selecione uma disciplina antes de buscar.
-                        </p>
+
+                       
                     </div>
 
                     <div class="nr-field">
@@ -323,15 +322,138 @@
                 </table>
             </div>
 
-            @else
-            {{-- ── SEM DISCIPLINA SELECIONADA ── --}}
-            <div style="text-align:center;padding:36px 20px;color:#94a3b8">
-                <i class="fas fa-book-open" style="font-size:2rem;color:#bfdbfe;display:block;margin-bottom:10px"></i>
-                <p style="font-size:.875rem;font-weight:600;color:#64748b;margin:0 0 4px">Selecione uma disciplina</p>
-                <p style="font-size:.8rem;margin:0">Escolha uma disciplina no filtro acima para visualizar as notas.</p>
-            </div>
-            @endif
+           @else
+            {{-- ── TODAS AS DISCIPLINAS ── --}}
+            @if($notasAgrupadas && $notasAgrupadas->isNotEmpty())
+                @foreach($disciplinas as $disc)
+                @php
+                    $notasDaDisciplina = $notas->where('disciplina_id', $disc->id);
+                    $alunosComNota = $notasAgrupadas->filter(fn($d) => $d['notas']->has($disc->id));
+                @endphp
+                @if($notasDaDisciplina->isEmpty()) @continue @endif
 
+                <div style="margin-bottom:12px;">
+                    {{-- Cabeçalho da disciplina --}}
+                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px 8px 0 0;padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:none;">
+                        <i class="fas fa-book" style="color:#3b82f6;font-size:.8rem;"></i>
+                        <span style="font-size:.78rem;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em;">{{ $disc->nome }}</span>
+                        @php
+                            $cfds = $notasDaDisciplina->whereNotNull('cfd');
+                            $mediaDisc = $cfds->avg('cfd');
+                            $aprovDisc = $cfds->filter(fn($n) => $n->isAprovado())->count();
+                            $reprovDisc = $cfds->filter(fn($n) => !$n->isAprovado())->count();
+                        @endphp
+                        <span style="margin-left:auto;display:flex;gap:10px;align-items:center;">
+                            @if($mediaDisc)
+                                <span style="font-size:.7rem;color:#64748b;">Média: <strong style="color:#0f172a;">{{ number_format($mediaDisc,2) }}</strong></span>
+                            @endif
+                            <span class="nr-badge nr-badge-ok" style="font-size:.63rem;padding:2px 7px;">{{ $aprovDisc }} Apr</span>
+                            <span class="nr-badge nr-badge-fail" style="font-size:.63rem;padding:2px 7px;">{{ $reprovDisc }} Rep</span>
+                        </span>
+                    </div>
+
+                    {{-- Tabela da disciplina --}}
+                    <div style="border:1px solid #bfdbfe;border-radius:0 0 8px 8px;overflow:hidden;">
+                        <table style="width:100%;border-collapse:collapse;font-size:.8rem;">
+                            <thead>
+                                <tr style="background:#f8fafc;">
+                                    <th style="width:36px;text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Nº</th>
+                                    <th style="text-align:left;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Aluno</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">MT1</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">MT2</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;font-weight:800;color:#0f172a;">MFT2</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">MT3</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#1d4ed8;font-size:.65rem;font-weight:800;text-transform:uppercase;border-bottom:1px solid #e2e8f0;background:#eff6ff;">CFD</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Estado</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">T1/T2/T3</th>
+                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php $cnt = 1; @endphp
+                                @foreach($notasAgrupadas as $alunoId => $dados)
+                                @php
+                                    $nota = $dados['notas']->get($disc->id);
+                                    if (!$nota) continue;
+                                    $aluno   = $dados['aluno'];
+                                    $temCfd  = !is_null($nota->cfd);
+                                    $aprov   = $temCfd && $nota->isAprovado();
+                                    $locked  = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
+                                    $t1B     = $nota->bloqueado_t1 ?? false;
+                                    $t2B     = $nota->bloqueado_t2 ?? false;
+                                    $t3B     = $nota->bloqueado_t3 ?? false;
+                                    $algumB  = $t1B || $t2B || $t3B;
+                                    $trBg    = $loop->odd ? '#fafbfd' : '#fff';
+                                @endphp
+                                <tr style="background:{{ $trBg }};" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='{{ $trBg }}'">
+                                    <td style="text-align:center;padding:8px;color:#94a3b8;border-bottom:1px solid #f1f5f9;">{{ $cnt++ }}</td>
+                                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;">
+                                        <a href="{{ route('users.show', $aluno) }}" class="nr-aluno-link">{{ $aluno->name ?? '—' }}</a>
+                                        <span class="nr-proc">{{ $aluno->numero_processo ?? '' }}</span>
+                                    </td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">{{ $nota->mt1 ? number_format($nota->mt1,2) : '—' }}</td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">{{ $nota->mt2 ? number_format($nota->mt2,2) : '—' }}</td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;font-weight:700;">{{ $nota->mft2 ? number_format($nota->mft2,2) : '—' }}</td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;background:#f8faff;">
+                                        @if($temCfd)
+                                            <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd,2) }}</strong>
+                                        @else
+                                            <span class="nr-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">
+                                        @if($temCfd)
+                                            <span class="nr-badge {{ $aprov ? 'nr-badge-ok' : 'nr-badge-fail' }}" style="font-size:.62rem;padding:2px 6px;">
+                                                <i class="fas {{ $aprov ? 'fa-check' : 'fa-times' }}"></i>
+                                                {{ $aprov ? 'Apr' : 'Rep' }}
+                                            </span>
+                                        @else
+                                            <span class="nr-badge nr-badge-pend" style="font-size:.62rem;padding:2px 6px;"><i class="fas fa-hourglass-half"></i> Pend</span>
+                                        @endif
+                                    </td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">
+                                        @if(($nota->status ?? '') === 'finalizado' && !$algumB)
+                                            <div class="nr-tri-wrap">
+                                                <span class="nr-tri nr-tri-lock">T1</span>
+                                                <span class="nr-tri nr-tri-lock">T2</span>
+                                                <span class="nr-tri nr-tri-lock">T3</span>
+                                            </div>
+                                        @elseif($algumB)
+                                            <div class="nr-tri-wrap">
+                                                <span class="nr-tri {{ $t1B ? 'nr-tri-lock' : 'nr-tri-open' }}">T1</span>
+                                                <span class="nr-tri {{ $t2B ? 'nr-tri-lock' : 'nr-tri-open' }}">T2</span>
+                                                <span class="nr-tri {{ $t3B ? 'nr-tri-lock' : 'nr-tri-open' }}">T3</span>
+                                            </div>
+                                        @else
+                                            <div class="nr-tri-wrap">
+                                                <span class="nr-tri nr-tri-open">T1</span>
+                                                <span class="nr-tri nr-tri-open">T2</span>
+                                                <span class="nr-tri nr-tri-open">T3</span>
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">
+                                        @if($locked)
+                                            <span class="nr-act-lock" title="Finalizado"><i class="fas fa-lock"></i></span>
+                                        @else
+                                            <a href="{{ route('notas.edit', $nota) }}" class="nr-act-edit" title="Editar"><i class="fas fa-pen"></i></a>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endforeach
+            @else
+                <div class="nr-empty">
+                    <i class="fas fa-clipboard-list" style="font-size:2rem;color:#cbd5e1;display:block;margin-bottom:10px"></i>
+                    Nenhuma nota encontrada para esta turma.
+                </div>
+            @endif
+            @endif
         </div>{{-- /nr-card tabela --}}
 
     @else
@@ -741,20 +863,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ── Validação: disciplina obrigatória se turma selecionada ── */
     var form = document.querySelector('#notas-root form');
     if (form) {
-        form.addEventListener('submit', function (e) {
-            var turma = form.querySelector('[name="turma_id"]');
-            var disc  = form.querySelector('[name="disciplina_id"]');
-            if (turma && disc && turma.value && !disc.value) {
-                e.preventDefault();
-                disc.classList.add('nr-input-error');
-                disc.focus();
-                var msg = document.getElementById('nr-disc-error');
-                if (msg) msg.style.display = 'flex';
-                setTimeout(function () {
-                    disc.classList.remove('nr-input-error');
-                }, 2500);
-            }
-        });
+
         var discSel = form.querySelector('[name="disciplina_id"]');
         if (discSel) {
             discSel.addEventListener('change', function () {
