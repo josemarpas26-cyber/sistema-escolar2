@@ -48,9 +48,9 @@ Route::middleware(['auth'])->group(function () {
      //  Route::post('users/{user}/restore', [UserController::class, 'restore'])
     //    ->name('users.restore');
     
-    Route::get('users/alunos', [UserController::class, 'alunos'])
+    Route::get('alunos', [UserController::class, 'alunos'])
         ->name('users.alunos');
-    Route::get('users/professores', [UserController::class, 'professores'])
+    Route::get('professores', [UserController::class, 'professores'])
         ->name('users.professores');
 
     // === CURSOS ===
