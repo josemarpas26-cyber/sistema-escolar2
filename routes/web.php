@@ -34,15 +34,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
+    Route::get('users/lixeira', [UserController::class, 'lixeira'])
+        ->name('users.lixeira');
+
+    Route::post('users/{id}/restore', [UserController::class, 'restore'])
+        ->name('users.restore');
+
     // === USUÁRIOS ===
     Route::resource('users', UserController::class);
     Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
         ->name('users.toggle-status');
-    Route::post('users/{user}/restore', [UserController::class, 'restore'])
-        ->name('users.restore');
-    Route::get('alunos', [UserController::class, 'alunos'])
+
+     //  Route::post('users/{user}/restore', [UserController::class, 'restore'])
+    //    ->name('users.restore');
+    
+    Route::get('users/alunos', [UserController::class, 'alunos'])
         ->name('users.alunos');
-    Route::get('professores', [UserController::class, 'professores'])
+    Route::get('users/professores', [UserController::class, 'professores'])
         ->name('users.professores');
 
     // === CURSOS ===

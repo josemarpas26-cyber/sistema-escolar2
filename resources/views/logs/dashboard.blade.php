@@ -125,11 +125,12 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-gray-900">
-                        {{ $log->usuario->name }}
+                        {{ optional($log->usuario)->name ?? '—' }}
+
                     </p>
                     <p class="text-xs text-gray-600">
                         {{ ucfirst($log->acao) }} nota de 
-                        <span class="font-medium">{{ $log->aluno->name }}</span>
+                        <span class="font-medium">{{ optional($log->aluno)->name ?? '—' }}</span>
                         em {{ $log->disciplina->nome }}
                     </p>
                     <p class="text-xs text-gray-500 mt-1">

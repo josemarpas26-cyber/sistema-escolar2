@@ -151,6 +151,29 @@
                     </div>
                     @endif
 
+{{--
+    Adicionar dentro da secção "Gestão" do layouts/app.blade.php,
+    logo após o bloco de Usuários (dropdown com Alunos/Professores).
+    Apenas visível para ADM.
+--}}
+
+@if(auth()->user()->isAdmin())
+<a href="{{ route('users.lixeira') }}"
+   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100
+          {{ request()->routeIs('users.lixeira') ? 'bg-red-50 text-red-700' : '' }}">
+    <i class="fas fa-trash-alt w-5 {{ request()->routeIs('users.lixeira') ? 'text-red-500' : 'text-gray-400' }}"></i>
+    <span class="ml-3 font-medium">Lixeira</span>
+    @php
+        $deletedCount = \App\Models\User::onlyTrashed()->count();
+    @endphp
+    @if($deletedCount > 0)
+    <span class="ml-auto bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
+        {{ $deletedCount }}
+    </span>
+    @endif
+</a>
+@endif
+
                 </nav>
 
                 <!-- User Profile -->

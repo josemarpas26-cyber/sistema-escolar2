@@ -12,7 +12,7 @@ use Illuminate\Validation\Rules\Password;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile.
+     * Exibir perfil do utilizador autenticado.
      */
     public function show()
     {
@@ -22,34 +22,31 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * Atualizar informações do perfil.
      */
     public function update(Request $request)
     {
         $user = Auth::user();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email,' . $user->id],
-            'telefone' => ['nullable', 'string', 'max:20'],
-            'endereco' => ['nullable', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'max:255'],
+            'email'       => ['required', 'email', 'unique:users,email,' . $user->id],
+            'telefone'    => ['nullable', 'string', 'max:20'],
+            'endereco'    => ['nullable', 'string', 'max:255'],
             'foto_perfil' => ['nullable', 'image', 'max:2048'],
         ], [
-            'name.required' => 'O nome é obrigatório',
-            'email.required' => 'O email é obrigatório',
-            'email.email' => 'Insira um email válido',
-            'email.unique' => 'Este email já está em uso',
-            'foto_perfil.image' => 'O arquivo deve ser uma imagem',
-            'foto_perfil.max' => 'A imagem não pode exceder 2MB',
+            'name.required'       => 'O nome é obrigatório',
+            'email.required'      => 'O email é obrigatório',
+            'email.email'         => 'Insira um email válido',
+            'email.unique'        => 'Este email já está em uso',
+            'foto_perfil.image'   => 'O arquivo deve ser uma imagem',
+            'foto_perfil.max'     => 'A imagem não pode exceder 2MB',
         ]);
 
-        // Upload de foto
         if ($request->hasFile('foto_perfil')) {
-            // Deletar foto antiga
             if ($user->foto_perfil) {
                 Storage::disk('public')->delete($user->foto_perfil);
             }
-            
             $validated['foto_perfil'] = $request->file('foto_perfil')
                 ->store('fotos_perfil', 'public');
         }
@@ -60,19 +57,18 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's password.
+     * Alterar senha.
      */
     public function updatePassword(Request $request)
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            'password'         => ['required', Password::defaults(), 'confirmed'],
         ], [
-            'current_password.required' => 'A senha atual é obrigatória',
+            'current_password.required'       => 'A senha atual é obrigatória',
             'current_password.current_password' => 'A senha atual está incorreta',
-            'password.required' => 'A nova senha é obrigatória',
-            'password.confirmed' => 'As senhas não coincidem',
-            'password.min' => 'A senha deve ter no mínimo 8 caracteres',
+            'password.required'               => 'A nova senha é obrigatória',
+            'password.confirmed'              => 'As senhas não coincidem',
         ]);
 
         $request->user()->update([
@@ -83,18 +79,24 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Deletar conta — APENAS ADM e Secretária podem fazer isto.
+     * Alunos e Professores NÃO podem auto-deletar.
      */
     public function destroy(Request $request)
     {
+        $user = $request->user();
+
+        // Bloquear alunos e professores
+        if ($user->isAluno() || $user->isProfessor()) {
+            abort(403, 'Não tem permissão para deletar a sua conta. Contacte a administração.');
+        }
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ], [
-            'password.required' => 'A senha é obrigatória',
+            'password.required'         => 'A senha é obrigatória',
             'password.current_password' => 'A senha está incorreta',
         ]);
-
-        $user = $request->user();
 
         Auth::logout();
 
