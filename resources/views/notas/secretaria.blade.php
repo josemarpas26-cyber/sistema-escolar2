@@ -37,6 +37,7 @@
         <div class="nr-card-body">
             <form method="GET" action="{{ route('notas.secretaria-index') }}">
                 <div class="nr-filter-grid">
+                    @csrf
 
                     <div class="nr-field">
                         <label class="nr-label"><i class="fas fa-users"></i> Turma</label>

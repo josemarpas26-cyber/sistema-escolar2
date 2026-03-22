@@ -7,6 +7,7 @@
 @section('content')
 <x-card title="Filtros" icon="fas fa-filter" class="mb-6">
     <form method="GET" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        @csrf
         <input type="text" name="aluno" value="{{ request('aluno') }}" placeholder="Pesquisar aluno" class="input">
         <input type="text" name="turma" value="{{ request('turma') }}" placeholder="Pesquisar turma" class="input">
         <input type="text" name="curso" value="{{ request('curso') }}" placeholder="Pesquisar curso" class="input">

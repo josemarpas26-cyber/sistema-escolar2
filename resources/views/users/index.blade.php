@@ -14,7 +14,8 @@
 <!-- Filtros -->
 <x-card class="mb-6">
     <form method="GET" action="{{ route('users.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        
+            @csrf
+
         <!-- Busca -->
         <div>
             <label class="label">Buscar</label>

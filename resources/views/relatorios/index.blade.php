@@ -8,7 +8,7 @@
     {{-- ================= BOLETIM ================= --}}
     <x-card title="Boletim do Aluno" icon="fas fa-file-pdf">
         <form method="GET" action="{{ route('relatorios.boletim') }}" class="grid grid-cols-1 md:grid-cols-5 gap-3">
-
+            @csrf
             <select name="aluno_id" class="form-input" required>
                 <option value="">Aluno</option>
                 @foreach($alunos as $aluno)
@@ -57,6 +57,7 @@
               id="form-pauta"
               action="{{ route('relatorios.pauta', ['turma' => $turmas->first()?->id ?? 1]) }}"
               class="grid grid-cols-1 md:grid-cols-5 gap-3">
+    @csrf
 
             <select name="turma_id" id="turma_id" class="form-input" required>
                 <option value="">Turma</option>
@@ -105,7 +106,7 @@
               id="form-pauta-geral"
               action="{{ route('relatorios.pauta', ['turma' => $turmas->first()?->id ?? 1]) }}"
               class="grid grid-cols-1 md:grid-cols-4 gap-3">
-
+    @csrf
             <select name="turma_id" id="turma_id_geral" class="form-input" required>
                 <option value="">Turma</option>
                 @foreach($turmas as $turma)
@@ -143,6 +144,7 @@
 
         <x-card title="Histórico Académico do Aluno" icon="fas fa-history">
             <form method="GET" action="{{ route('relatorios.historico') }}" class="space-y-3">
+    @csrf
 
                 <select name="aluno_id" class="form-input" required>
                     <option value="">Aluno</option>
@@ -163,6 +165,7 @@
 
         <x-card title="Histórico de Turmas do Professor" icon="fas fa-chalkboard-teacher">
             <form method="GET" action="{{ route('relatorios.historico-professor') }}" class="space-y-3">
+    @csrf
 
                 <select name="professor_id" class="form-input" required>
                     <option value="">Professor</option>

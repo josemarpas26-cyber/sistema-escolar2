@@ -14,6 +14,8 @@
 <!-- Filtros -->
 <x-card class="mb-6">
     <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        @csrf
+
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nome ou nº processo..." class="input">
         <select name="turma" class="input">
             <option value="">Todas as turmas</option>

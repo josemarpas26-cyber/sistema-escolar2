@@ -7,7 +7,7 @@
 <!-- Seleção de Turma/Disciplina -->
 <x-card class="mb-6" title="Selecione Turma e Disciplina" icon="fas fa-filter">
     <form method="GET" action="{{ route('notas.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
+    @csrf
         <div>
             <label class="label">Turma</label>
             <select name="turma_id" class="input" required onchange="this.form.submit()">
