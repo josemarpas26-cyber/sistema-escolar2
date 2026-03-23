@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -19,30 +20,39 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Handle an incoming authentication request.
+     *
+     * Aceita login por email OU por número de processo.
      */
     public function store(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'login'    => ['required', 'string'],
             'password' => ['required'],
         ], [
-            'email.required' => 'O email é obrigatório',
-            'email.email' => 'Insira um email válido',
-            'password.required' => 'A senha é obrigatória',
+            'login.required'    => 'O email ou número de processo é obrigatório.',
+            'password.required' => 'A senha é obrigatória.',
         ]);
 
-        // Verificar se o usuário está ativo
-        $user = \App\Models\User::where('email', $request->email)->first();
-        
-        if ($user && !$user->ativo) {
+        $login    = $request->input('login');
+        $password = $request->input('password');
+
+        // Determina se o utilizador digitou um email ou número de processo
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'numero_processo';
+
+        // Tenta encontrar o utilizador
+        $user = User::where($field, $login)->first();
+
+        // Conta desativada?
+        if ($user && ! $user->ativo) {
             throw ValidationException::withMessages([
-                'email' => 'Esta conta está desativada. Contacte o administrador.',
+                'login' => 'Esta conta está desativada. Contacte o administrador.',
             ]);
         }
 
-        if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        // Credenciais incorretas?
+        if (! $user || ! Auth::attempt([$field => $login, 'password' => $password], $request->boolean('remember'))) {
             throw ValidationException::withMessages([
-                'email' => 'As credenciais fornecidas estão incorretas.',
+                'login' => 'As credenciais fornecidas estão incorretas.',
             ]);
         }
 

@@ -76,21 +76,35 @@ class UserController extends Controller
         return view('users.create', compact('roles'));
     }
 
+ 
+    /**
+     * Salvar novo usuário.
+     *
+     * Email é obrigatório para admin / secretaria / professor.
+     * Para alunos, é opcional — se omitido, fica NULL.
+     */
     public function store(Request $request)
     {
         $this->checkPermission('users.create');
-
-        $selectedRole = Role::find($request->input('role_id'));
+ 
+        $selectedRole = \App\Models\Role::find($request->input('role_id'));
+        $isAluno      = optional($selectedRole)->name === 'aluno';
+ 
         $shouldGeneratePassword = $request->boolean('auto_password')
             || optional($selectedRole)->name === 'professor';
-
+ 
         $passwordRules = $shouldGeneratePassword
             ? ['nullable']
             : ['required', 'string', 'min:8', 'confirmed'];
-
+ 
+        // Regra de email: obrigatório para não-alunos, opcional para alunos
+        $emailRules = $isAluno
+            ? ['nullable', 'email', \Illuminate\Validation\Rule::unique('users', 'email')->whereNotNull('email')]
+            : ['required', 'email', 'unique:users,email'];
+ 
         $validated = $request->validate([
             'name'                  => 'required|string|max:255',
-            'email'                 => 'required|email|unique:users,email',
+            'email'                 => $emailRules,
             'password'              => $passwordRules,
             'role_id'               => 'required|exists:roles,id',
             'auto_password'         => 'nullable|boolean',
@@ -103,33 +117,39 @@ class UserController extends Controller
             'numero_processo'       => 'nullable|string|unique:users,numero_processo',
             'nome_encarregado'      => 'nullable|string|max:255',
             'contacto_encarregado'  => 'nullable|string|max:20',
+        ], [
+            'email.required' => 'O email é obrigatório para este tipo de utilizador.',
+            'email.unique'   => 'Este email já está em uso.',
         ]);
-
+ 
+        // Senha automática
         $generatedPassword = null;
         if ($shouldGeneratePassword) {
-            $generatedPassword = Str::password(12);
+            $generatedPassword    = \Illuminate\Support\Str::password(12);
             $validated['password'] = $generatedPassword;
         }
-
-        $validated['password'] = Hash::make($validated['password']);
+ 
+        $validated['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
         unset($validated['auto_password']);
-
+ 
+        // Upload de foto
         if ($request->hasFile('foto_perfil')) {
             $validated['foto_perfil'] = $request->file('foto_perfil')
                 ->store('fotos_perfil', 'public');
         }
-
-        $user = User::create($validated);
-
+ 
+        $user = \App\Models\User::create($validated);
+ 
         $successMessage = 'Utilizador criado com sucesso!';
         if ($generatedPassword) {
-            $successMessage .= " Senha provisória: {$generatedPassword} — anote agora, não será exibida novamente.";
+            $successMessage .= " Senha provisória gerada: {$generatedPassword}";
         }
-
+ 
         return redirect()
             ->route('users.show', $user)
             ->with('success', $successMessage);
     }
+ 
 
     public function show(User $user)
     {
@@ -148,43 +168,58 @@ class UserController extends Controller
         return view('users.edit', compact('user', 'roles'));
     }
 
-    public function update(Request $request, User $user)
+ /**
+     * Atualizar usuário.
+     */
+    public function update(Request $request, \App\Models\User $user)
     {
         $this->checkPermission('users.edit');
-
+ 
+        $selectedRole = \App\Models\Role::find($request->input('role_id'));
+        $isAluno      = optional($selectedRole)->name === 'aluno';
+ 
+        // Regra de email
+        $emailRules = $isAluno
+            ? ['nullable', 'email', \Illuminate\Validation\Rule::unique('users', 'email')
+                ->ignore($user->id)
+                ->whereNotNull('email')]
+            : ['required', 'email', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)];
+ 
         $validated = $request->validate([
             'name'                  => 'required|string|max:255',
-            'email'                 => ['required', 'email', Rule::unique('users')->ignore($user->id)],
+            'email'                 => $emailRules,
             'password'              => 'nullable|string|min:6|confirmed',
             'role_id'               => 'required|exists:roles,id',
-            'bi'                    => ['nullable', 'string', Rule::unique('users')->ignore($user->id)],
+            'bi'                    => ['nullable', 'string', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
             'data_nascimento'       => 'nullable|date',
             'genero'                => 'nullable|in:M,F',
             'telefone'              => 'nullable|string|max:20',
             'endereco'              => 'nullable|string|max:255',
             'foto_perfil'           => 'nullable|image|max:2048',
-            'numero_processo'       => ['nullable', 'string', Rule::unique('users')->ignore($user->id)],
+            'numero_processo'       => ['nullable', 'string', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
             'nome_encarregado'      => 'nullable|string|max:255',
             'contacto_encarregado'  => 'nullable|string|max:20',
             'ativo'                 => 'boolean',
         ]);
-
-        if (!empty($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
+ 
+        // Atualizar senha apenas se fornecida
+        if (! empty($validated['password'])) {
+            $validated['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
         } else {
             unset($validated['password']);
         }
-
+ 
+        // Upload de nova foto
         if ($request->hasFile('foto_perfil')) {
             if ($user->foto_perfil) {
-                Storage::disk('public')->delete($user->foto_perfil);
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto_perfil);
             }
             $validated['foto_perfil'] = $request->file('foto_perfil')
                 ->store('fotos_perfil', 'public');
         }
-
+ 
         $user->update($validated);
-
+ 
         return redirect()
             ->route('users.show', $user)
             ->with('success', 'Utilizador atualizado com sucesso!');
