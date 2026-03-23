@@ -53,22 +53,20 @@ class DashboardController extends Controller
     private function secretariaDashboard()
     {
         $anoLetivo = AnoLetivo::ativo()->first();
-
+ 
         $stats = [
-            'total_alunos'   => User::alunos()->ativos()->count(),
-            'total_turmas'   => Turma::anoAtivo()->count(),
-            'ano_letivo'     => $anoLetivo,
-            'turmas_recentes' => Turma::anoAtivo()
-                ->with([
-                    'curso',
-                    'alunos' => fn($q) => $q->wherePivot('status', 'matriculado'),
-                ])
+            'total_alunos'      => User::alunos()->ativos()->count(),
+            'total_professores' => User::professores()->ativos()->count(), // ← estava em falta
+            'total_turmas'      => Turma::anoAtivo()->count(),
+            'ano_letivo'        => $anoLetivo,
+            'turmas_recentes'   => Turma::anoAtivo()
+                ->with(['curso', 'alunos'])
                 ->latest()
                 ->take(5)
                 ->get(),
             'logs_hoje' => NotaLog::whereDate('data_alteracao', today())->count(),
         ];
-
+ 
         return view('dashboard.secretaria', $stats);
     }
 

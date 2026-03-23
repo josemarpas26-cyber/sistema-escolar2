@@ -321,28 +321,34 @@ class UserController extends Controller
 
         $query = User::alunos()->with(['role', 'turmas.curso']);
 
+        // 🔎 Pesquisa
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('numero_processo', 'like', "%{$search}%");
+                ->orWhere('numero_processo', 'like', "%{$search}%")
+                ->orWhere('bi', 'like', "%{$search}%"); // ✅ adicionado
             });
         }
 
+        // 🎓 Filtro por turma
         if ($request->filled('turma')) {
             $query->whereHas('turmas', function ($q) use ($request) {
-                $q->where('turma_id', $request->turma);
+                $q->where('turmas.id', $request->turma); // ✅ ajustado
             });
         }
 
+        // ✅ Filtro por status
         if ($request->filled('status')) {
             $query->where('ativo', $request->status === 'ativo');
         }
 
         $alunos = $query->paginate(20);
-        $turmas = Turma::orderBy('nome')->get();
 
-        // IDs das turmas que o professor logado lecciona (para filtro de boletim)
+        // 📚 Turmas
+        $turmas = \App\Models\Turma::orderBy('nome')->get();
+
+        // 👨‍🏫 Turmas do professor logado
         $turmasProfesor = collect();
         if (auth()->user()->isProfessor()) {
             $turmasProfesor = auth()->user()
