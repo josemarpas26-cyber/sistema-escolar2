@@ -9,6 +9,11 @@
     {{-- ── Formulários principais ── --}}
     <div class="lg:col-span-2 space-y-6">
 
+        @php
+            $isRestrito = in_array(auth()->user()->role?->name, ['aluno', 'professor']);
+        @endphp
+
+        <div x-data="{ mostrarSenha: false }" class="space-y-6">
         @if($canEditProfile)       
         {{-- Dados Pessoais --}}
         <x-card title="Informações Pessoais" icon="fas fa-user">
@@ -121,16 +126,58 @@
                     <input type="text" value="{{ $user->endereco }}" class="input bg-gray-50" disabled>
                 </div>
             </div>
-
-            <div class="mt-6 flex justify-end">
-                <a href="{{ route('perfil.senha') }}" class="btn btn-primary">
-                    <i class="fas fa-key mr-2"></i>
-                    Ir para alteração de senha
-                </a>
-            </div>
         </x-card>
         @endif
+
+        @if($isRestrito)
+        <div class="flex justify-end">
+            <button
+                type="button"
+                x-on:click="
+                    mostrarSenha = !mostrarSenha;
+                    if (mostrarSenha) {
+                        $nextTick(() => {
+                            $refs.secaoSenha.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        });
+                    }
+                "
+                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200"
+            >
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M7 10V7a5 5 0 1 1 10 0v3"/>
+                    <rect x="5" y="10" width="14" height="11" rx="2"/>
+                    <path d="M12 15v3"/>
+                </svg>
+                <span x-text="mostrarSenha ? 'Ocultar alteração de senha' : 'Ir para alteração de senha'"></span>
+                <svg class="w-3.5 h-3.5 transition-transform duration-300"
+                     :class="mostrarSenha ? 'rotate-180' : 'rotate-0'"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2.5">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </button>
+        </div>
+        @endif
+
         {{-- Alterar Senha --}}
+                <div
+            x-ref="secaoSenha"
+            @if($isRestrito)
+                x-show="mostrarSenha"
+                x-cloak
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform -translate-y-3"
+                x-transition:enter-end="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform translate-y-0"
+                x-transition:leave-end="opacity-0 transform -translate-y-3"
+            @endif
+        >
         <x-card title="Alterar Senha" icon="fas fa-lock">
             <form method="POST" action="{{ route('profile.password') }}">
                 @csrf
@@ -164,7 +211,9 @@
                 </div>
             </form>
         </x-card>
-
+        </div>
+        </div>
+        
         {{--
             Zona de Perigo — apenas ADM e Secretária.
             Alunos e Professores NÃO podem deletar a própria conta.
