@@ -58,7 +58,9 @@
                     </td>
                     <td class="px-6 py-4 text-right space-x-2">
                         <a href="{{ route('users.show', $professor) }}" class="text-primary-600"><i class="fas fa-eye"></i></a>
+                       @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())                        
                         <a href="{{ route('users.edit', $professor) }}" class="text-blue-600"><i class="fas fa-edit"></i></a>
+                       @endif
                     </td>
                 </tr>
                 @endforeach

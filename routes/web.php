@@ -40,6 +40,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('users/{id}/restore', [UserController::class, 'restore'])
         ->name('users.restore');
 
+    // Alteração de senha do perfil autenticado
+    Route::get('/perfil/senha', [App\Http\Controllers\Auth\ProfileController::class, 'editSenha'])
+        ->name('perfil.senha');
+    Route::put('/perfil/senha', [App\Http\Controllers\Auth\ProfileController::class, 'updateSenha'])
+        ->name('perfil.senha.update');
+
     // === USUÁRIOS ===
     Route::resource('users', UserController::class);
     Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
