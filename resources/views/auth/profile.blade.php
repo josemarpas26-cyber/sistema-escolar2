@@ -9,6 +9,7 @@
     {{-- ── Formulários principais ── --}}
     <div class="lg:col-span-2 space-y-6">
 
+        @if($canEditProfile)       
         {{-- Dados Pessoais --}}
         <x-card title="Informações Pessoais" icon="fas fa-user">
             <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
@@ -87,7 +88,48 @@
                 </div>
             </form>
         </x-card>
+        @else
+        <x-card title="Informações Pessoais" icon="fas fa-user-lock">
+            <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                <p class="font-semibold">A edição do perfil foi desativada para o seu papel.</p>
+                <p class="mt-1">Alunos e professores podem alterar apenas a própria senha. Para atualizar outros dados, contacte a administração.</p>
+            </div>
 
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label">Nome Completo</label>
+                    <input type="text" value="{{ $user->name }}" class="input bg-gray-50" disabled>
+                </div>
+
+                <div>
+                    <label class="label">Email</label>
+                    <input type="email" value="{{ $user->email }}" class="input bg-gray-50" disabled>
+                </div>
+
+                <div>
+                    <label class="label">Telefone</label>
+                    <input type="text" value="{{ $user->telefone }}" class="input bg-gray-50" disabled>
+                </div>
+
+                <div>
+                    <label class="label">BI</label>
+                    <input type="text" value="{{ $user->bi }}" class="input bg-gray-50" disabled>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label">Endereço</label>
+                    <input type="text" value="{{ $user->endereco }}" class="input bg-gray-50" disabled>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <a href="{{ route('perfil.senha') }}" class="btn btn-primary">
+                    <i class="fas fa-key mr-2"></i>
+                    Ir para alteração de senha
+                </a>
+            </div>
+        </x-card>
+        @endif
         {{-- Alterar Senha --}}
         <x-card title="Alterar Senha" icon="fas fa-lock">
             <form method="POST" action="{{ route('profile.password') }}">

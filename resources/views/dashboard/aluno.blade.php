@@ -151,7 +151,7 @@
             <i class="fas fa-user text-2xl text-blue-600 mr-3"></i>
             <div>
                 <span class="font-medium text-gray-700 block">Meu Perfil</span>
-                <span class="text-xs text-gray-500">Atualizar dados pessoais e senha</span>
+                <span class="text-xs text-gray-500">Consultar perfil e alterar apenas a senha</span>
             </div>
         </a>
 
