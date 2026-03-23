@@ -12,27 +12,30 @@
 <form method="POST" action="{{ route('login') }}" class="space-y-6">
     @csrf
 
-    <!-- Email -->
+    <!-- Email ou Número de Processo -->
     <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-            Email
+        <label for="login" class="block text-sm font-medium text-gray-700 mb-2">
+            Email ou Número de Processo
         </label>
         <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-envelope text-gray-400"></i>
+                <i class="fas fa-user text-gray-400"></i>
             </div>
-            <input 
-                type="email" 
-                id="email" 
-                name="email" 
-                value="{{ old('email') }}"
-                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-500 @enderror"
-                placeholder="seu@email.com"
-                required 
+            <input
+                type="text"
+                id="login"
+                name="login"
+                value="{{ old('login') }}"
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg
+                       focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                       transition-colors @error('login') border-red-500 @enderror"
+                placeholder="utilizador@escola.ao  ou  2024001"
+                required
                 autofocus
+                autocomplete="username"
             >
         </div>
-        @error('email')
+        @error('login')
         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
         @enderror
     </div>
@@ -46,13 +49,16 @@
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fas fa-lock text-gray-400"></i>
             </div>
-            <input 
-                type="password" 
-                id="password" 
-                name="password" 
-                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('password') border-red-500 @enderror"
+            <input
+                type="password"
+                id="password"
+                name="password"
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg
+                       focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                       transition-colors @error('password') border-red-500 @enderror"
                 placeholder="••••••••"
                 required
+                autocomplete="current-password"
             >
         </div>
         @error('password')
@@ -63,23 +69,27 @@
     <!-- Remember Me & Forgot Password -->
     <div class="flex items-center justify-between">
         <label class="flex items-center">
-            <input 
-                type="checkbox" 
-                name="remember" 
+            <input
+                type="checkbox"
+                name="remember"
                 class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             >
             <span class="ml-2 text-sm text-gray-600">Lembrar-me</span>
         </label>
 
-        <a href="{{ route('password.request') }}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+        <a href="{{ route('password.request') }}"
+           class="text-sm text-primary-600 hover:text-primary-700 font-medium">
             Esqueceu a senha?
         </a>
     </div>
 
     <!-- Submit Button -->
-    <button 
-        type="submit" 
-        class="w-full bg-[#23aae2] hover:bg-[#1b7fb0] text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+    <button
+        type="submit"
+        class="w-full bg-[#23aae2] hover:bg-[#1b7fb0] text-white font-semibold
+               py-3 px-4 rounded-lg focus:outline-none focus:ring-2
+               focus:ring-primary-500 focus:ring-offset-2 transition-colors
+               flex items-center justify-center"
     >
         <i class="fas fa-sign-in-alt mr-2"></i>
         Entrar
@@ -92,15 +102,15 @@
     <p class="text-xs text-gray-500 text-center mb-3">Credenciais de demonstração:</p>
     <div class="space-y-2 text-xs">
         <div class="bg-gray-50 rounded-lg p-3">
-            <p class="font-semibold text-gray-700 mb-1">Admin</p>
+            <p class="font-semibold text-gray-700 mb-1">Admin (por email)</p>
             <p class="text-gray-600">admin@escola.ao / password</p>
         </div>
         <div class="bg-gray-50 rounded-lg p-3">
-            <p class="font-semibold text-gray-700 mb-1">Professor</p>
-            <p class="text-gray-600">prof.matematica@escola.ao / password</p>
+            <p class="font-semibold text-gray-700 mb-1">Aluno (por nº processo)</p>
+            <p class="text-gray-600">2024001 / password</p>
         </div>
         <div class="bg-gray-50 rounded-lg p-3">
-            <p class="font-semibold text-gray-700 mb-1">Aluno</p>
+            <p class="font-semibold text-gray-700 mb-1">Aluno (por email, se tiver)</p>
             <p class="text-gray-600">aluno1@escola.ao / password</p>
         </div>
     </div>
