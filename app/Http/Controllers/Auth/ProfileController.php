@@ -16,9 +16,20 @@ class ProfileController extends Controller
      */
     public function show()
     {
+        $user = Auth::user();
+
         return view('auth.profile', [
-            'user' => Auth::user(),
+            'user' => $user,
+            'canEditProfile' => !($user->isAluno() || $user->isProfessor()),
         ]);
+    }
+    
+    /**
+     * Exibir formulário dedicado para alteração de senha.
+     */
+    public function editPassword()
+    {
+        return view('profile.senha');
     }
 
     /**
@@ -27,6 +38,10 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user = Auth::user();
+
+        if ($user->isAluno() || $user->isProfessor()) {
+            abort(403, 'Não tem permissão para editar informações de perfil. Apenas a senha pode ser alterada.');
+        }
 
         $validated = $request->validate([
             'name'        => ['required', 'string', 'max:255'],

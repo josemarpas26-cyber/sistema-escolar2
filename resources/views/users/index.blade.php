@@ -120,11 +120,13 @@
                            title="Ver">
                             <i class="fas fa-eye"></i>
                         </a>
+                        @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())                        
                         <a href="{{ route('users.edit', $user) }}" 
                            class="text-blue-600 hover:text-blue-900"
                            title="Editar">
                             <i class="fas fa-edit"></i>
                         </a>
+                        @endif                        
                         <form method="POST" action="{{ route('users.toggle-status', $user) }}" 
                               class="inline">
                             @csrf
