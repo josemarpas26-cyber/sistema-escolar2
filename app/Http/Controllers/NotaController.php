@@ -346,9 +346,9 @@ class NotaController extends Controller
                 continue;
             }
 
-            $nota->mac1 = $notaData['mac2'] ?? null;
-            $nota->pp1  = $notaData['pp2']  ?? null;
-            $nota->pt1  = $notaData['pt2']  ?? null;
+            $nota->mac2 = $notaData['mac2'] ?? null;
+            $nota->pp2  = $notaData['pp2']  ?? null;
+            $nota->pt2  = $notaData['pt2']  ?? null;
             
             $nota->recalcular(); // agora turma e disciplina já estão carregadas
             $nota->save();
