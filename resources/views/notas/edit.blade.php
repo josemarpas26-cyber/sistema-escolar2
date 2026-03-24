@@ -5,7 +5,7 @@
 @section('content')
 @php
     $notaFinalizada = $nota->status === 'finalizado';
-    $podeReabrirNota = auth()->user()->role->hasPermission('notas.reabrir');
+    $podeReabrirNota = auth()->user()?->hasPermission('notas.reabrir') ?? false;
     $somenteLeitura = $notaFinalizada && !$podeReabrirNota;
 @endphp
 

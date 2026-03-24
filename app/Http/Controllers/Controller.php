@@ -39,7 +39,7 @@ class Controller extends BaseController
      */
     protected function checkPermission(string $permission): void
     {
-        if (!auth()->user()->role->hasPermission($permission)) {
+        if (!auth()->user()?->hasPermission($permission)) {
             abort(403, 'Sem permissão para executar esta ação');
         }
     }

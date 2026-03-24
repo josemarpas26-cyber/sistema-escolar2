@@ -9,8 +9,9 @@ class LancarNotaRequest extends FormRequest
     public function authorize(): bool
     {
         $user = auth()->user();
-        return $user->role->hasPermission('notas.lancar') || 
-               $user->role->hasPermission('notas.editar');
+
+        return $user?->hasPermission('notas.lancar')
+            || $user?->hasPermission('notas.editar');
     }
 
     public function rules(): array

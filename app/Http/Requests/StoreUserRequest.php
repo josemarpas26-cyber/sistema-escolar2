@@ -9,7 +9,7 @@ class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->user()->role->hasPermission('users.create');
+        return auth()->user()?->hasPermission('users.create') ?? false;
     }
 
     public function rules(): array

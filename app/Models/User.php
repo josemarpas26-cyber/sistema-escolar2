@@ -138,6 +138,13 @@ class User extends Authenticatable
         return $this->turmaCoordenada()->exists();
     }
 
+    public function hasPermission(string $permissionName): bool
+    {
+        $this->loadMissing('role.permissions');
+
+        return $this->role?->hasPermission($permissionName) ?? false;
+    }
+
     public function getFotoPerfilUrlAttribute(): string
     {
         if ($this->foto_perfil) {
