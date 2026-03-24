@@ -398,14 +398,17 @@ class TurmaController extends Controller
         $novaTurma->disciplinas()->attach($turma->disciplinas->pluck('id'));
 
         // Promover alunos aprovados
+        $totalDisciplinas = $turma->disciplinas()->count();
+
         $alunosAprovados = $turma->alunos()
             ->wherePivot('status', 'matriculado')
-            ->whereHas('notas', fn($q) => $q
+            ->whereDoesntHave('notas', fn ($q) => $q
                 ->where('turma_id', $turma->id)
                 ->where('ano_letivo_id', $turma->ano_letivo_id)
-                ->whereNotNull('cfd')
-                ->where('cfd', '>=', 10)
-            )
+                ->where(fn ($q) => $q->whereNull('cfd')->orWhere('cfd', '<', 10)))
+            ->whereHas('notas', fn ($q) => $q
+                ->where('turma_id', $turma->id)
+                ->where('ano_letivo_id', $turma->ano_letivo_id), '=', $totalDisciplinas)
             ->get();
 
         foreach ($alunosAprovados as $aluno) {
