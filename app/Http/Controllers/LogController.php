@@ -337,7 +337,7 @@ public function dashboard()
                 
                 fputcsv($file, [
                      optional($log->data_alteracao)->format('d/m/Y H:i:s') ?? '-',
-                    $log->usuario->name ?? '-',
+                    optional($log->usuario)->name ?? 'Sistema',
                     $log->descricao_acao,
                     $log->aluno->name ?? '-',
                     $log->turma->nome_completo ?? '-',

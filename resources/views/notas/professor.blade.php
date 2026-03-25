@@ -108,7 +108,7 @@
                                 </select>
 
                     <button type="submit" class="btn btn-primary"
-                            {{ $notas->isEmpty() || !$haNotasBloqueadasOuFinalizadas ? 'disabled' : '' }}>
+                            {{ $notas->isEmpty() ? 'disabled' : '' }}>
                         <i class="fas fa-lock mr-2"></i>
                             Finalizar/Bloquear
                     </button>
@@ -136,7 +136,7 @@
 
                             </select>
                     <button type="submit" class="btn btn-outline"
-                            {{ $notas->isEmpty() || $notas->every(fn($nota) => $nota->status !== 'finalizado') ? 'disabled' : '' }}>
+                            {{ $notas->isEmpty() || !$haNotasBloqueadasOuFinalizadas ? 'disabled' : '' }}>
                         <i class="fas fa-lock-open mr-2"></i>
                         Reabrir/Desbloquear                    </button>
                 </form>

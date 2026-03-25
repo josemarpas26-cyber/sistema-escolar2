@@ -87,7 +87,7 @@ class UserController extends Controller
     {
         $this->checkPermission('users.create');
  
-        $selectedRole = \App\Models\Role::find($request->input('role_id'));
+        $selectedRole = Role::find($request->input('role_id'));
         $isAluno      = optional($selectedRole)->name === 'aluno';
  
         $shouldGeneratePassword = $request->boolean('auto_password')
@@ -99,7 +99,7 @@ class UserController extends Controller
  
         // Regra de email: obrigatório para não-alunos, opcional para alunos
         $emailRules = $isAluno
-            ? ['nullable', 'email', \Illuminate\Validation\Rule::unique('users', 'email')->whereNotNull('email')]
+            ? ['nullable', 'email', Rule::unique('users', 'email')->whereNotNull('email')]
             : ['required', 'email', 'unique:users,email'];
  
         $validated = $request->validate([
@@ -125,12 +125,16 @@ class UserController extends Controller
         // Senha automática
         $generatedPassword = null;
         if ($shouldGeneratePassword) {
-            $generatedPassword    = \Illuminate\Support\Str::password(12);
+            $generatedPassword    = Str::password(12);
             $validated['password'] = $generatedPassword;
         }
  
-        $validated['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
+        $validated['password'] = Hash::make($validated['password']);
         unset($validated['auto_password']);
+
+        if (!empty($validated['email'])) {
+            $validated['email_verified_at'] = null;
+        }
  
         // Upload de foto
         if ($request->hasFile('foto_perfil')) {
@@ -138,7 +142,11 @@ class UserController extends Controller
                 ->store('fotos_perfil', 'public');
         }
  
-        $user = \App\Models\User::create($validated);
+        $user = User::create($validated);
+
+        if ($user->email) {
+            $user->sendEmailVerificationNotification();
+        }
  
         $successMessage = 'Utilizador criado com sucesso!';
         if ($generatedPassword) {
@@ -171,32 +179,32 @@ class UserController extends Controller
  /**
      * Atualizar usuário.
      */
-    public function update(Request $request, \App\Models\User $user)
+    public function update(Request $request, User $user)
     {
         $this->checkPermission('users.edit');
  
-        $selectedRole = \App\Models\Role::find($request->input('role_id'));
+        $selectedRole = Role::find($request->input('role_id'));
         $isAluno      = optional($selectedRole)->name === 'aluno';
  
         // Regra de email
         $emailRules = $isAluno
-            ? ['nullable', 'email', \Illuminate\Validation\Rule::unique('users', 'email')
+            ? ['nullable', 'email', Rule::unique('users', 'email')
                 ->ignore($user->id)
                 ->whereNotNull('email')]
-            : ['required', 'email', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)];
+            : ['required', 'email', Rule::unique('users')->ignore($user->id)];
  
         $validated = $request->validate([
             'name'                  => 'required|string|max:255',
             'email'                 => $emailRules,
             'password'              => 'nullable|string|min:6|confirmed',
             'role_id'               => 'required|exists:roles,id',
-            'bi'                    => ['nullable', 'string', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
+            'bi'                    => ['nullable', 'string', Rule::unique('users')->ignore($user->id)],
             'data_nascimento'       => 'nullable|date',
             'genero'                => 'nullable|in:M,F',
             'telefone'              => 'nullable|string|max:20',
             'endereco'              => 'nullable|string|max:255',
             'foto_perfil'           => 'nullable|image|max:2048',
-            'numero_processo'       => ['nullable', 'string', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
+            'numero_processo'       => ['nullable', 'string', Rule::unique('users')->ignore($user->id)],
             'nome_encarregado'      => 'nullable|string|max:255',
             'contacto_encarregado'  => 'nullable|string|max:20',
             'ativo'                 => 'boolean',
@@ -204,21 +212,31 @@ class UserController extends Controller
  
         // Atualizar senha apenas se fornecida
         if (! empty($validated['password'])) {
-            $validated['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
+            $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
+        }
+
+        $emailAlterado = array_key_exists('email', $validated) && $validated['email'] !== $user->email;
+
+        if ($emailAlterado) {
+            $validated['email_verified_at'] = null;
         }
  
         // Upload de nova foto
         if ($request->hasFile('foto_perfil')) {
             if ($user->foto_perfil) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto_perfil);
+                Storage::disk('public')->delete($user->foto_perfil);
             }
             $validated['foto_perfil'] = $request->file('foto_perfil')
                 ->store('fotos_perfil', 'public');
         }
  
         $user->update($validated);
+
+        if ($emailAlterado && $user->email) {
+            $user->sendEmailVerificationNotification();
+        }
  
         return redirect()
             ->route('users.show', $user)
@@ -346,7 +364,7 @@ class UserController extends Controller
         $alunos = $query->paginate(20);
 
         // 📚 Turmas
-        $turmas = \App\Models\Turma::orderBy('nome')->get();
+        $turmas = Turma::orderBy('nome')->get();
 
         // 👨‍🏫 Turmas do professor logado
         $turmasProfesor = collect();
