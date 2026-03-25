@@ -12,6 +12,12 @@ use Illuminate\Support\Collection;
 
 class NotaService
 {
+    /**
+     * Relações que o model Nota exige para recalcular().
+     * Centralizado aqui para não divergir entre chamadas.
+     */
+    private const RELACOES_RECALCULO = ['aluno', 'turma.curso', 'disciplina', 'turma'];
+
     public function criarNotasParaTurma(Turma $turma, Disciplina $disciplina): int
     {
         $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
@@ -20,8 +26,8 @@ class NotaService
         foreach ($alunos as $aluno) {
             $nota = Nota::firstOrCreate(
                 [
-                    'aluno_id' => $aluno->id,
-                    'turma_id' => $turma->id,
+                    'aluno_id'      => $aluno->id,
+                    'turma_id'      => $turma->id,
                     'disciplina_id' => $disciplina->id,
                     'ano_letivo_id' => $turma->ano_letivo_id,
                 ],
@@ -53,7 +59,7 @@ class NotaService
 
     public function recalcularNota(Nota $nota, bool $preencherCAsAnteriores = true): void
     {
-        $nota->loadMissing(['aluno', 'turma.curso', 'disciplina']);
+        $nota->loadMissing(self::RELACOES_RECALCULO);
 
         if ($preencherCAsAnteriores) {
             $this->preencherCAsAnteriores($nota);
@@ -66,10 +72,10 @@ class NotaService
     {
         if ($turma->classe == '10') {
             return [
-                'sucesso' => 0,
-                'erro' => 0,
+                'sucesso'    => 0,
+                'erro'       => 0,
                 'bloqueadas' => 0,
-                'mensagem' => 'Nao ha CAs para importar na 10a classe.',
+                'mensagem'   => 'Nao ha CAs para importar na 10a classe.',
             ];
         }
 
@@ -83,7 +89,7 @@ class NotaService
                 ->where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
                 ->where('ano_letivo_id', $turma->ano_letivo_id)
-                ->with(['aluno', 'turma.curso', 'disciplina'])
+                ->with(self::RELACOES_RECALCULO)
                 ->first();
 
             if (!$nota) {
@@ -107,10 +113,10 @@ class NotaService
         }
 
         return [
-            'sucesso' => $sucesso,
-            'erro' => $erro,
+            'sucesso'    => $sucesso,
+            'erro'       => $erro,
             'bloqueadas' => $bloqueadas,
-            'mensagem' => "{$sucesso} CAs importados, {$erro} com dados insuficientes e {$bloqueadas} bloqueados por finalizacao.",
+            'mensagem'   => "{$sucesso} CAs importados, {$erro} com dados insuficientes e {$bloqueadas} bloqueados por finalizacao.",
         ];
     }
 
@@ -123,21 +129,21 @@ class NotaService
 
         if ($notas->isEmpty()) {
             return [
-                'media' => null,
-                'aprovados' => 0,
+                'media'      => null,
+                'aprovados'  => 0,
                 'reprovados' => 0,
-                'total' => 0,
+                'total'      => 0,
             ];
         }
 
         $aprovados = $notas->filter(fn ($nota) => $nota->isAprovado())->count();
 
         return [
-            'media' => round($notas->avg('cfd'), 2),
-            'aprovados' => $aprovados,
-            'reprovados' => $notas->count() - $aprovados,
-            'total' => $notas->count(),
-            'taxa_aprovacao' => round(($aprovados / $notas->count()) * 100, 2),
+            'media'           => round($notas->avg('cfd'), 2),
+            'aprovados'       => $aprovados,
+            'reprovados'      => $notas->count() - $aprovados,
+            'total'           => $notas->count(),
+            'taxa_aprovacao'  => round(($aprovados / $notas->count()) * 100, 2),
         ];
     }
 
@@ -196,34 +202,38 @@ class NotaService
 
         if ($notasComCFD->isEmpty()) {
             return [
-                'media_geral' => null,
-                'aprovacoes' => 0,
-                'reprovacoes' => 0,
+                'media_geral'       => null,
+                'aprovacoes'        => 0,
+                'reprovacoes'       => 0,
                 'total_disciplinas' => $notas->count(),
-                'melhor_nota' => null,
-                'pior_nota' => null,
+                'melhor_nota'       => null,
+                'pior_nota'         => null,
             ];
         }
 
-        $aprovados = $notasComCFD->filter(fn ($nota) => $nota->isAprovado());
+        $aprovados  = $notasComCFD->filter(fn ($nota) => $nota->isAprovado());
         $melhorNota = $notasComCFD->sortByDesc('cfd')->first();
-        $piorNota = $notasComCFD->sortBy('cfd')->first();
+        $piorNota   = $notasComCFD->sortBy('cfd')->first();
 
         return [
-            'media_geral' => round($notasComCFD->avg('cfd'), 2),
-            'aprovacoes' => $aprovados->count(),
-            'reprovacoes' => $notasComCFD->count() - $aprovados->count(),
+            'media_geral'       => round($notasComCFD->avg('cfd'), 2),
+            'aprovacoes'        => $aprovados->count(),
+            'reprovacoes'       => $notasComCFD->count() - $aprovados->count(),
             'total_disciplinas' => $notas->count(),
-            'melhor_nota' => [
+            'melhor_nota'       => [
                 'disciplina' => $melhorNota->disciplina->nome,
-                'nota' => $melhorNota->cfd,
+                'nota'       => $melhorNota->cfd,
             ],
             'pior_nota' => [
                 'disciplina' => $piorNota->disciplina->nome,
-                'nota' => $piorNota->cfd,
+                'nota'       => $piorNota->cfd,
             ],
         ];
     }
+
+    /* ------------------------------------------------------------------ */
+    /*  Privados                                                           */
+    /* ------------------------------------------------------------------ */
 
     private function queryNotasDaPauta(Turma $turma, Disciplina $disciplina, ?int $alunoId = null): Builder
     {
@@ -259,14 +269,14 @@ class NotaService
 
     private function resumoCompletude(Collection $notas, callable $regra): array
     {
-        $total = $notas->count();
+        $total     = $notas->count();
         $completas = $notas->filter($regra)->count();
 
         return [
-            'total' => $total,
-            'completas' => $completas,
+            'total'       => $total,
+            'completas'   => $completas,
             'incompletas' => $total - $completas,
-            'percentual' => $total > 0 ? round(($completas / $total) * 100, 2) : 0,
+            'percentual'  => $total > 0 ? round(($completas / $total) * 100, 2) : 0,
         ];
     }
 }

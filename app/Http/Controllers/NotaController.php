@@ -194,6 +194,58 @@ class NotaController extends Controller
         ));
     }
 
+
+
+
+
+
+
+        private function buildFeedbackLancamento(
+        string $trimestre,
+        int $salvas,
+        int $bloqueadas,
+        int $semAlteracao,
+        array $naoEncontradas
+    ): array {
+        $partes = [];
+
+        if ($salvas > 0) {
+            $partes[] = "{$salvas} nota(s) lançada(s) com sucesso";
+        }
+
+        if ($semAlteracao > 0) {
+            $partes[] = "{$semAlteracao} nota(s) sem alteração";
+        }
+
+        if ($bloqueadas > 0) {
+            $partes[] = "{$bloqueadas} nota(s) ignorada(s) por estarem bloqueadas";
+        }
+
+        if (!empty($naoEncontradas)) {
+            $ids = implode(', ', $naoEncontradas);
+            $partes[] = count($naoEncontradas) . " nota(s) não encontrada(s) (IDs: {$ids})";
+        }
+
+        if (empty($partes)) {
+            return ['warning', "Nenhuma nota do {$trimestre}º trimestre foi processada."];
+        }
+
+        $mensagem = "{$trimestre}º trimestre: " . implode('. ', $partes) . '.';
+
+        // success só se houve pelo menos 1 salva e nenhum problema
+        if ($salvas > 0 && $bloqueadas === 0 && empty($naoEncontradas)) {
+            $tipo = 'success';
+        } elseif ($salvas === 0 && $semAlteracao > 0 && $bloqueadas === 0) {
+            $tipo = 'info';
+        } else {
+            $tipo = 'warning';
+        }
+
+        return [$tipo, $mensagem];
+    }
+
+
+
     // -------------------------------------------------------------------------
     // Lançamento de notas — método unificado
     // -------------------------------------------------------------------------
@@ -216,7 +268,6 @@ class NotaController extends Controller
             ? $this->checkPermission('notas.lancar')
             : $this->checkPermission('notas.editar');
 
-        // Regras de validação geradas dinamicamente a partir do mapeamento
         $campos = self::CAMPOS_TRIMESTRE[$trimestre];
         $rules  = ['notas' => 'required|array', 'notas.*.id' => 'required|exists:notas,id'];
 
@@ -232,42 +283,57 @@ class NotaController extends Controller
             ->get()
             ->keyBy('id');
 
-        // Transação garante atomicidade: ou tudo salva, ou nada salva
-        DB::transaction(function () use ($validated, $notasMap, $campos, $trimestre, $user) {
-        // lancarTrimestre() — trecho do foreach, substituir inteiro
-        foreach ($validated['notas'] as $notaData) {
-            $nota = $notasMap->get($notaData['id']);
+        $salvas         = 0;
+        $bloqueadas     = 0;
+        $semAlteracao   = 0;
+        $naoEncontradas = [];
 
-            if (!$nota) {
-                continue;
+        DB::transaction(function () use (
+            $validated, $notasMap, $campos, $trimestre, $user,
+            &$salvas, &$bloqueadas, &$semAlteracao, &$naoEncontradas
+        ) {
+            foreach ($validated['notas'] as $notaData) {
+                $nota = $notasMap->get($notaData['id']);
+
+                if (!$nota) {
+                    $naoEncontradas[] = $notaData['id'];
+                    continue;
+                }
+
+                if ($user->isProfessor()) {
+                    $this->verificarPermissaoProfessor($nota);
+                }
+
+                if ($this->notaBloqueadaParaEdicao($nota, $trimestre)) {
+                    $bloqueadas++;
+                    continue;
+                }
+
+                // Atribui os valores do formulário
+                foreach ($campos as $campo) {
+                    $nota->{$campo} = $notaData[$campo] ?? null;
+                }
+
+                // Só recalcula e salva se algum campo do trimestre realmente mudou
+                if (!$nota->isDirty($campos)) {
+                    $semAlteracao++;
+                    continue;
+                }
+
+                $this->notaService->recalcularNota($nota);
+                $nota->save();
+                $salvas++;
             }
-
-            if ($user->isProfessor()) {
-                $this->verificarPermissaoProfessor($nota);
-            }
-
-            if ($this->notaBloqueadaParaEdicao($nota, $trimestre)) {
-                continue;
-            }
-
-            foreach ($campos as $campo) {
-                $nota->{$campo} = $notaData[$campo] ?? null;
-            }
-
-            // Garante que recalcular() nunca dispare lazy-load:
-            // o with() já carregou turma.curso e disciplina,
-            // mas setRelation() força o model a reconhecer isso.
-            if (!$nota->relationLoaded('turma') || !$nota->turma?->relationLoaded('curso')) {
-                $nota->load(['turma.curso', 'disciplina']);
-            }
-
-            $this->notaService->recalcularNota($nota);
-            $nota->save();
-        }
         });
 
-        return back()->with('success', "Notas do {$trimestre}º trimestre lancadas com sucesso.");
+        [$tipo, $mensagem] = $this->buildFeedbackLancamento(
+            $trimestre, $salvas, $bloqueadas, $semAlteracao, $naoEncontradas
+        );
+
+        return back()->with($tipo, $mensagem);
     }
+
+
 
     // -------------------------------------------------------------------------
     // Edição individual

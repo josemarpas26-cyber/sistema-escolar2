@@ -37,6 +37,10 @@ class Nota extends Model
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
     ];
 
+    /* ------------------------------------------------------------------ */
+    /*  Relacionamentos                                                    */
+    /* ------------------------------------------------------------------ */
+
     public function aluno()
     {
         return $this->belongsTo(User::class, 'aluno_id');
@@ -62,27 +66,68 @@ class Nota extends Model
         return $this->hasMany(NotaLog::class);
     }
 
+    /* ------------------------------------------------------------------ */
+    /*  Recálculo público                                                  */
+    /* ------------------------------------------------------------------ */
+
     /**
      * Recalcula todos os campos derivados da nota.
      *
-     * Nao dispara lazy-load. Exige que 'turma.curso' e 'disciplina'
-     * estejam carregados antes da chamada.
+     * Exige que 'turma' e 'disciplina' estejam eager-loaded e não-nulos.
+     * Exemplo: $nota->load(['turma', 'disciplina'])->recalcular();
      */
     public function recalcular(): void
     {
+        $this->assertRelacoesCarregadas();
+
+        $classe = (int) $this->turma->classe;
+
+        $this->calcularMediasTrimestre1e2();
+
+        match ($classe) {
+            10, 11, 12 => $this->calcularTrimestre3($classe),
+            default    => $this->limparCamposFinais(),
+        };
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Guardas                                                            */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Garante que turma e disciplina estão eager-loaded e não são null.
+     *
+     * Chamada em qualquer ponto que precise dessas relações,
+     * evitando lazy-load silencioso e "property on null".
+     */
+    private function assertRelacoesCarregadas(): void
+    {
         if (!$this->relationLoaded('turma') || !$this->relationLoaded('disciplina')) {
             throw new \LogicException(
-                "recalcular() chamado sem eager load em Nota #{$this->id}. " .
-                "Use with(['turma.curso', 'disciplina']) antes de chamar recalcular()."
+                "Relações não carregadas em Nota #{$this->id}. "
+                . "Use load(['turma', 'disciplina']) ou with(['turma', 'disciplina']) antes de chamar recalcular()."
             );
         }
 
         if (!$this->turma) {
-            throw new \RuntimeException("Nota {$this->id} nao possui turma associada.");
+            throw new \RuntimeException(
+                "Nota #{$this->id} não possui turma associada."
+            );
         }
 
-        $classe = (int) $this->turma->classe;
+        if (!$this->disciplina) {
+            throw new \RuntimeException(
+                "Nota #{$this->id} não possui disciplina associada."
+            );
+        }
+    }
 
+    /* ------------------------------------------------------------------ */
+    /*  Cálculos internos                                                  */
+    /* ------------------------------------------------------------------ */
+
+    private function calcularMediasTrimestre1e2(): void
+    {
         $this->mt1 = $this->mac1 !== null && $this->pp1 !== null && $this->pt1 !== null
             ? round(($this->mac1 + $this->pp1 + $this->pt1) / 3, 2)
             : null;
@@ -94,16 +139,12 @@ class Nota extends Model
         $this->mft2 = $this->mt1 !== null && $this->mt2 !== null
             ? round(($this->mt1 + $this->mt2) / 2, 2)
             : null;
-
-        match ($classe) {
-            10 => $this->calcularTrimestre3Classe10(),
-            11 => $this->calcularTrimestre3Classe11(),
-            12 => $this->calcularTrimestre3Classe12(),
-            default => $this->limparCamposFinais(),
-        };
     }
 
-    private function calcularTrimestre3Classe10(): void
+    /**
+     * Trimestre 3 + campos finais — lógica idêntica para classes 10, 11, 12.
+     */
+    private function calcularTrimestre3(int $classe): void
     {
         $this->mt3 = $this->mac3 !== null && $this->pp3 !== null
             ? round(($this->mac3 + $this->pp3) / 2, 2)
@@ -117,44 +158,16 @@ class Nota extends Model
             ? round((0.6 * $this->cf) + (0.4 * $this->pg), 2)
             : null;
 
-        $this->atualizarCfdParaClasseAtual(10);
+        $this->atualizarCfd($classe);
     }
 
-    private function calcularTrimestre3Classe11(): void
-    {
-        $this->mt3 = $this->mac3 !== null && $this->pp3 !== null
-            ? round(($this->mac3 + $this->pp3) / 2, 2)
-            : null;
-
-        $this->cf = $this->mft2 !== null && $this->mt3 !== null
-            ? round(($this->mft2 + $this->mt3) / 2, 2)
-            : null;
-
-        $this->ca = $this->cf !== null && $this->pg !== null
-            ? round((0.6 * $this->cf) + (0.4 * $this->pg), 2)
-            : null;
-
-        $this->atualizarCfdParaClasseAtual(11);
-    }
-
-    private function calcularTrimestre3Classe12(): void
-    {
-        $this->mt3 = $this->mac3 !== null && $this->pp3 !== null
-            ? round(($this->mac3 + $this->pp3) / 2, 2)
-            : null;
-
-        $this->cf = $this->mft2 !== null && $this->mt3 !== null
-            ? round(($this->mft2 + $this->mt3) / 2, 2)
-            : null;
-
-        $this->ca = $this->cf !== null && $this->pg !== null
-            ? round((0.6 * $this->cf) + (0.4 * $this->pg), 2)
-            : null;
-
-        $this->atualizarCfdParaClasseAtual(12);
-    }
-
-    private function atualizarCfdParaClasseAtual(int $classeAtual): void
+    /**
+     * Calcula o CFD usando a disciplina JÁ CARREGADA (nunca faz lazy-load).
+     *
+     * Recebe a disciplina explicitamente via $this->disciplina que foi
+     * validada por assertRelacoesCarregadas().
+     */
+    private function atualizarCfd(int $classeAtual): void
     {
         $this->cfd = null;
 
@@ -162,9 +175,12 @@ class Nota extends Model
             return;
         }
 
+        // $disciplina é garantidamente não-nula aqui (assertRelacoesCarregadas).
+        $disciplina = $this->disciplina;
+
         $classificacoes = [];
 
-        if ($this->disciplina->leciona_10 && $classeAtual >= 10) {
+        if ($disciplina->leciona_10 && $classeAtual >= 10) {
             $ca10 = $classeAtual === 10 ? $this->ca : $this->ca_10;
 
             if ($ca10 === null) {
@@ -174,7 +190,7 @@ class Nota extends Model
             $classificacoes[] = $ca10;
         }
 
-        if ($this->disciplina->leciona_11 && $classeAtual >= 11) {
+        if ($disciplina->leciona_11 && $classeAtual >= 11) {
             $ca11 = $classeAtual === 11 ? $this->ca : $this->ca_11;
 
             if ($ca11 === null) {
@@ -184,7 +200,7 @@ class Nota extends Model
             $classificacoes[] = $ca11;
         }
 
-        if ($this->disciplina->leciona_12 && $classeAtual >= 12) {
+        if ($disciplina->leciona_12 && $classeAtual >= 12) {
             $classificacoes[] = $this->ca;
         }
 
@@ -198,10 +214,14 @@ class Nota extends Model
     private function limparCamposFinais(): void
     {
         $this->mt3 = null;
-        $this->cf = null;
-        $this->ca = null;
+        $this->cf  = null;
+        $this->ca  = null;
         $this->cfd = null;
     }
+
+    /* ------------------------------------------------------------------ */
+    /*  Acessores / helpers públicos                                       */
+    /* ------------------------------------------------------------------ */
 
     public function isAprovado(): bool
     {
