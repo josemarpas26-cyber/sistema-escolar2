@@ -50,6 +50,12 @@
     $podeReabrirNotas = auth()->user()->can('notas.reabrir');
     $podeFinalizarNotas = auth()->user()->can('notas.editar');
     $opcoesAlunosOperacao = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
+    $t1SomenteLeituraGeral = !$podeReabrirNotas
+        && $notas->every(fn($nota) => $nota->status === 'finalizado' || ($nota->bloqueado_t1 ?? false));
+    $t2SomenteLeituraGeral = !$podeReabrirNotas
+        && $notas->every(fn($nota) => $nota->status === 'finalizado' || ($nota->bloqueado_t2 ?? false));
+    $t3SomenteLeituraGeral = !$podeReabrirNotas
+        && $notas->every(fn($nota) => $nota->status === 'finalizado' || ($nota->bloqueado_t3 ?? false));
 @endphp
 <!-- Info da Turma/Disciplina -->
 <div class="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
@@ -183,10 +189,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($notas as $index => $nota)
+                            @php
+                                $t1SomenteLeitura = !$podeReabrirNotas
+                                    && ($nota->status === 'finalizado' || ($nota->bloqueado_t1 ?? false));
+                            @endphp
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ $nota->aluno->name }}
-                                                                        @if($nota->status === 'finalizado')
+                                                                        @if($t1SomenteLeitura)
                                         <x-badge type="warning" class="ml-2">Somente leitura</x-badge>
                                     @endif
                                     <input type="hidden" name="notas[{{ $index }}][id]" value="{{ $nota->id }}">
@@ -197,7 +207,7 @@
                                            value="{{ $nota->mac1 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                                                                       onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t1SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
@@ -205,7 +215,7 @@
                                            value="{{ $nota->pp1 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                                                                       onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t1SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
@@ -213,7 +223,7 @@
                                            value="{{ $nota->pt1 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                                                                       onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t1SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-sm font-bold text-primary-600">
@@ -227,7 +237,7 @@
                 </div>
                 <div class="mt-6 flex justify-end">
                                         <button type="submit" class="btn btn-success"
-                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
+                            {{ $t1SomenteLeituraGeral ? 'disabled' : '' }}>
                         <i class="fas fa-save mr-2"></i>
                         Salvar 1º Trimestre
                     </button>
@@ -255,10 +265,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($notas as $index => $nota)
+                            @php
+                                $t2SomenteLeitura = !$podeReabrirNotas
+                                    && ($nota->status === 'finalizado' || ($nota->bloqueado_t2 ?? false));
+                            @endphp
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ $nota->aluno->name }}
-                                    @if($nota->status === 'finalizado')
+                                    @if($t2SomenteLeitura)
                                         <x-badge type="warning" class="ml-2">Somente leitura</x-badge>
                                     @endif
                                     <input type="hidden" name="notas[{{ $index }}][id]" value="{{ $nota->id }}">
@@ -272,7 +286,7 @@
                                            value="{{ $nota->mac2 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                                                                       onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t2SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
@@ -280,7 +294,7 @@
                                            value="{{ $nota->pp2 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                                                                       onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t2SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
@@ -288,7 +302,7 @@
                                            value="{{ $nota->pt2 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                                                                       onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t2SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-sm font-bold text-primary-600">
@@ -307,7 +321,7 @@
                 </div>
                 <div class="mt-6 flex justify-end">
                              <button type="submit" class="btn btn-success"
-                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
+                            {{ $t2SomenteLeituraGeral ? 'disabled' : '' }}>
                         <i class="fas fa-save mr-2"></i>
                         Salvar 2º Trimestre
                     </button>
@@ -319,6 +333,8 @@
         <div x-show="tab === '3'" x-cloak>
             <form method="POST" action="{{ route('notas.lancarTrimestre', 3) }}">
                 @csrf
+                <input type="hidden" name="turma_id" value="{{ $turma->id }}">
+                <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -334,10 +350,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($notas as $index => $nota)
+                            @php
+                                $t3SomenteLeitura = !$podeReabrirNotas
+                                    && ($nota->status === 'finalizado' || ($nota->bloqueado_t3 ?? false));
+                            @endphp
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ $nota->aluno->name }}
-                                     @if($nota->status === 'finalizado')
+                                     @if($t3SomenteLeitura)
                                         <x-badge type="warning" class="ml-2">Somente leitura</x-badge>
                                     @endif
                                     <input type="hidden" name="notas[{{ $index }}][id]" value="{{ $nota->id }}">
@@ -351,7 +371,7 @@
                                            value="{{ $nota->mac3 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                             onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t3SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
@@ -359,7 +379,7 @@
                                            value="{{ $nota->pp3 }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                             onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t3SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <input type="number" step="0.01" min="0" max="20" 
@@ -367,7 +387,7 @@
                                            value="{{ $nota->pg }}"
                                            class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-primary-500"
                                             onblur="formatNota(this)"
-                                           {{ $nota->status === 'finalizado' && !$podeReabrirNotas ? 'disabled' : '' }}>
+                                           {{ $t3SomenteLeitura ? 'disabled' : '' }}>
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-sm font-bold {{ $nota->cfd && $nota->cfd >= 10 ? 'text-green-600' : 'text-red-600' }}">
@@ -390,19 +410,16 @@
                 </div>
                 <div class="mt-6 flex justify-end space-x-3">
                     @if($turma->classe != '10')
-                    <form method="POST" action="{{ route('notas.importar-cas') }}" class="inline">
-                        @csrf
-                        <input type="hidden" name="turma_id" value="{{ $turma->id }}">
-                        <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
                         <button type="submit" class="btn btn-outline"
-                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
+                            formaction="{{ route('notas.importar-cas') }}"
+                            formmethod="POST"
+                            {{ $t3SomenteLeituraGeral ? 'disabled' : '' }}>
                             <i class="fas fa-download mr-2"></i>
                             Importar CAs
                         </button>
-                    </form>
                     @endif
                     <button type="submit" class="btn btn-success"
-                            {{ $notas->every(fn($nota) => $nota->status === 'finalizado') && !$podeReabrirNotas ? 'disabled' : '' }}>
+                            {{ $t3SomenteLeituraGeral ? 'disabled' : '' }}>
                         <i class="fas fa-save mr-2"></i>
                         Salvar 3º Trimestre
                     </button>
