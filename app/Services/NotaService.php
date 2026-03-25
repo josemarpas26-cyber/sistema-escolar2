@@ -51,6 +51,17 @@ class NotaService
         return $notaAnterior?->ca;
     }
 
+    public function recalcularNota(Nota $nota, bool $preencherCAsAnteriores = true): void
+    {
+        $nota->loadMissing(['aluno', 'turma.curso', 'disciplina']);
+
+        if ($preencherCAsAnteriores) {
+            $this->preencherCAsAnteriores($nota);
+        }
+
+        $nota->recalcular();
+    }
+
     public function importarCAsParaTurma(Turma $turma, Disciplina $disciplina, bool $permitirFinalizado = false): array
     {
         if ($turma->classe == '10') {
@@ -72,6 +83,7 @@ class NotaService
                 ->where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
                 ->where('ano_letivo_id', $turma->ano_letivo_id)
+                ->with(['aluno', 'turma.curso', 'disciplina'])
                 ->first();
 
             if (!$nota) {
@@ -84,41 +96,14 @@ class NotaService
                 continue;
             }
 
-            if ($turma->classe == '11') {
-                $ca10 = $this->importarCAAnterior($aluno, $disciplina, '10');
-
-                if ($ca10 === null) {
-                    $erro++;
-                    continue;
-                }
-
-                $nota->update(['ca_10' => $ca10]);
-                $nota->recalcular();
-                $nota->save();
-                $sucesso++;
+            if (!$this->preencherCAsAnteriores($nota)) {
+                $erro++;
                 continue;
             }
 
-            if ($turma->classe == '12') {
-                $ca10 = $this->importarCAAnterior($aluno, $disciplina, '10');
-                $ca11 = $this->importarCAAnterior($aluno, $disciplina, '11');
-
-                if ($ca10 === null || $ca11 === null) {
-                    $erro++;
-                    continue;
-                }
-
-                $nota->update([
-                    'ca_10' => $ca10,
-                    'ca_11' => $ca11,
-                ]);
-                $nota->recalcular();
-                $nota->save();
-                $sucesso++;
-                continue;
-            }
-
-            $erro++;
+            $this->recalcularNota($nota, false);
+            $nota->save();
+            $sucesso++;
         }
 
         return [
@@ -247,6 +232,29 @@ class NotaService
             ->where('disciplina_id', $disciplina->id)
             ->where('ano_letivo_id', $turma->ano_letivo_id)
             ->when($alunoId, fn (Builder $query, $id) => $query->where('aluno_id', $id));
+    }
+
+    private function preencherCAsAnteriores(Nota $nota): bool
+    {
+        $classeAtual = (int) $nota->turma->classe;
+
+        if ($classeAtual >= 11 && $nota->disciplina->leciona_10 && $nota->ca_10 === null) {
+            $nota->ca_10 = $this->importarCAAnterior($nota->aluno, $nota->disciplina, '10');
+        }
+
+        if ($classeAtual >= 12 && $nota->disciplina->leciona_11 && $nota->ca_11 === null) {
+            $nota->ca_11 = $this->importarCAAnterior($nota->aluno, $nota->disciplina, '11');
+        }
+
+        if ($classeAtual >= 11 && $nota->disciplina->leciona_10 && $nota->ca_10 === null) {
+            return false;
+        }
+
+        if ($classeAtual >= 12 && $nota->disciplina->leciona_11 && $nota->ca_11 === null) {
+            return false;
+        }
+
+        return true;
     }
 
     private function resumoCompletude(Collection $notas, callable $regra): array

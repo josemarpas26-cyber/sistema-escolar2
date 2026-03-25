@@ -261,7 +261,7 @@ class NotaController extends Controller
                 $nota->load(['turma.curso', 'disciplina']);
             }
 
-            $nota->recalcular();
+            $this->notaService->recalcularNota($nota);
             $nota->save();
         }
         });
@@ -312,8 +312,8 @@ class NotaController extends Controller
 
         $validated = $request->validate($rules);
 
-        $nota->update($validated);
-        $nota->recalcular();
+        $nota->fill($validated);
+        $this->notaService->recalcularNota($nota);
         $nota->save();
 
         return redirect()
@@ -428,14 +428,6 @@ class NotaController extends Controller
 
         if ($notas->isEmpty()) {
             return back()->with('error', 'Nenhuma nota encontrada para finalizar neste ano letivo.');
-        }
-
-        $completude = $trimestre
-            ? $this->notaService->verificarCompletudeTrimestre($turma, $disciplina, (int) $trimestre, $alunoId)
-            : $this->notaService->verificarCompletudeFinalizacao($turma, $disciplina, $alunoId);
-
-        if ($completude['incompletas'] > 0) {
-            return back()->with('error', $this->mensagemCompletudePendente($trimestre, $completude['incompletas']));
         }
 
         [$finalizadas, $jaFinalizadas] = DB::transaction(function () use ($notas, $trimestre) {
@@ -641,10 +633,4 @@ class NotaController extends Controller
             ->get();
     }
 
-    private function mensagemCompletudePendente(?string $trimestre, int $incompletas): string
-    {
-        return $trimestre
-            ? "Ainda existem {$incompletas} notas incompletas para o {$trimestre}o trimestre."
-            : "Ainda existem {$incompletas} notas sem classificacao final completa.";
-    }
 }

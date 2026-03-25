@@ -16,17 +16,10 @@ class NotaObserver
     public function updating(Nota $nota): void
     {
         $camposMonitorados = [
-            'mac1',
-            'pp1',
-            'pt1',
-            'mac2',
-            'pp2',
-            'pt2',
-            'mac3',
-            'pp3',
-            'pg',
-            'ca_10',
-            'ca_11',
+            'mac1', 'pp1', 'pt1',
+            'mac2', 'pp2', 'pt2',
+            'mac3', 'pp3', 'pg',
+            'ca_10', 'ca_11',
             'status',
             'bloqueado_t1',
             'bloqueado_t2',
@@ -34,6 +27,12 @@ class NotaObserver
         ];
 
         $camposAlterados = [];
+        $usuarioId = Auth::id();
+
+        // Se não houver usuário autenticado, sai sem registrar
+        if ($usuarioId === null) {
+            return;
+        }
 
         foreach ($camposMonitorados as $campo) {
             if (!$nota->isDirty($campo)) {
@@ -43,14 +42,12 @@ class NotaObserver
             $valorAnterior = $this->normalizarValor($nota->getOriginal($campo));
             $valorNovo     = $this->normalizarValor($nota->{$campo});
 
-            // Agrupado (JSON)
             $camposAlterados[$campo] = [
-                'anterior' => $valorAnterior,
-                'novo'     => $valorNovo,
-                'trimestre'=> $this->determinarTrimestre($campo),
+                'anterior'  => $valorAnterior,
+                'novo'      => $valorNovo,
+                'trimestre' => $this->determinarTrimestre($campo),
             ];
 
-            // Detalhado (opcional - pode filtrar campos críticos aqui)
             $this->registrarLog(
                 $nota,
                 'edicao',
@@ -61,13 +58,20 @@ class NotaObserver
             );
         }
 
-        // Log principal (1 único insert)
+        // ✅ Agora incluindo usuario_id e outros campos necessários
         if (!empty($camposAlterados)) {
             NotaLog::create([
-                'nota_id'    => $nota->id,
-                'tipo'       => 'edicao',
-                'alteracoes' => json_encode($camposAlterados),
-                'quantidade_campos' => count($camposAlterados),
+                'nota_id'          => $nota->id,
+                'usuario_id'       => $usuarioId,          // ← ADICIONADO
+                'aluno_id'         => $nota->aluno_id,     // ← ADICIONADO
+                'turma_id'         => $nota->turma_id,     // ← ADICIONADO
+                'disciplina_id'    => $nota->disciplina_id,// ← ADICIONADO
+                'acao'             => 'edicao',
+                'campo_alterado'   => 'multiplos',         // ou 'todas'
+                'alteracoes'       => json_encode($camposAlterados),
+                'quantidade_campos'=> count($camposAlterados),
+                'ip_address'       => request()?->ip(),
+                'data_alteracao'   => now(),
             ]);
         }
     }

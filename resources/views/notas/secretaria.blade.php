@@ -145,7 +145,7 @@
                                 @endforeach
                             </select>
                             <button type="submit" class="nr-btn nr-btn-primary"
-                                    {{ $notas->isEmpty() || $totalEmLancamento === 0 ? 'disabled' : '' }}
+                                    {{ $notas->isEmpty() ? 'disabled' : '' }}
                                     title="Finalizar e bloquear edição desta pauta">
                                 <i class="fas fa-lock"></i> Finalizar/Bloquear
                             </button>
@@ -173,7 +173,7 @@
                                 @endforeach
                             </select>
                             <button type="submit" class="nr-btn nr-btn-ghost"
-                                    {{ $notas->isEmpty() || ($totalFinalizadas === 0 && $totalBloqueadasTrimestre === 0) ? 'disabled' : '' }}
+                                    {{ $notas->isEmpty() ? 'disabled' : '' }}
                                     title="Reabrir pauta finalizada">
                                 <i class="fas fa-lock-open"></i> Reabrir/Desbloquear
                             </button>
