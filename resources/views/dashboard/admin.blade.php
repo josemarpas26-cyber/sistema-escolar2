@@ -268,7 +268,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm text-gray-900">
-                        <span class="font-semibold">{{ $log->usuario->name }}</span> 
+                        <span class="font-semibold">{{ optional($log->usuario)->name ?? 'Sistema' }}</span> 
                         {{ $log->descricao_acao }} 
                         <span class="text-primary-600">{{ $log->descricao_campo }}</span>
                     </p>

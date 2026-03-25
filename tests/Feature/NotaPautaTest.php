@@ -1,0 +1,311 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\AnoLetivo;
+use App\Models\Curso;
+use App\Models\Disciplina;
+use App\Models\Nota;
+use App\Models\Permission;
+use App\Models\ProfessorTurmaDisciplina;
+use App\Models\Role;
+use App\Models\Turma;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class NotaPautaTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_lancar_terceiro_trimestre_calcula_cfd_automaticamente(): void
+    {
+        $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $professor = User::factory()->create(['role_id' => $professorRole->id]);
+        $aluno = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica([
+            'classe' => '10',
+            'disciplina' => [
+                'leciona_10' => true,
+                'leciona_11' => true,
+                'leciona_12' => true,
+            ],
+        ]);
+
+        $turma->alunos()->attach($aluno->id, [
+            'data_matricula' => now(),
+            'status' => 'matriculado',
+        ]);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $professor->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        $nota = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'mac1' => 12,
+            'pp1' => 12,
+            'pt1' => 12,
+            'mac2' => 15,
+            'pp2' => 15,
+            'pt2' => 15,
+            'status' => 'em_lancamento',
+        ]);
+
+        $response = $this
+            ->actingAs($professor)
+            ->post(route('notas.lancarTrimestre', 3), [
+                'notas' => [
+                    [
+                        'id' => $nota->id,
+                        'mac3' => 14,
+                        'pp3' => 16,
+                        'pg' => 18,
+                    ],
+                ],
+            ]);
+
+        $response->assertRedirect();
+
+        $nota->refresh();
+
+        $this->assertEquals(12.00, (float) $nota->mt1);
+        $this->assertEquals(15.00, (float) $nota->mt2);
+        $this->assertEquals(13.50, (float) $nota->mft2);
+        $this->assertEquals(15.00, (float) $nota->mt3);
+        $this->assertEquals(14.25, (float) $nota->cf);
+        $this->assertEquals(15.75, (float) $nota->ca);
+        $this->assertEquals(15.75, (float) $nota->cfd);
+    }
+
+    public function test_finalizar_e_reabrir_respeitam_aluno_e_trimestre(): void
+    {
+        $secretariaRole = $this->createRoleWithPermissions('secretaria', ['notas.editar', 'notas.reabrir']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $secretaria = User::factory()->create(['role_id' => $secretariaRole->id]);
+        $aluno1 = User::factory()->create(['role_id' => $alunoRole->id]);
+        $aluno2 = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
+
+        $nota1 = Nota::create([
+            'aluno_id' => $aluno1->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'status' => 'em_lancamento',
+        ]);
+
+        $nota2 = Nota::create([
+            'aluno_id' => $aluno2->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'status' => 'em_lancamento',
+        ]);
+
+        $this
+            ->actingAs($secretaria)
+            ->post(route('notas.finalizar'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+                'trimestre' => '1',
+                'aluno_id' => $aluno1->id,
+            ])
+            ->assertRedirect();
+
+        $nota1->refresh();
+        $nota2->refresh();
+
+        $this->assertTrue($nota1->bloqueado_t1);
+        $this->assertFalse($nota2->bloqueado_t1);
+        $this->assertSame('em_lancamento', $nota1->status);
+        $this->assertSame('em_lancamento', $nota2->status);
+
+        $nota1->update([
+            'status' => 'finalizado',
+            'bloqueado_t1' => true,
+            'bloqueado_t2' => true,
+            'bloqueado_t3' => true,
+        ]);
+
+        $nota2->update([
+            'status' => 'finalizado',
+            'bloqueado_t1' => true,
+            'bloqueado_t2' => true,
+            'bloqueado_t3' => true,
+        ]);
+
+        $this
+            ->actingAs($secretaria)
+            ->post(route('notas.reabrir'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+                'trimestre' => '2',
+                'aluno_id' => $aluno1->id,
+            ])
+            ->assertRedirect();
+
+        $nota1->refresh();
+        $nota2->refresh();
+
+        $this->assertSame('em_lancamento', $nota1->status);
+        $this->assertTrue($nota1->bloqueado_t1);
+        $this->assertFalse($nota1->bloqueado_t2);
+        $this->assertTrue($nota1->bloqueado_t3);
+
+        $this->assertSame('finalizado', $nota2->status);
+        $this->assertTrue($nota2->bloqueado_t1);
+        $this->assertTrue($nota2->bloqueado_t2);
+        $this->assertTrue($nota2->bloqueado_t3);
+    }
+
+    public function test_tela_do_professor_bloqueia_apenas_o_trimestre_fechado(): void
+    {
+        $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $professor = User::factory()->create(['role_id' => $professorRole->id]);
+        $aluno = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
+
+        $turma->alunos()->attach($aluno->id, [
+            'data_matricula' => now(),
+            'status' => 'matriculado',
+        ]);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $professor->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'status' => 'em_lancamento',
+            'bloqueado_t1' => true,
+            'bloqueado_t2' => false,
+            'bloqueado_t3' => true,
+        ]);
+
+        $response = $this
+            ->actingAs($professor)
+            ->get(route('notas.professor-index', [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ]));
+
+        $response->assertOk();
+
+        $html = $response->getContent();
+
+        $this->assertTrue($this->inputHasAttribute($html, 'notas[0][mac1]', 'disabled'));
+        $this->assertFalse($this->inputHasAttribute($html, 'notas[0][mac2]', 'disabled'));
+        $this->assertTrue($this->inputHasAttribute($html, 'notas[0][mac3]', 'disabled'));
+    }
+
+    private function createEstruturaAcademica(array $overrides = []): array
+    {
+        $anoLetivo = AnoLetivo::create([
+            'nome' => '2025/2026',
+            'data_inicio' => '2025-09-01',
+            'data_fim' => '2026-07-31',
+            'ativo' => true,
+            'encerrado' => false,
+        ]);
+
+        $coordenador = User::factory()->create();
+
+        $curso = Curso::create([
+            'nome' => 'Curso Teste',
+            'codigo' => 'CT',
+            'coordenador_id' => $coordenador->id,
+            'ativo' => true,
+        ]);
+
+        $turma = Turma::create([
+            'nome' => 'A',
+            'classe' => $overrides['classe'] ?? '10',
+            'curso_id' => $curso->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'coordenador_turma_id' => $coordenador->id,
+            'capacidade' => 40,
+            'ativo' => true,
+        ]);
+
+        $disciplina = Disciplina::create(array_merge([
+            'nome' => 'Matematica',
+            'codigo' => 'MAT',
+            'descricao' => 'Disciplina de teste',
+            'leciona_10' => true,
+            'leciona_11' => true,
+            'leciona_12' => true,
+            'disciplina_terminal' => false,
+            'ativo' => true,
+        ], $overrides['disciplina'] ?? []));
+
+        $turma->disciplinas()->attach($disciplina->id);
+        $curso->disciplinas()->attach($disciplina->id, ['ano_terminal' => 12]);
+
+        return compact('anoLetivo', 'curso', 'turma', 'disciplina');
+    }
+
+    private function createRoleWithPermissions(string $name, array $permissionNames): Role
+    {
+        $role = Role::create([
+            'name' => $name,
+            'display_name' => ucfirst($name),
+            'description' => "Role {$name} para testes",
+        ]);
+
+        $permissionIds = collect($permissionNames)
+            ->map(function (string $permissionName) {
+                return Permission::firstOrCreate(
+                    ['name' => $permissionName],
+                    [
+                        'display_name' => $permissionName,
+                        'description' => "Permissao {$permissionName} para testes",
+                    ]
+                )->id;
+            })
+            ->all();
+
+        $role->permissions()->sync($permissionIds);
+
+        return $role;
+    }
+
+    private function inputHasAttribute(string $html, string $inputName, string $attribute): bool
+    {
+        $dom = new \DOMDocument();
+
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+
+        foreach ($dom->getElementsByTagName('input') as $input) {
+            if ($input->getAttribute('name') !== $inputName) {
+                continue;
+            }
+
+            return $input->hasAttribute($attribute);
+        }
+
+        $this->fail("Input {$inputName} nao encontrado na resposta.");
+    }
+}

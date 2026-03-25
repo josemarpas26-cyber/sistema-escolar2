@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
         // Registrar o Observer para monitorar alterações em notas
         Nota::observe(NotaObserver::class); 
         Gate::before(function (User $user, string $ability) {
-            return $user->role?->hasPermission($ability) ? true : null;
+            return $user->hasPermission($ability) ? true : null;
         });
     }
 }

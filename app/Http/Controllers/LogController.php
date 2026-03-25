@@ -295,7 +295,7 @@ public function dashboard()
             $query->whereDate('data_alteracao', '<=', $request->data_fim);
         }
 
-        $logs = $query->cursor();
+        $logs = $query->limit(100000)->cursor();
 
         // Gerar CSV
         $filename = 'logs-' . now()->format('Y-m-d-His') . '.csv';
@@ -337,7 +337,7 @@ public function dashboard()
                 
                 fputcsv($file, [
                      optional($log->data_alteracao)->format('d/m/Y H:i:s') ?? '-',
-                    $log->usuario->name ?? '-',
+                    optional($log->usuario)->name ?? 'Sistema',
                     $log->descricao_acao,
                     $log->aluno->name ?? '-',
                     $log->turma->nome_completo ?? '-',

@@ -14,10 +14,7 @@ class CheckPermission
             return redirect()->route('login');
         }
 
-        // Uma query aqui, zero queries em hasPermission() depois.
-        $user = $request->user()->load('role.permissions');
-
-        if (!$user->role?->hasPermission($permission)) {
+        if (!$request->user()?->hasPermission($permission)) {
             abort(403, 'Você não tem permissão para acessar esta página.');
         }
 

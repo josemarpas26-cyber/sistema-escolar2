@@ -2,18 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes, MustVerifyEmailTrait;
 
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
         'password',
         'role_id',
         'bi',
@@ -110,22 +113,22 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role->name === 'admin';
+        return $this->role?->name === 'admin';
     }
 
     public function isSecretaria(): bool
     {
-        return $this->role->name === 'secretaria';
+        return $this->role?->name === 'secretaria';
     }
 
     public function isProfessor(): bool
     {
-        return $this->role->name === 'professor';
+        return $this->role?->name === 'professor';
     }
 
     public function isAluno(): bool
     {
-        return $this->role->name === 'aluno';
+        return $this->role?->name === 'aluno';
     }
 
     public function isCoordenadorCurso(): bool
@@ -136,6 +139,13 @@ class User extends Authenticatable
     public function isCoordenadorTurma(): bool
     {
         return $this->turmaCoordenada()->exists();
+    }
+
+    public function hasPermission(string $permissionName): bool
+    {
+        $this->loadMissing('role.permissions');
+
+        return $this->role?->hasPermission($permissionName) ?? false;
     }
 
     public function getFotoPerfilUrlAttribute(): string

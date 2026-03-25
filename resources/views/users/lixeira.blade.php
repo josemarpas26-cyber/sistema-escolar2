@@ -14,6 +14,7 @@
 {{-- Filtro --}}
 <x-card class="mb-6">
     <form method="GET" class="flex gap-4">
+         @csrf
         <input type="text" name="search" value="{{ request('search') }}"
                placeholder="Pesquisar por nome ou email..."
                class="input flex-1">

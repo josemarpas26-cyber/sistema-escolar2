@@ -148,55 +148,61 @@ public function show(AnoLetivo $anoLetivo)
      * Encerrar ano letivo
      */
     public function encerrar(AnoLetivo $anoLetivo)
-{
-    $this->checkPermission('anos.encerrar');
+    {
+        $this->checkPermission('anos.encerrar');
 
-    if ($anoLetivo->encerrado) {
-        return back()->with('error', 'Este ano letivo já está encerrado!');
-    }
+        if ($anoLetivo->encerrado) {
+            return back()->with('error', 'Este ano letivo já está encerrado!');
+        }
 
-    $anoLetivo->load(['turmas.disciplinas', 'turmas.alunos' => fn($q) => 
-    $q->wherePivot('status', 'matriculado')
-    ]);
-
-      foreach ($anoLetivo->turmas as $turma) {
-
-        $totalAlunos = $turma->alunos()
-            ->wherePivot('status', 'matriculado')
-            ->count();
-
-        $totalDisciplinas = $turma->disciplinas()->count();
-
-        $totalEsperado = $totalAlunos * $totalDisciplinas;
-
-        $totalNotasLancadas = \App\Models\Nota::where('turma_id', $turma->id)
-            ->where('ano_letivo_id', $anoLetivo->id)
-            ->whereNotNull('cfd')
-            ->count();
-
-        if ($totalNotasLancadas < $totalEsperado) {
-            return back()->with(
-                'error',
-                "A turma {$turma->nome_completo} ainda possui notas pendentes."
+        // 🔒 Impedir encerramento antes da data de fim (checagem barata primeiro)
+        if (now()->startOfDay()->lt($anoLetivo->data_fim->startOfDay())) {
+            return back()->with('error',
+                'Não é possível encerrar o ano letivo antes de '
+                . $anoLetivo->data_fim->format('d/m/Y') . '.'
             );
         }
+
+        // ── QUERY 1, 2, 3: Eager-load (turmas + pivot disciplinas + pivot alunos)
+        $anoLetivo->load([
+            'turmas.disciplinas',
+            'turmas.alunos' => fn($q) => $q->wherePivot('status', 'matriculado'),
+        ]);
+
+        $turmaIds = $anoLetivo->turmas->pluck('id');
+
+        // ── QUERY 4: Uma única query agrupada para TODAS as notas
+        $notasPorTurma = \App\Models\Nota::where('ano_letivo_id', $anoLetivo->id)
+            ->whereIn('turma_id', $turmaIds)
+            ->whereNotNull('cfd')
+            ->groupBy('turma_id')
+            ->select('turma_id', DB::raw('COUNT(*) as total'))
+            ->pluck('total', 'turma_id');
+
+        // ── LOOP: Zero queries (tudo já está em memória)
+        foreach ($anoLetivo->turmas as $turma) {
+            $totalAlunos      = $turma->alunos->count();       // ← Collection (sem parênteses)
+            $totalDisciplinas = $turma->disciplinas->count();   // ← Collection (sem parênteses)
+            $totalEsperado    = $totalAlunos * $totalDisciplinas;
+
+            $totalNotasLancadas = $notasPorTurma[$turma->id] ?? 0;  // ← lookup O(1)
+
+            if ($totalNotasLancadas < $totalEsperado) {
+                return back()->with(
+                    'error',
+                    "A turma {$turma->nome_completo} ainda possui notas pendentes."
+                );
+            }
+        }
+
+        // ── QUERY 5: Update final
+        $anoLetivo->update([
+            'encerrado' => true,
+            'ativo'     => false,
+        ]);
+
+        return back()->with('success', 'Ano letivo encerrado com sucesso!');
     }
-
-    // 🔒 Impedir encerramento antes da data de fim
-    if (now()->startOfDay()->lt($anoLetivo->data_fim->startOfDay())) {
-        return back()->with('error', 
-            'Não é possível encerrar o ano letivo antes de ' 
-            . $anoLetivo->data_fim->format('d/m/Y') . '.'
-        );
-    }
-
-    $anoLetivo->update([
-        'encerrado' => true,
-        'ativo' => false,
-    ]);
-
-    return back()->with('success', 'Ano letivo encerrado com sucesso!');
-}
 
 
     /**

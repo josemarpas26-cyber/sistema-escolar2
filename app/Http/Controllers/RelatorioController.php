@@ -106,6 +106,8 @@ class RelatorioController extends Controller
 
     public function boletimAluno(Request $request, ?User $aluno = null)
     {
+        $this->checkPermission('relatorios.boletins'); // no início do método
+
         $user = auth()->user();
 
         if (!$aluno && $request->filled('aluno_id')) {

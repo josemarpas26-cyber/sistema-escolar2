@@ -2,17 +2,22 @@
 
 namespace App\Services;
 
+use App\Models\AnoLetivo;
+use App\Models\Disciplina;
 use App\Models\Nota;
 use App\Models\Turma;
-use App\Models\Disciplina;
-use App\Models\AnoLetivo;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class NotaService
 {
     /**
-     * Criar notas para todos os alunos de uma turma/disciplina
+     * Relações que o model Nota exige para recalcular().
+     * Centralizado aqui para não divergir entre chamadas.
      */
+    private const RELACOES_RECALCULO = ['aluno', 'turma.curso', 'disciplina', 'turma'];
+
     public function criarNotasParaTurma(Turma $turma, Disciplina $disciplina): int
     {
         $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
@@ -37,64 +42,54 @@ class NotaService
         return $contador;
     }
 
-    /**
-     * Importar CA de uma classe específica para um aluno.
-     *
-     * BUG CORRIGIDO: O parâmetro anterior era "classeAtual" e subtraía 1
-     * internamente, tornando a chamada semanticamente confusa e propensa a
-     * erros. Agora recebe directamente a classe cujo CA se quer buscar.
-     *
-     * @param  string $classeBuscada  A classe cujo CA se pretende importar (ex: '10', '11')
-     */
     public function importarCAAnterior(User $aluno, Disciplina $disciplina, string $classeBuscada): ?float
     {
-        // BUG CORRIGIDO: antes comparava classeAnterior < 10 após subtrair 1,
-        // agora validamos directamente a classe pedida.
         if ((int) $classeBuscada < 10 || (int) $classeBuscada > 11) {
             return null;
         }
 
-        $notaAnterior = Nota::where('aluno_id',      $aluno->id)
+        $notaAnterior = Nota::where('aluno_id', $aluno->id)
             ->where('disciplina_id', $disciplina->id)
-            ->whereHas('turma', fn($q) => $q->where('classe', $classeBuscada))
+            ->whereHas('turma', fn ($query) => $query->where('classe', $classeBuscada))
             ->whereNotNull('ca')
             ->first();
 
         return $notaAnterior?->ca;
     }
 
-    /**
-     * Importar CAs para todos os alunos de uma turma.
-     *
-     * Regra:
-     *   11ª classe → preenche ca_10 (CA da 10ª)
-     *   12ª classe → preenche ca_10 (CA da 10ª) e ca_11 (CA da 11ª)
-     *
-     * BUG CORRIGIDO: as chamadas a importarCAAnterior() passavam a classeAtual
-     * em vez da classe cujo CA se queria buscar, tornando a lógica invertida e
-     * difícil de rastrear.
-     */
+    public function recalcularNota(Nota $nota, bool $preencherCAsAnteriores = true): void
+    {
+        $nota->loadMissing(self::RELACOES_RECALCULO);
+
+        if ($preencherCAsAnteriores) {
+            $this->preencherCAsAnteriores($nota);
+        }
+
+        $nota->recalcular();
+    }
+
     public function importarCAsParaTurma(Turma $turma, Disciplina $disciplina, bool $permitirFinalizado = false): array
     {
         if ($turma->classe == '10') {
             return [
-                'sucesso'   => 0,
-                'erro'      => 0,
-                'bloqueadas'=> 0,
-                'mensagem'  => 'Não há CAs para importar na 10ª classe.',
+                'sucesso'    => 0,
+                'erro'       => 0,
+                'bloqueadas' => 0,
+                'mensagem'   => 'Nao ha CAs para importar na 10a classe.',
             ];
         }
 
-        $alunos     = $turma->alunos()->wherePivot('status', 'matriculado')->get();
-        $sucesso    = 0;
-        $erro       = 0;
+        $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+        $sucesso = 0;
+        $erro = 0;
         $bloqueadas = 0;
 
         foreach ($alunos as $aluno) {
-            $nota = Nota::where('aluno_id',      $aluno->id)
-                ->where('turma_id',      $turma->id)
+            $nota = Nota::where('aluno_id', $aluno->id)
+                ->where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
                 ->where('ano_letivo_id', $turma->ano_letivo_id)
+                ->with(self::RELACOES_RECALCULO)
                 ->first();
 
             if (!$nota) {
@@ -107,65 +102,27 @@ class NotaService
                 continue;
             }
 
-            // --- 11ª classe: importar apenas CA da 10ª ---
-            if ($turma->classe == '11') {
-                // BUG CORRIGIDO: antes passava '11' (classeAtual), que internamente
-                // subtraía 1 e buscava classe='10' — funcionava por acidente mas era
-                // semanticamente errado. Agora passa '10' directamente.
-                $ca10 = $this->importarCAAnterior($aluno, $disciplina, '10');
-
-                if ($ca10 === null) {
-                    $erro++;
-                    continue;
-                }
-
-                $nota->update(['ca_10' => $ca10]);
-                $nota->recalcular();
-                $nota->save();
-                $sucesso++;
+            if (!$this->preencherCAsAnteriores($nota)) {
+                $erro++;
                 continue;
             }
 
-            // --- 12ª classe: importar CA da 10ª e CA da 11ª ---
-            if ($turma->classe == '12') {
-                // BUG CORRIGIDO: antes passava '11' para obter ca_10 e '12' para
-                // obter ca_11, o que só funcionava por coincidência da subtracção
-                // interna. Agora as classes pedidas são explícitas e correctas.
-                $ca10 = $this->importarCAAnterior($aluno, $disciplina, '10');
-                $ca11 = $this->importarCAAnterior($aluno, $disciplina, '11');
-
-                if ($ca10 === null || $ca11 === null) {
-                    $erro++;
-                    continue;
-                }
-
-                $nota->update([
-                    'ca_10' => $ca10,
-                    'ca_11' => $ca11,
-                ]);
-                $nota->recalcular();
-                $nota->save();
-                $sucesso++;
-                continue;
-            }
-
-            $erro++;
+            $this->recalcularNota($nota, false);
+            $nota->save();
+            $sucesso++;
         }
 
         return [
-            'sucesso'   => $sucesso,
-            'erro'      => $erro,
-            'bloqueadas'=> $bloqueadas,
-            'mensagem'  => "{$sucesso} CAs importados, {$erro} com dados insuficientes e {$bloqueadas} bloqueados por finalização.",
+            'sucesso'    => $sucesso,
+            'erro'       => $erro,
+            'bloqueadas' => $bloqueadas,
+            'mensagem'   => "{$sucesso} CAs importados, {$erro} com dados insuficientes e {$bloqueadas} bloqueados por finalizacao.",
         ];
     }
 
-    /**
-     * Calcular média da turma em uma disciplina
-     */
     public function calcularMediaTurma(Turma $turma, Disciplina $disciplina): array
     {
-        $notas = Nota::where('turma_id',     $turma->id)
+        $notas = Nota::where('turma_id', $turma->id)
             ->where('disciplina_id', $disciplina->id)
             ->whereNotNull('cfd')
             ->get();
@@ -179,7 +136,7 @@ class NotaService
             ];
         }
 
-        $aprovados = $notas->filter(fn($n) => $n->isAprovado())->count();
+        $aprovados = $notas->filter(fn ($nota) => $nota->isAprovado())->count();
 
         return [
             'media'           => round($notas->avg('cfd'), 2),
@@ -190,55 +147,53 @@ class NotaService
         ];
     }
 
-    /**
-     * Verificar se todas as notas de um trimestre foram lançadas.
-     *
-     * BUG CORRIGIDO 1: nome do método tinha typo ("Trimestr" em vez de "Trimestre").
-     * BUG CORRIGIDO 2: o 3º trimestre verificava `pg` (Prova Global) como parte
-     *   do lançamento trimestral, mas `pg` é um campo opcional lançado separadamente
-     *   após o 3º trimestre. A verificação correcta é mac3 + pp3 + mt3 (calculado).
-     */
-    public function verificarCompletudeTrimestre(Turma $turma, Disciplina $disciplina, int $trimestre): array
-    {
-        $notas = Nota::where('turma_id',     $turma->id)
-            ->where('disciplina_id', $disciplina->id)
-            ->get();
+    public function verificarCompletudeTrimestre(
+        Turma $turma,
+        Disciplina $disciplina,
+        int $trimestre,
+        ?int $alunoId = null
+    ): array {
+        $notas = $this->queryNotasDaPauta($turma, $disciplina, $alunoId)->get();
 
-        $total    = $notas->count();
-        $completas = 0;
-
-        foreach ($notas as $nota) {
-            $completo = match ($trimestre) {
-                1 => $nota->mac1 !== null && $nota->pp1 !== null && $nota->pt1 !== null,
-                2 => $nota->mac2 !== null && $nota->pp2 !== null && $nota->pt2 !== null,
-                // BUG CORRIGIDO: era `pg` — agora verifica mt3 (nota calculada do 3º trim)
-                3 => $nota->mac3 !== null && $nota->pp3 !== null && $nota->mt3 !== null,
+        return $this->resumoCompletude($notas, function (Nota $nota) use ($trimestre) {
+            return match ($trimestre) {
+                1 => $nota->mac1 !== null && $nota->pp1 !== null && $nota->pt1 !== null && $nota->mt1 !== null,
+                2 => $nota->mac2 !== null && $nota->pp2 !== null && $nota->pt2 !== null && $nota->mt2 !== null,
+                3 => $nota->mac3 !== null
+                    && $nota->pp3 !== null
+                    && $nota->pg !== null
+                    && $nota->mt3 !== null
+                    && $nota->cf !== null
+                    && $nota->ca !== null,
                 default => false,
             };
-
-            if ($completo) {
-                $completas++;
-            }
-        }
-
-        return [
-            'total'      => $total,
-            'completas'  => $completas,
-            'incompletas'=> $total - $completas,
-            'percentual' => $total > 0 ? round(($completas / $total) * 100, 2) : 0,
-        ];
+        });
     }
 
-    /**
-     * Gerar estatísticas gerais de um aluno
-     */
+    public function verificarCompletudeFinalizacao(
+        Turma $turma,
+        Disciplina $disciplina,
+        ?int $alunoId = null
+    ): array {
+        $notas = $this->queryNotasDaPauta($turma, $disciplina, $alunoId)->get();
+
+        return $this->resumoCompletude($notas, function (Nota $nota) {
+            return $nota->mt1 !== null
+                && $nota->mt2 !== null
+                && $nota->mt3 !== null
+                && $nota->cf !== null
+                && $nota->ca !== null
+                && $nota->cfd !== null;
+        });
+    }
+
     public function estatisticasAluno(User $aluno, ?AnoLetivo $anoLetivo = null): array
     {
         if (!$anoLetivo) {
             $anoLetivo = AnoLetivo::ativo()->first();
         }
 
-        $notas = Nota::where('aluno_id',     $aluno->id)
+        $notas = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
             ->with('disciplina')
             ->get();
@@ -256,7 +211,7 @@ class NotaService
             ];
         }
 
-        $aprovados  = $notasComCFD->filter(fn($n) => $n->isAprovado());
+        $aprovados  = $notasComCFD->filter(fn ($nota) => $nota->isAprovado());
         $melhorNota = $notasComCFD->sortByDesc('cfd')->first();
         $piorNota   = $notasComCFD->sortBy('cfd')->first();
 
@@ -269,10 +224,59 @@ class NotaService
                 'disciplina' => $melhorNota->disciplina->nome,
                 'nota'       => $melhorNota->cfd,
             ],
-            'pior_nota'         => [
+            'pior_nota' => [
                 'disciplina' => $piorNota->disciplina->nome,
                 'nota'       => $piorNota->cfd,
             ],
+        ];
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Privados                                                           */
+    /* ------------------------------------------------------------------ */
+
+    private function queryNotasDaPauta(Turma $turma, Disciplina $disciplina, ?int $alunoId = null): Builder
+    {
+        return Nota::query()
+            ->where('turma_id', $turma->id)
+            ->where('disciplina_id', $disciplina->id)
+            ->where('ano_letivo_id', $turma->ano_letivo_id)
+            ->when($alunoId, fn (Builder $query, $id) => $query->where('aluno_id', $id));
+    }
+
+    private function preencherCAsAnteriores(Nota $nota): bool
+    {
+        $classeAtual = (int) $nota->turma->classe;
+
+        if ($classeAtual >= 11 && $nota->disciplina->leciona_10 && $nota->ca_10 === null) {
+            $nota->ca_10 = $this->importarCAAnterior($nota->aluno, $nota->disciplina, '10');
+        }
+
+        if ($classeAtual >= 12 && $nota->disciplina->leciona_11 && $nota->ca_11 === null) {
+            $nota->ca_11 = $this->importarCAAnterior($nota->aluno, $nota->disciplina, '11');
+        }
+
+        if ($classeAtual >= 11 && $nota->disciplina->leciona_10 && $nota->ca_10 === null) {
+            return false;
+        }
+
+        if ($classeAtual >= 12 && $nota->disciplina->leciona_11 && $nota->ca_11 === null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function resumoCompletude(Collection $notas, callable $regra): array
+    {
+        $total     = $notas->count();
+        $completas = $notas->filter($regra)->count();
+
+        return [
+            'total'       => $total,
+            'completas'   => $completas,
+            'incompletas' => $total - $completas,
+            'percentual'  => $total > 0 ? round(($completas / $total) * 100, 2) : 0,
         ];
     }
 }

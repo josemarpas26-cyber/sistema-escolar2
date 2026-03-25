@@ -2,6 +2,14 @@
 
 @section('page-title', 'Dashboard de Logs')
 
+@php
+    $metaAcao = [
+        'criacao' => ['label' => 'Criacoes', 'dot' => 'bg-green-500', 'bar' => 'bg-green-500', 'icon' => 'plus', 'chip' => 'bg-green-100 text-green-600'],
+        'edicao' => ['label' => 'Edicoes', 'dot' => 'bg-blue-500', 'bar' => 'bg-blue-500', 'icon' => 'edit', 'chip' => 'bg-blue-100 text-blue-600'],
+        'exclusao' => ['label' => 'Exclusoes', 'dot' => 'bg-red-500', 'bar' => 'bg-red-500', 'icon' => 'trash', 'chip' => 'bg-red-100 text-red-600'],
+    ];
+@endphp
+
 @section('header-actions')
 <div class="flex space-x-2">
     <a href="{{ route('logs.index') }}" class="btn btn-outline">
@@ -16,233 +24,180 @@
 @endsection
 
 @section('content')
-
-<!-- Estatísticas Gerais -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    
-    <x-stat-card 
-        title="Total de Logs" 
-        :value="$totalLogs"
-        icon="fas fa-clipboard-list"
-        color="primary"
-    />
-    
-    <x-stat-card 
-        title="Hoje" 
-        :value="$logsHoje"
-        icon="fas fa-calendar-day"
-        color="green"
-    />
-    
-    <x-stat-card 
-        title="Esta Semana" 
-        :value="$logsSemana"
-        icon="fas fa-calendar-week"
-        color="blue"
-    />
-    
-    <x-stat-card 
-        title="Este Mês" 
-        :value="$logsMes"
-        icon="fas fa-calendar-alt"
-        color="purple"
-    />
-
+<div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+    <x-stat-card title="Total de Logs" :value="$totalLogs" icon="fas fa-clipboard-list" color="primary" />
+    <x-stat-card title="Hoje" :value="$logsHoje" icon="fas fa-calendar-day" color="green" />
+    <x-stat-card title="Esta Semana" :value="$logsSemana" icon="fas fa-calendar-week" color="blue" />
+    <x-stat-card title="Este Mes" :value="$logsMes" icon="fas fa-calendar-alt" color="purple" />
 </div>
 
-<!-- Gráficos e Análises -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-    <!-- Logs por Ação -->
-    <x-card title="Logs por Tipo de Ação" icon="fas fa-chart-pie">
+<div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <x-card title="Logs por Acao" icon="fas fa-chart-pie">
         <div class="space-y-3">
             @foreach($logsPorAcao as $acao => $quantidade)
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="w-3 h-3 rounded-full mr-3 {{ $acao == 'created' ? 'bg-green-500' : ($acao == 'updated' ? 'bg-blue-500' : 'bg-red-500') }}"></div>
-                    <span class="font-medium text-gray-700">
-                        {{ ucfirst($acao) }}
-                    </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <div class="w-32 bg-gray-200 rounded-full h-2">
-                        <div class="h-2 rounded-full {{ $acao == 'created' ? 'bg-green-500' : ($acao == 'updated' ? 'bg-blue-500' : 'bg-red-500') }}" 
-                            style="width: {{ $totalLogs > 0 ? ($quantidade / $totalLogs) * 100 : 0 }}%"></div>
+                @php
+                    $item = $metaAcao[$acao] ?? ['label' => ucfirst($acao), 'dot' => 'bg-gray-400', 'bar' => 'bg-gray-400', 'icon' => 'circle', 'chip' => 'bg-gray-100 text-gray-600'];
+                @endphp
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="mr-3 h-3 w-3 rounded-full {{ $item['dot'] }}"></div>
+                        <span class="font-medium text-gray-700">{{ $item['label'] }}</span>
                     </div>
-                    <span class="text-sm font-bold text-gray-900 w-12 text-right">{{ $quantidade }}</span>
+                    <div class="flex items-center space-x-3">
+                        <div class="h-2 w-32 rounded-full bg-gray-200">
+                            <div class="h-2 rounded-full {{ $item['bar'] }}" style="width: {{ $totalLogs > 0 ? ($quantidade / $totalLogs) * 100 : 0 }}%"></div>
+                        </div>
+                        <span class="w-12 text-right text-sm font-bold text-gray-900">{{ $quantidade }}</span>
+                    </div>
                 </div>
-            </div>
             @endforeach
         </div>
     </x-card>
 
-    <!-- Top Usuários -->
-    <x-card title="Usuários Mais Ativos" icon="fas fa-users">
+    <x-card title="Utilizadores Mais Ativos" icon="fas fa-users">
         <div class="space-y-3">
-            @foreach($topUsuarios as $usuarioData)
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user text-primary-600"></i>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-900">{{ $usuarioData->usuario->name }}</p>
-                        <p class="text-xs text-gray-500">{{ $usuarioData->usuario->role->display_name ?? 'Sem função' }}</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="text-2xl font-bold text-primary-600">{{ $usuarioData->total }}</div>
-                    <div class="text-xs text-gray-500">alterações</div>
-                </div>
-            </div>
-            @endforeach
-
-            @if($topUsuarios->isEmpty())
-            <div class="text-center py-6 text-gray-500">
-                <i class="fas fa-user-slash text-3xl mb-2"></i>
-                <p>Nenhum dado disponível</p>
-            </div>
-            @endif
-        </div>
-    </x-card>
-
-</div>
-
-<!-- Logs Recentes e Disciplinas Mais Editadas -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-    <!-- Logs Recentes -->
-    <x-card title="Alterações Recentes" icon="fas fa-clock">
-        <div class="space-y-2">
-            @foreach($logsRecentes as $log)
-            <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center
-                                {{ $log->acao == 'created' ? 'bg-green-100 text-green-600' : 
-                                   ($log->acao == 'updated' ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600') }}">
-                        <i class="fas fa-{{ $log->acao == 'created' ? 'plus' : ($log->acao == 'updated' ? 'edit' : 'trash') }} text-xs"></i>
-                    </div>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900">
-                        {{ optional($log->usuario)->name ?? '—' }}
-
-                    </p>
-                    <p class="text-xs text-gray-600">
-                        {{ ucfirst($log->acao) }} nota de 
-                        <span class="font-medium">{{ optional($log->aluno)->name ?? '—' }}</span>
-                        em {{ $log->disciplina->nome }}
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">
-                        <i class="fas fa-clock mr-1"></i>
-                        {{ $log->data_alteracao->diffForHumans() }}
-                    </p>
-                </div>
-            </div>
-            @endforeach
-
-            @if($logsRecentes->isEmpty())
-            <div class="text-center py-6 text-gray-500">
-                <i class="fas fa-inbox text-3xl mb-2"></i>
-                <p>Nenhum log recente</p>
-            </div>
-            @endif
-        </div>
-    </x-card>
-
-    <!-- Disciplinas Mais Editadas -->
-    <x-card title="Disciplinas Mais Editadas" icon="fas fa-book">
-        <div class="space-y-3">
-            @foreach($topDisciplinas as $discData)
-            <div class="flex items-center justify-between">
-                <div class="flex-1">
-                    <p class="font-medium text-gray-900">{{ $discData->disciplina->nome }}</p>
-                    <p class="text-xs text-gray-500">{{ $discData->disciplina->codigo }}</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    @php
-                        $max = max($topDisciplinas->first()->total ?? 0, 1);
-                        $percent = min(100, ($discData->total / $max) * 100);
-                    @endphp
-
-                    <div class="w-24 bg-gray-200 rounded-full h-2">
-                        <div class="bg-primary-500 h-2 rounded-full"
-                            style="width: {{ $percent }}%">
+            @forelse($topUsuarios as $usuarioData)
+                <div class="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
+                            <i class="fas fa-user text-primary-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ optional($usuarioData->usuario)->name ?? 'Sistema' }}</p>
+                            <p class="text-xs text-gray-500">{{ optional(optional($usuarioData->usuario)->role)->display_name ?? 'Sem funcao' }}</p>
                         </div>
                     </div>
-
-                    <span class="text-sm font-bold text-gray-900 w-10 text-right">{{ $discData->total }}</span>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-primary-600">{{ $usuarioData->total }}</div>
+                        <div class="text-xs text-gray-500">alteracoes</div>
+                    </div>
                 </div>
-            </div>
-            @endforeach
+            @empty
+                <div class="py-6 text-center text-gray-500">
+                    <i class="fas fa-user-slash mb-2 text-3xl"></i>
+                    <p>Nenhum dado disponivel</p>
+                </div>
+            @endforelse
+        </div>
+    </x-card>
+</div>
 
-            @if($topDisciplinas->isEmpty())
-            <div class="text-center py-6 text-gray-500">
-                <i class="fas fa-book-open text-3xl mb-2"></i>
-                <p>Nenhum dado disponível</p>
-            </div>
-            @endif
+<div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <x-card title="Alteracoes Recentes" icon="fas fa-clock">
+        <div class="space-y-2">
+            @forelse($logsRecentes as $log)
+                @php
+                    $item = $metaAcao[$log->acao] ?? ['icon' => 'circle', 'chip' => 'bg-gray-100 text-gray-600'];
+                @endphp
+                <div class="flex items-start space-x-3 rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
+                    <div class="flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-full {{ $item['chip'] }}">
+                            <i class="fas fa-{{ $item['icon'] }} text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-medium text-gray-900">{{ optional($log->usuario)->name ?? 'Sistema' }}</p>
+                        <p class="text-xs text-gray-600">
+                            {{ $log->descricao_acao }} {{ $log->descricao_campo }}
+                            de <span class="font-medium">{{ optional($log->aluno)->name ?? '-' }}</span>
+                            em {{ optional($log->disciplina)->nome ?? '-' }}
+                        </p>
+                        @if($log->motivo)
+                            <p class="mt-1 text-xs text-amber-700">Motivo: {{ $log->motivo }}</p>
+                        @endif
+                        <p class="mt-1 text-xs text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>
+                            {{ $log->data_alteracao->diffForHumans() }}
+                        </p>
+                    </div>
+                </div>
+            @empty
+                <div class="py-6 text-center text-gray-500">
+                    <i class="fas fa-inbox mb-2 text-3xl"></i>
+                    <p>Nenhum log recente</p>
+                </div>
+            @endforelse
         </div>
     </x-card>
 
+    <x-card title="Disciplinas Mais Editadas" icon="fas fa-book">
+        <div class="space-y-3">
+            @forelse($topDisciplinas as $discData)
+                @php
+                    $max = max($topDisciplinas->first()->total ?? 0, 1);
+                    $percent = min(100, ($discData->total / $max) * 100);
+                @endphp
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900">{{ $discData->disciplina->nome }}</p>
+                        <p class="text-xs text-gray-500">{{ $discData->disciplina->codigo }}</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="h-2 w-24 rounded-full bg-gray-200">
+                            <div class="h-2 rounded-full bg-primary-500" style="width: {{ $percent }}%"></div>
+                        </div>
+                        <span class="w-10 text-right text-sm font-bold text-gray-900">{{ $discData->total }}</span>
+                    </div>
+                </div>
+            @empty
+                <div class="py-6 text-center text-gray-500">
+                    <i class="fas fa-book-open mb-2 text-3xl"></i>
+                    <p>Nenhum dado disponivel</p>
+                </div>
+            @endforelse
+        </div>
+    </x-card>
 </div>
 
-<!-- Atividade por Período -->
-<x-card title="Atividade dos Últimos 7 Dias" icon="fas fa-chart-line">
-    <div class="h-64 flex items-end justify-between space-x-2">
+<x-card title="Atividade dos Ultimos 7 Dias" icon="fas fa-chart-line">
+    <div class="flex h-64 items-end justify-between space-x-2">
         @foreach($atividadeSemanal as $dia => $total)
-        @php
-            $altura = $atividadeSemanal->max() > 0 ? ($total / $atividadeSemanal->max()) * 100 : 0;
-        @endphp
-        <div class="flex-1 flex flex-col items-center">
-            <div class="w-full bg-primary-500 rounded-t hover:bg-primary-600 transition-colors cursor-pointer relative group" 
-                 style="height: {{ $altura }}%">
-                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    {{ $total }} alterações
+            @php
+                $altura = $atividadeSemanal->max() > 0 ? ($total / $atividadeSemanal->max()) * 100 : 0;
+            @endphp
+            <div class="flex flex-1 flex-col items-center">
+                <div class="group relative w-full cursor-pointer rounded-t bg-primary-500 transition-colors hover:bg-primary-600" style="height: {{ $altura }}%">
+                    <div class="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        {{ $total }} alteracoes
+                    </div>
+                </div>
+                <div class="mt-2 text-center text-xs text-gray-600">
+                    {{ \Carbon\Carbon::parse($dia)->format('d/m') }}
                 </div>
             </div>
-            <div class="text-xs text-gray-600 mt-2 text-center">
-                {{ \Carbon\Carbon::parse($dia)->format('d/m') }}
-            </div>
-        </div>
         @endforeach
     </div>
 </x-card>
 
-<!-- Filtros Rápidos -->
-<div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-    <a href="{{ route('logs.index', ['acao' => 'created']) }}" 
-       class="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 transition-colors">
+<div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+    <a href="{{ route('logs.index', ['acao' => 'criacao']) }}" class="rounded-lg border border-green-200 bg-green-50 p-4 transition-colors hover:bg-green-100">
         <div class="flex items-center justify-between">
             <div>
-                <div class="text-green-800 font-semibold">Notas Criadas</div>
-                <div class="text-sm text-green-600">Ver todas as criações</div>
+                <div class="font-semibold text-green-800">Notas Criadas</div>
+                <div class="text-sm text-green-600">Ver todas as criacoes</div>
             </div>
             <i class="fas fa-plus-circle text-3xl text-green-500"></i>
         </div>
     </a>
 
-    <a href="{{ route('logs.index', ['acao' => 'updated']) }}" 
-       class="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 transition-colors">
+    <a href="{{ route('logs.index', ['acao' => 'edicao']) }}" class="rounded-lg border border-blue-200 bg-blue-50 p-4 transition-colors hover:bg-blue-100">
         <div class="flex items-center justify-between">
             <div>
-                <div class="text-blue-800 font-semibold">Notas Editadas</div>
-                <div class="text-sm text-blue-600">Ver todas as edições</div>
+                <div class="font-semibold text-blue-800">Notas Editadas</div>
+                <div class="text-sm text-blue-600">Ver todas as edicoes</div>
             </div>
             <i class="fas fa-edit text-3xl text-blue-500"></i>
         </div>
     </a>
 
-    <a href="{{ route('logs.index', ['acao' => 'deleted']) }}" 
-       class="bg-red-50 border border-red-200 rounded-lg p-4 hover:bg-red-100 transition-colors">
+    <a href="{{ route('logs.index', ['acao' => 'exclusao']) }}" class="rounded-lg border border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100">
         <div class="flex items-center justify-between">
             <div>
-                <div class="text-red-800 font-semibold">Notas Deletadas</div>
-                <div class="text-sm text-red-600">Ver todas as exclusões</div>
+                <div class="font-semibold text-red-800">Notas Removidas</div>
+                <div class="text-sm text-red-600">Ver todas as exclusoes</div>
             </div>
             <i class="fas fa-trash-alt text-3xl text-red-500"></i>
         </div>
     </a>
 </div>
-
 @endsection

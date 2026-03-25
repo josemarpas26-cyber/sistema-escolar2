@@ -37,7 +37,9 @@ class Nota extends Model
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
     ];
 
-    // === RELACIONAMENTOS ===
+    /* ------------------------------------------------------------------ */
+    /*  Relacionamentos                                                    */
+    /* ------------------------------------------------------------------ */
 
     public function aluno()
     {
@@ -64,166 +66,162 @@ class Nota extends Model
         return $this->hasMany(NotaLog::class);
     }
 
-    // === CÁLCULOS AUTOMÁTICOS ===
+    /* ------------------------------------------------------------------ */
+    /*  Recálculo público                                                  */
+    /* ------------------------------------------------------------------ */
 
     /**
-     * Recalcula todas as médias da nota
+     * Recalcula todos os campos derivados da nota.
+     *
+     * Exige que 'turma' e 'disciplina' estejam eager-loaded e não-nulos.
+     * Exemplo: $nota->load(['turma', 'disciplina'])->recalcular();
      */
-// Nota.php — recalcular() com guard completo
     public function recalcular(): void
     {
-        // Garantir que as relações necessárias estão carregadas
-        if (!$this->relationLoaded('turma') || !$this->turma) {
-            $this->load(['turma.curso', 'disciplina']);
-        }
-        
-        if (!$this->turma) {
-            throw new \RuntimeException("Nota {$this->id} não possui turma associada.");
-        }
+        $this->assertRelacoesCarregadas();
 
-        $classe = $this->turma->classe;
+        $classe = (int) $this->turma->classe;
 
-        // 1º Trimestre
-        if ($this->mac1 !== null && $this->pp1 !== null && $this->pt1 !== null) {
-            $this->mt1 = round(($this->mac1 + $this->pp1 + $this->pt1) / 3, 2);
-        }
-
-        // 2º Trimestre
-        if ($this->mac2 !== null && $this->pp2 !== null && $this->pt2 !== null) {
-            $this->mt2 = round(($this->mac2 + $this->pp2 + $this->pt2) / 3, 2);
-        }
-
-        // MFT2
-        if ($this->mt1 !== null && $this->mt2 !== null) {
-            $this->mft2 = round(($this->mt1 + $this->mt2) / 2, 2);
-        }
+        $this->calcularMediasTrimestre1e2();
 
         match ($classe) {
-            '10' => $this->calcularTrimestre3Classe10(),
-            '11' => $this->calcularTrimestre3Classe11(),
-            '12' => $this->calcularTrimestre3Classe12(),
-            default => null,
+            10, 11, 12 => $this->calcularTrimestre3($classe),
+            default    => $this->limparCamposFinais(),
         };
     }
 
+    /* ------------------------------------------------------------------ */
+    /*  Guardas                                                            */
+    /* ------------------------------------------------------------------ */
+
     /**
-     * 3º Trimestre - 10ª Classe
+     * Garante que turma e disciplina estão eager-loaded e não são null.
+     *
+     * Chamada em qualquer ponto que precise dessas relações,
+     * evitando lazy-load silencioso e "property on null".
      */
-    private function calcularTrimestre3Classe10(): void
+    private function assertRelacoesCarregadas(): void
     {
-        // MT3 = (MAC3 + PP3) / 2
-        if ($this->mac3 !== null && $this->pp3 !== null) {
-            $this->mt3 = round(($this->mac3 + $this->pp3) / 2, 2);
+        if (!$this->relationLoaded('turma') || !$this->relationLoaded('disciplina')) {
+            throw new \LogicException(
+                "Relações não carregadas em Nota #{$this->id}. "
+                . "Use load(['turma', 'disciplina']) ou with(['turma', 'disciplina']) antes de chamar recalcular()."
+            );
         }
 
-        // CF = (MFT2 + MT3) / 2
-        if ($this->mft2 !== null && $this->mt3 !== null) {
-            $this->cf = round(($this->mft2 + $this->mt3) / 2, 2);
+        if (!$this->turma) {
+            throw new \RuntimeException(
+                "Nota #{$this->id} não possui turma associada."
+            );
         }
 
-        // CA = 0.6 × CF + 0.4 × PG
-        if ($this->cf !== null && $this->pg !== null) {
-            $this->ca = round((0.6 * $this->cf) + (0.4 * $this->pg), 2);
-        }
-
-        // Verificar se é disciplina terminal nesta classe/curso
-        $anoTerminal = $this->disciplina?->anoTerminalParaCurso($this->turma?->curso_id);
-
-        if ($anoTerminal === 10) {
-            // Disciplina termina na 10ª — CFD = CA
-            if ($this->ca !== null) {
-                $this->cfd = $this->ca;
-            }
-        } else {
-            // Disciplina continua nas classes seguintes
-            // CFD ainda não é final, mas salvamos CA para uso futuro
-            // CFD na 10ª para disciplinas não-terminais = CA (classificação do ano)
-            if ($this->ca !== null) {
-                $this->cfd = $this->ca; // provisório, será recalculado na 11ª/12ª
-            }
+        if (!$this->disciplina) {
+            throw new \RuntimeException(
+                "Nota #{$this->id} não possui disciplina associada."
+            );
         }
     }
 
-    /**
-     * 3º Trimestre - 11ª Classe
-     */
-    private function calcularTrimestre3Classe11(): void
+    /* ------------------------------------------------------------------ */
+    /*  Cálculos internos                                                  */
+    /* ------------------------------------------------------------------ */
+
+    private function calcularMediasTrimestre1e2(): void
     {
-        // MT3 = (MAC3 + PP3) / 2
-        if ($this->mac3 !== null && $this->pp3 !== null) {
-            $this->mt3 = round(($this->mac3 + $this->pp3) / 2, 2);
-        }
+        $this->mt1 = $this->mac1 !== null && $this->pp1 !== null && $this->pt1 !== null
+            ? round(($this->mac1 + $this->pp1 + $this->pt1) / 3, 2)
+            : null;
 
-        // CF = (MFT2 + MT3) / 2
-        if ($this->mft2 !== null && $this->mt3 !== null) {
-            $this->cf = round(($this->mft2 + $this->mt3) / 2, 2);
-        }
+        $this->mt2 = $this->mac2 !== null && $this->pp2 !== null && $this->pt2 !== null
+            ? round(($this->mac2 + $this->pp2 + $this->pt2) / 3, 2)
+            : null;
 
-        // CA11ª = 0.6 × CF + 0.4 × PG
-        if ($this->cf !== null && $this->pg !== null) {
-            $this->ca = round((0.6 * $this->cf) + (0.4 * $this->pg), 2);
-        }
-
-        // CFD = (CA10ª + CA11ª) / 2
-        if ($this->ca_10 !== null && $this->ca !== null) {
-            $this->cfd = round(($this->ca_10 + $this->ca) / 2, 2);
-        }
-         $this->aplicarRegraTerminalPorCurso(11);
+        $this->mft2 = $this->mt1 !== null && $this->mt2 !== null
+            ? round(($this->mt1 + $this->mt2) / 2, 2)
+            : null;
     }
 
     /**
-     * 3º Trimestre - 12ª Classe
+     * Trimestre 3 + campos finais — lógica idêntica para classes 10, 11, 12.
      */
-    private function calcularTrimestre3Classe12(): void
+    private function calcularTrimestre3(int $classe): void
     {
-        // MT3 = (MAC3 + PP3) / 2
-        if ($this->mac3 !== null && $this->pp3 !== null) {
-            $this->mt3 = round(($this->mac3 + $this->pp3) / 2, 2);
-        }
+        $this->mt3 = $this->mac3 !== null && $this->pp3 !== null
+            ? round(($this->mac3 + $this->pp3) / 2, 2)
+            : null;
 
-        // CF = (MFT2 + MT3) / 2
-        if ($this->mft2 !== null && $this->mt3 !== null) {
-            $this->cf = round(($this->mft2 + $this->mt3) / 2, 2);
-        }
+        $this->cf = $this->mft2 !== null && $this->mt3 !== null
+            ? round(($this->mft2 + $this->mt3) / 2, 2)
+            : null;
 
-        // CA12ª = 0.6 × CF + 0.4 × PG
-        if ($this->cf !== null && $this->pg !== null) {
-            $this->ca = round((0.6 * $this->cf) + (0.4 * $this->pg), 2);
-        }
+        $this->ca = $this->cf !== null && $this->pg !== null
+            ? round((0.6 * $this->cf) + (0.4 * $this->pg), 2)
+            : null;
 
-        // CFD = (CA10ª + CA11ª + CA12ª) / 3
-        if ($this->ca_10 !== null && $this->ca_11 !== null && $this->ca !== null) {
-            $this->cfd = round(($this->ca_10 + $this->ca_11 + $this->ca) / 3, 2);
-        }
-
-           $this->aplicarRegraTerminalPorCurso(12);
+        $this->atualizarCfd($classe);
     }
 
+    /**
+     * Calcula o CFD usando a disciplina JÁ CARREGADA (nunca faz lazy-load).
+     *
+     * Recebe a disciplina explicitamente via $this->disciplina que foi
+     * validada por assertRelacoesCarregadas().
+     */
+    private function atualizarCfd(int $classeAtual): void
+    {
+        $this->cfd = null;
 
-        private function aplicarRegraTerminalPorCurso(int $classeAtual): void
-        {
-            $anoTerminal = $this->disciplina->anoTerminalParaCurso($this->turma?->curso_id);
-
-            if ($anoTerminal !== $classeAtual) {
+        if ($this->ca === null) {
             return;
+        }
+
+        // $disciplina é garantidamente não-nula aqui (assertRelacoesCarregadas).
+        $disciplina = $this->disciplina;
+
+        $classificacoes = [];
+
+        if ($disciplina->leciona_10 && $classeAtual >= 10) {
+            $ca10 = $classeAtual === 10 ? $this->ca : $this->ca_10;
+
+            if ($ca10 === null) {
+                return;
             }
 
-            if ($classeAtual === 10 && $this->ca !== null) {
-            $this->cfd = $this->ca;
-            return;
+            $classificacoes[] = $ca10;
         }
 
-        if ($classeAtual === 11 && $this->ca_10 !== null && $this->ca !== null) {
-            $this->cfd = round(($this->ca_10 + $this->ca) / 2, 2);
-            return;
+        if ($disciplina->leciona_11 && $classeAtual >= 11) {
+            $ca11 = $classeAtual === 11 ? $this->ca : $this->ca_11;
+
+            if ($ca11 === null) {
+                return;
+            }
+
+            $classificacoes[] = $ca11;
         }
 
-        if ($classeAtual === 12 && $this->ca_10 !== null && $this->ca_11 !== null && $this->ca !== null) {
-            $this->cfd = round(($this->ca_10 + $this->ca_11 + $this->ca) / 3, 2);
+        if ($disciplina->leciona_12 && $classeAtual >= 12) {
+            $classificacoes[] = $this->ca;
         }
+
+        if (empty($classificacoes)) {
+            $classificacoes[] = $this->ca;
+        }
+
+        $this->cfd = round(array_sum($classificacoes) / count($classificacoes), 2);
     }
 
-    // === HELPERS ===
+    private function limparCamposFinais(): void
+    {
+        $this->mt3 = null;
+        $this->cf  = null;
+        $this->ca  = null;
+        $this->cfd = null;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Acessores / helpers públicos                                       */
+    /* ------------------------------------------------------------------ */
 
     public function isAprovado(): bool
     {
@@ -235,6 +233,7 @@ class Nota extends Model
         if ($this->cfd === null) {
             return 'Em andamento';
         }
+
         return $this->cfd >= 10 ? 'Aprovado' : 'Reprovado';
     }
 }
