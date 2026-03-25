@@ -8,6 +8,7 @@ use App\Models\AnoLetivo;
 use App\Models\User;
 use App\Models\Disciplina;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TurmaController extends Controller
 {
@@ -356,75 +357,123 @@ class TurmaController extends Controller
     {
         $this->checkPermission('turmas.promote');
 
-        // Verificar se há próximo ano letivo
-        $proximoAno = AnoLetivo::where('data_inicio', '>', $turma->anoLetivo->data_inicio)
-        ->orderBy('data_inicio')
-        ->first();
+        // ----------------------------------------------------------------
+        // Validações prévias
+        // ----------------------------------------------------------------
 
-        
+        $proximoAno = AnoLetivo::where('data_inicio', '>', $turma->anoLetivo->data_inicio)
+            ->orderBy('data_inicio')
+            ->first();
+
         if (!$proximoAno) {
-            return back()->with('error', 'Não há ano letivo ativo para promover a turma!');
+            return back()->with('error', 'Não há ano letivo posterior para promover a turma.');
         }
 
-        // Verificar se já existe turma promovida
-        $novaClasse = (string) ((int) $turma->classe + 1);
-        
+        $novaClasse = (int) $turma->classe + 1;
+
         if ($novaClasse > 12) {
-            return back()->with('error', 'Alunos da 12ª classe não podem ser promovidos!');
+            return back()->with('error', 'Alunos da 12ª classe não podem ser promovidos.');
         }
 
         $turmaExistente = Turma::where('curso_id', $turma->curso_id)
-            ->where('classe', $novaClasse)
+            ->where('classe', (string) $novaClasse)
             ->where('nome', $turma->nome)
             ->where('ano_letivo_id', $proximoAno->id)
             ->exists();
 
         if ($turmaExistente) {
-            return back()->with('error', 'Já existe uma turma com este nome na classe seguinte!');
+            return back()->with('error', 'Já existe uma turma com este nome na classe seguinte.');
         }
 
-        // Criar nova turma
-        $novaTurma = Turma::create([
-            'nome' => $turma->nome,
-            'classe' => $novaClasse,
-            'curso_id' => $turma->curso_id,
-            'ano_letivo_id' => $proximoAno->id,
-            'coordenador_turma_id' => $turma->coordenador_turma_id,
-            'capacidade' => $turma->capacidade,
-            'ativo' => true,
-        ]);
+        // ----------------------------------------------------------------
+        // Guarda: turma sem disciplinas não pode promover ninguém
+        // ----------------------------------------------------------------
 
-        // Copiar disciplinas
-        $novaTurma->disciplinas()->attach($turma->disciplinas->pluck('id'));
-
-        // Promover alunos aprovados
         $totalDisciplinas = $turma->disciplinas()->count();
+
+        if ($totalDisciplinas === 0) {
+            return back()->with(
+                'error',
+                'A turma não tem disciplinas associadas. Não é possível determinar aprovações.'
+            );
+        }
+
+        // ----------------------------------------------------------------
+        // Identificar alunos aprovados
+        // ----------------------------------------------------------------
+        // Aprovado = tem nota com cfd >= 10 em TODAS as disciplinas da turma
+        //            E NÃO tem nenhuma nota reprovada/incompleta
 
         $alunosAprovados = $turma->alunos()
             ->wherePivot('status', 'matriculado')
             ->whereDoesntHave('notas', fn ($q) => $q
                 ->where('turma_id', $turma->id)
                 ->where('ano_letivo_id', $turma->ano_letivo_id)
-                ->where(fn ($q) => $q->whereNull('cfd')->orWhere('cfd', '<', 10)))
-            ->whereHas('notas', fn ($q) => $q
-                ->where('turma_id', $turma->id)
-                ->where('ano_letivo_id', $turma->ano_letivo_id), '=', $totalDisciplinas)
+                ->where(fn ($q) => $q
+                    ->whereNull('cfd')
+                    ->orWhere('cfd', '<', 10)
+                )
+            )
+            ->whereHas(
+                'notas',
+                fn ($q) => $q
+                    ->where('turma_id', $turma->id)
+                    ->where('ano_letivo_id', $turma->ano_letivo_id)
+                    ->where('cfd', '>=', 10),
+                '=',
+                $totalDisciplinas
+            )
             ->get();
 
-        foreach ($alunosAprovados as $aluno) {
-            $novaTurma->alunos()->attach($aluno->id, [
-                'data_matricula' => now(),
-                'status' => 'matriculado',
-            ]);
-            
-            // Atualizar status na turma antiga
-            $turma->alunos()->updateExistingPivot($aluno->id, [
-                'status' => 'concluido',
-            ]);
+        if ($alunosAprovados->isEmpty()) {
+            return back()->with(
+                'warning',
+                'Nenhum aluno cumpre os critérios de aprovação para promoção.'
+            );
         }
+
+        // ----------------------------------------------------------------
+        // Transação: criar turma + mover alunos (tudo ou nada)
+        // ----------------------------------------------------------------
+
+        $novaTurma = DB::transaction(function () use (
+            $turma, $novaClasse, $proximoAno, $alunosAprovados
+        ) {
+            $novaTurma = Turma::create([
+                'nome'                 => $turma->nome,
+                'classe'               => (string) $novaClasse,
+                'curso_id'             => $turma->curso_id,
+                'ano_letivo_id'        => $proximoAno->id,
+                'coordenador_turma_id' => $turma->coordenador_turma_id,
+                'capacidade'           => $turma->capacidade,
+                'ativo'                => true,
+            ]);
+
+            // Copiar disciplinas
+            $novaTurma->disciplinas()->attach($turma->disciplinas->pluck('id'));
+
+            // Promover cada aluno aprovado
+            foreach ($alunosAprovados as $aluno) {
+                $novaTurma->alunos()->attach($aluno->id, [
+                    'data_matricula' => now(),
+                    'status'         => 'matriculado',
+                ]);
+
+                $turma->alunos()->updateExistingPivot($aluno->id, [
+                    'status' => 'concluido',
+                ]);
+            }
+
+            return $novaTurma;
+        });
+
+        $total = $alunosAprovados->count();
 
         return redirect()
             ->route('turmas.show', $novaTurma)
-            ->with('success', "Turma promovida com sucesso para {$novaClasse}ª classe!");
+            ->with(
+                'success',
+                "Turma promovida para {$novaClasse}ª classe. {$total} aluno(s) aprovado(s) transferido(s)."
+            );
     }
 }
