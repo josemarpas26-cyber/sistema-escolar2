@@ -58,22 +58,7 @@ class NotaObserver
             );
         }
 
-        // ✅ Agora incluindo usuario_id e outros campos necessários
-        if (!empty($camposAlterados)) {
-            NotaLog::create([
-                'nota_id'          => $nota->id,
-                'usuario_id'       => $usuarioId,          // ← ADICIONADO
-                'aluno_id'         => $nota->aluno_id,     // ← ADICIONADO
-                'turma_id'         => $nota->turma_id,     // ← ADICIONADO
-                'disciplina_id'    => $nota->disciplina_id,// ← ADICIONADO
-                'acao'             => 'edicao',
-                'campo_alterado'   => 'multiplos',         // ou 'todas'
-                'alteracoes'       => json_encode($camposAlterados),
-                'quantidade_campos'=> count($camposAlterados),
-                'ip_address'       => request()?->ip(),
-                'data_alteracao'   => now(),
-            ]);
-        }
+
     }
 
     public function deleted(Nota $nota): void
