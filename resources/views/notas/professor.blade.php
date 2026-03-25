@@ -173,7 +173,8 @@
                  @endif
         <!-- 1º Trimestre -->
         <div x-show="tab === '1'">
-            <form method="POST" action="{{ route('notas.trimestre-1') }}">
+            <form method="POST" action="{{ route('notas.lancarTrimestre', 1) }}">
+
                 @csrf
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -242,7 +243,8 @@
 
         <!-- 2º Trimestre -->
         <div x-show="tab === '2'" x-cloak>
-            <form method="POST" action="{{ route('notas.trimestre-2') }}">
+            <form method="POST" action="{{ route('notas.lancarTrimestre', 2) }}">
+
                 @csrf
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -321,7 +323,7 @@
 
         <!-- 3º Trimestre -->
         <div x-show="tab === '3'" x-cloak>
-            <form method="POST" action="{{ route('notas.trimestre-3') }}">
+            <form method="POST" action="{{ route('notas.lancarTrimestre', 3) }}">
                 @csrf
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">

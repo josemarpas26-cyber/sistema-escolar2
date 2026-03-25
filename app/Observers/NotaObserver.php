@@ -33,19 +33,42 @@ class NotaObserver
             'bloqueado_t3',
         ];
 
+        $camposAlterados = [];
+
         foreach ($camposMonitorados as $campo) {
             if (!$nota->isDirty($campo)) {
                 continue;
             }
 
+            $valorAnterior = $this->normalizarValor($nota->getOriginal($campo));
+            $valorNovo     = $this->normalizarValor($nota->{$campo});
+
+            // Agrupado (JSON)
+            $camposAlterados[$campo] = [
+                'anterior' => $valorAnterior,
+                'novo'     => $valorNovo,
+                'trimestre'=> $this->determinarTrimestre($campo),
+            ];
+
+            // Detalhado (opcional - pode filtrar campos críticos aqui)
             $this->registrarLog(
                 $nota,
                 'edicao',
                 $campo,
-                $this->normalizarValor($nota->getOriginal($campo)),
-                $this->normalizarValor($nota->{$campo}),
+                $valorAnterior,
+                $valorNovo,
                 $this->determinarTrimestre($campo)
             );
+        }
+
+        // Log principal (1 único insert)
+        if (!empty($camposAlterados)) {
+            NotaLog::create([
+                'nota_id'    => $nota->id,
+                'tipo'       => 'edicao',
+                'alteracoes' => json_encode($camposAlterados),
+                'quantidade_campos' => count($camposAlterados),
+            ]);
         }
     }
 

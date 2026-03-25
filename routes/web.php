@@ -70,12 +70,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.edit');
     Route::put('notas/{nota}', [NotaController::class, 'update'])
         ->name('notas.update');
-    Route::post('notas/trimestre-1', [NotaController::class, 'lancarTrimestre1'])
-        ->name('notas.trimestre-1');
-    Route::post('notas/trimestre-2', [NotaController::class, 'lancarTrimestre2'])
-        ->name('notas.trimestre-2');
-    Route::post('notas/trimestre-3', [NotaController::class, 'lancarTrimestre3'])
-        ->name('notas.trimestre-3');
+    Route::post('/notas/trimestre/{trimestre}', [NotaController::class, 'lancarTrimestre'])
+        ->name('notas.lancarTrimestre')
+        ->whereIn('trimestre', ['1', '2', '3']);
     Route::post('notas/inicializar-pauta', [NotaController::class, 'inicializarPauta'])
         ->name('notas.inicializar-pauta');
     Route::post('notas/importar-cas', [NotaController::class, 'importarCAs'])

@@ -70,30 +70,42 @@ class Nota extends Model
      * Recalcula todas as médias da nota
      */
 // Nota.php — recalcular() com guard completo
+    /**
+     * Recalcula todas as médias da nota.
+     *
+     * NUNCA dispara lazy-load. Exige que 'turma.curso' e 'disciplina'
+     * estejam carregados antes da chamada — responsabilidade do caller.
+     * Em loops, use Nota::with(['turma.curso', 'disciplina'])->...
+     */
     public function recalcular(): void
     {
-        // Garantir que as relações necessárias estão carregadas
-        if (!$this->relationLoaded('turma') || !$this->turma) {
-            $this->load(['turma.curso', 'disciplina']);
+        // Guard sem query: lança exceção se o caller não fez eager load.
+        // Isso força o problema a aparecer em dev/test em vez de silenciosamente
+        // gerar N+1 em produção.
+        if (!$this->relationLoaded('turma') || !$this->relationLoaded('disciplina')) {
+            throw new \LogicException(
+                "recalcular() chamado sem eager load em Nota #{$this->id}. " .
+                "Use with(['turma.curso', 'disciplina']) antes de chamar recalcular()."
+            );
         }
-        
+
         if (!$this->turma) {
             throw new \RuntimeException("Nota {$this->id} não possui turma associada.");
         }
 
         $classe = $this->turma->classe;
 
-        // 1º Trimestre
+        // 1º Trimestre — MT1
         if ($this->mac1 !== null && $this->pp1 !== null && $this->pt1 !== null) {
             $this->mt1 = round(($this->mac1 + $this->pp1 + $this->pt1) / 3, 2);
         }
 
-        // 2º Trimestre
+        // 2º Trimestre — MT2
         if ($this->mac2 !== null && $this->pp2 !== null && $this->pt2 !== null) {
             $this->mt2 = round(($this->mac2 + $this->pp2 + $this->pt2) / 3, 2);
         }
 
-        // MFT2
+        // MFT2 depende de MT1 e MT2 já calculados acima
         if ($this->mt1 !== null && $this->mt2 !== null) {
             $this->mft2 = round(($this->mt1 + $this->mt2) / 2, 2);
         }
@@ -126,22 +138,8 @@ class Nota extends Model
             $this->ca = round((0.6 * $this->cf) + (0.4 * $this->pg), 2);
         }
 
-        // Verificar se é disciplina terminal nesta classe/curso
-        $anoTerminal = $this->disciplina?->anoTerminalParaCurso($this->turma?->curso_id);
-
-        if ($anoTerminal === 10) {
-            // Disciplina termina na 10ª — CFD = CA
-            if ($this->ca !== null) {
-                $this->cfd = $this->ca;
-            }
-        } else {
-            // Disciplina continua nas classes seguintes
-            // CFD ainda não é final, mas salvamos CA para uso futuro
-            // CFD na 10ª para disciplinas não-terminais = CA (classificação do ano)
-            if ($this->ca !== null) {
-                $this->cfd = $this->ca; // provisório, será recalculado na 11ª/12ª
-            }
-        }
+        // CFD via regra terminal — unificado com classes 11 e 12
+        $this->aplicarRegraTerminalPorCurso(10);
     }
 
     /**
@@ -200,15 +198,18 @@ class Nota extends Model
     }
 
 
-        private function aplicarRegraTerminalPorCurso(int $classeAtual): void
-        {
-            $anoTerminal = $this->disciplina->anoTerminalParaCurso($this->turma?->curso_id);
+    private function aplicarRegraTerminalPorCurso(int $classeAtual): void
+    {
+        // disciplina já está carregada (garantido pelo guard em recalcular())
+        $anoTerminal = $this->disciplina->anoTerminalParaCurso($this->turma?->curso_id);
 
-            if ($anoTerminal !== $classeAtual) {
+        // Disciplina não termina nesta classe — CFD não é calculado aqui
+        if ($anoTerminal !== $classeAtual) {
             return;
-            }
+        }
 
-            if ($classeAtual === 10 && $this->ca !== null) {
+        // Disciplina termina nesta classe: CFD = média das CAs acumuladas até aqui
+        if ($classeAtual === 10 && $this->ca !== null) {
             $this->cfd = $this->ca;
             return;
         }

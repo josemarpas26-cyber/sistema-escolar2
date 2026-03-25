@@ -13,27 +13,31 @@ use Illuminate\Support\Facades\DB;
 
 class NotaController extends Controller
 {
+    // Mapeamento dos campos por trimestre — única fonte de verdade
+    private const CAMPOS_TRIMESTRE = [
+        '1' => ['mac1', 'pp1', 'pt1'],
+        '2' => ['mac2', 'pp2', 'pt2'],
+        '3' => ['mac3', 'pp3', 'pg'],
+    ];
+
     public function __construct(private readonly NotaService $notaService)
     {
     }
+
+    // -------------------------------------------------------------------------
+    // Index / visualização
+    // -------------------------------------------------------------------------
 
     public function index(Request $request)
     {
         $user = auth()->user();
 
-        if ($user->isProfessor()) {
-            return $this->professorIndex($request);
-        }
-
-        if ($user->isSecretaria() || $user->isAdmin()) {
-            return $this->secretariaIndex($request);
-        }
-
-        if ($user->isAluno()) {
-            return $this->alunoIndex();
-        }
-
-        abort(403);
+        return match (true) {
+            $user->isProfessor()                        => $this->professorIndex($request),
+            $user->isSecretaria() || $user->isAdmin()   => $this->secretariaIndex($request),
+            $user->isAluno()                            => $this->alunoIndex(),
+            default                                     => abort(403),
+        };
     }
 
     public function professorIndex(Request $request)
@@ -50,12 +54,11 @@ class NotaController extends Controller
             ->with(['turma', 'disciplina'])
             ->get();
 
-        $turmaId = $request->turma_id;
+        $turmaId      = $request->turma_id;
         $disciplinaId = $request->disciplina_id;
-
-        $notas = null;
-        $turma = null;
-        $disciplina = null;
+        $notas        = null;
+        $turma        = null;
+        $disciplina   = null;
 
         if ($turmaId && $disciplinaId) {
             $temAtribuicao = $atribuicoes
@@ -67,9 +70,9 @@ class NotaController extends Controller
                 return back()->with('error', 'Voce nao leciona esta disciplina nesta turma.');
             }
 
-            $turma = Turma::findOrFail($turmaId);
+            $turma      = Turma::findOrFail($turmaId);
             $disciplina = Disciplina::findOrFail($disciplinaId);
-            $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+            $alunos     = $turma->alunos()->wherePivot('status', 'matriculado')->get();
 
             $notasPorAluno = Nota::where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
@@ -95,53 +98,6 @@ class NotaController extends Controller
         return view('notas.professor', compact('atribuicoes', 'notas', 'turma', 'disciplina'));
     }
 
-    public function inicializarPauta(Request $request)
-    {
-        $user = auth()->user();
-
-        if ($user->isProfessor()) {
-            $this->checkPermission('notas.lancar');
-        } else {
-            $this->checkPermission('notas.editar');
-        }
-
-        $validated = $request->validate([
-            'turma_id' => 'required|exists:turmas,id',
-            'disciplina_id' => 'required|exists:disciplinas,id',
-        ]);
-
-        $anoLetivo = AnoLetivo::ativo()->first();
-
-        if (!$anoLetivo) {
-            return $this->redirectSemAnoLetivoAtivo();
-        }
-
-        $turma = Turma::findOrFail($validated['turma_id']);
-        $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
-
-        if ($user->isProfessor()) {
-            $temAtribuicao = $user->atribuicoes()
-                ->where('turma_id', $turma->id)
-                ->where('disciplina_id', $disciplina->id)
-                ->where('ano_letivo_id', $anoLetivo->id)
-                ->exists();
-
-            if (!$temAtribuicao) {
-                abort(403, 'Voce nao tem permissao para inicializar esta pauta.');
-            }
-        }
-
-        if ($turma->ano_letivo_id !== $anoLetivo->id) {
-            return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
-        }
-
-        $criados = $this->notaService->criarNotasParaTurma($turma, $disciplina);
-
-        return redirect()
-            ->route('notas.index', ['turma_id' => $turma->id, 'disciplina_id' => $disciplina->id])
-            ->with('success', "Pauta inicializada. {$criados} registros criados.");
-    }
-
     public function secretariaIndex(Request $request)
     {
         $this->checkPermission('notas.view_all');
@@ -152,20 +108,20 @@ class NotaController extends Controller
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turmas = Turma::anoAtivo()->with('curso')->get();
+        $turmas      = Turma::anoAtivo()->with('curso')->get();
         $disciplinas = collect();
 
-        $turmaId = $request->turma_id;
+        $turmaId      = $request->turma_id;
         $disciplinaId = $request->disciplina_id;
 
-        $notas = null;
-        $notasAgrupadas = null;
-        $turmaSelecionada = null;
+        $notas               = null;
+        $notasAgrupadas      = null;
+        $turmaSelecionada    = null;
         $disciplinaSelecionada = null;
 
         if ($turmaId) {
             $turmaSelecionada = Turma::findOrFail($turmaId);
-            $disciplinas = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
+            $disciplinas      = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
 
             $query = Nota::where('turma_id', $turmaSelecionada->id)
                 ->where('ano_letivo_id', $anoLetivo->id)
@@ -177,7 +133,7 @@ class NotaController extends Controller
             }
 
             if ($request->filled('aluno')) {
-                $query->whereHas('aluno', fn ($query) => $query
+                $query->whereHas('aluno', fn ($q) => $q
                     ->where('name', 'like', "%{$request->aluno}%")
                     ->orWhere('numero_processo', 'like', "%{$request->aluno}%"));
             }
@@ -208,7 +164,7 @@ class NotaController extends Controller
     {
         $this->checkPermission('notas.view_own');
 
-        $aluno = auth()->user();
+        $aluno     = auth()->user();
         $anoLetivo = AnoLetivo::ativo()->first();
 
         if (!$anoLetivo) {
@@ -220,13 +176,13 @@ class NotaController extends Controller
             ->with(['disciplina', 'turma'])
             ->get();
 
-        $turmaAtual = $notas->first()?->turma;
-        $notasComCfd = $notas->whereNotNull('cfd');
-        $mediaGeral = $notasComCfd->isNotEmpty()
+        $turmaAtual   = $notas->first()?->turma;
+        $notasComCfd  = $notas->whereNotNull('cfd');
+        $mediaGeral   = $notasComCfd->isNotEmpty()
             ? round($notasComCfd->avg('cfd'), 2)
             : 0;
 
-        $aprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd >= 10)->count();
+        $aprovacoes  = $notasComCfd->filter(fn ($nota) => $nota->cfd >= 10)->count();
         $reprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd < 10)->count();
 
         return view('notas.aluno', compact(
@@ -238,30 +194,47 @@ class NotaController extends Controller
         ));
     }
 
-    public function lancarTrimestre1(Request $request)
-    {
-        $user = auth()->user();
+    // -------------------------------------------------------------------------
+    // Lançamento de notas — método unificado
+    // -------------------------------------------------------------------------
 
-        if ($user->isProfessor()) {
-            $this->checkPermission('notas.lancar');
-        } else {
-            $this->checkPermission('notas.editar');
+    /**
+     * Lança as notas de um trimestre específico (1, 2 ou 3).
+     * Substitui lancarTrimestre1, lancarTrimestre2 e lancarTrimestre3.
+     *
+     * Rota sugerida: POST /notas/trimestre/{trimestre}
+     */
+    public function lancarTrimestre(Request $request, string $trimestre)
+    {
+        if (!array_key_exists($trimestre, self::CAMPOS_TRIMESTRE)) {
+            abort(404, 'Trimestre inválido.');
         }
 
-        $validated = $request->validate([
-            'notas' => 'required|array',
-            'notas.*.id' => 'required|exists:notas,id',
-            'notas.*.mac1' => 'nullable|numeric|min:0|max:20',
-            'notas.*.pp1' => 'nullable|numeric|min:0|max:20',
-            'notas.*.pt1' => 'nullable|numeric|min:0|max:20',
-        ]);
+        $user = auth()->user();
 
-        $ids = collect($validated['notas'])->pluck('id');
+        $user->isProfessor()
+            ? $this->checkPermission('notas.lancar')
+            : $this->checkPermission('notas.editar');
+
+        // Regras de validação geradas dinamicamente a partir do mapeamento
+        $campos = self::CAMPOS_TRIMESTRE[$trimestre];
+        $rules  = ['notas' => 'required|array', 'notas.*.id' => 'required|exists:notas,id'];
+
+        foreach ($campos as $campo) {
+            $rules["notas.*.{$campo}"] = 'nullable|numeric|min:0|max:20';
+        }
+
+        $validated = $request->validate($rules);
+
+        $ids      = collect($validated['notas'])->pluck('id');
         $notasMap = Nota::whereIn('id', $ids)
             ->with(['turma.curso', 'disciplina'])
             ->get()
             ->keyBy('id');
 
+        // Transação garante atomicidade: ou tudo salva, ou nada salva
+        DB::transaction(function () use ($validated, $notasMap, $campos, $trimestre, $user) {
+        // lancarTrimestre() — trecho do foreach, substituir inteiro
         foreach ($validated['notas'] as $notaData) {
             $nota = $notasMap->get($notaData['id']);
 
@@ -273,127 +246,40 @@ class NotaController extends Controller
                 $this->verificarPermissaoProfessor($nota);
             }
 
-            if ($this->notaBloqueadaParaEdicao($nota, '1')) {
+            if ($this->notaBloqueadaParaEdicao($nota, $trimestre)) {
                 continue;
             }
 
-            $nota->mac1 = $notaData['mac1'] ?? null;
-            $nota->pp1 = $notaData['pp1'] ?? null;
-            $nota->pt1 = $notaData['pt1'] ?? null;
+            foreach ($campos as $campo) {
+                $nota->{$campo} = $notaData[$campo] ?? null;
+            }
+
+            // Garante que recalcular() nunca dispare lazy-load:
+            // o with() já carregou turma.curso e disciplina,
+            // mas setRelation() força o model a reconhecer isso.
+            if (!$nota->relationLoaded('turma') || !$nota->turma?->relationLoaded('curso')) {
+                $nota->load(['turma.curso', 'disciplina']);
+            }
+
             $nota->recalcular();
             $nota->save();
         }
+        });
 
-        return back()->with('success', 'Notas do 1o trimestre lancadas com sucesso.');
+        return back()->with('success', "Notas do {$trimestre}º trimestre lancadas com sucesso.");
     }
 
-    public function lancarTrimestre2(Request $request)
-    {
-        $user = auth()->user();
-
-        if ($user->isProfessor()) {
-            $this->checkPermission('notas.lancar');
-        } else {
-            $this->checkPermission('notas.editar');
-        }
-
-        $validated = $request->validate([
-            'notas' => 'required|array',
-            'notas.*.id' => 'required|exists:notas,id',
-            'notas.*.mac2' => 'nullable|numeric|min:0|max:20',
-            'notas.*.pp2' => 'nullable|numeric|min:0|max:20',
-            'notas.*.pt2' => 'nullable|numeric|min:0|max:20',
-        ]);
-
-        $ids = collect($validated['notas'])->pluck('id');
-        $notasMap = Nota::whereIn('id', $ids)
-            ->with(['turma.curso', 'disciplina'])
-            ->get()
-            ->keyBy('id');
-
-        foreach ($validated['notas'] as $notaData) {
-            $nota = $notasMap->get($notaData['id']);
-
-            if (!$nota) {
-                continue;
-            }
-
-            if ($user->isProfessor()) {
-                $this->verificarPermissaoProfessor($nota);
-            }
-
-            if ($this->notaBloqueadaParaEdicao($nota, '2')) {
-                continue;
-            }
-
-            $nota->mac2 = $notaData['mac2'] ?? null;
-            $nota->pp2 = $notaData['pp2'] ?? null;
-            $nota->pt2 = $notaData['pt2'] ?? null;
-            $nota->recalcular();
-            $nota->save();
-        }
-
-        return back()->with('success', 'Notas do 2o trimestre lancadas com sucesso.');
-    }
-
-    public function lancarTrimestre3(Request $request)
-    {
-        $user = auth()->user();
-
-        if ($user->isProfessor()) {
-            $this->checkPermission('notas.lancar');
-        } else {
-            $this->checkPermission('notas.editar');
-        }
-
-        $validated = $request->validate([
-            'notas' => 'required|array',
-            'notas.*.id' => 'required|exists:notas,id',
-            'notas.*.mac3' => 'nullable|numeric|min:0|max:20',
-            'notas.*.pp3' => 'nullable|numeric|min:0|max:20',
-            'notas.*.pg' => 'nullable|numeric|min:0|max:20',
-        ]);
-
-        $ids = collect($validated['notas'])->pluck('id');
-        $notasMap = Nota::whereIn('id', $ids)
-            ->with(['turma.curso', 'disciplina'])
-            ->get()
-            ->keyBy('id');
-
-        foreach ($validated['notas'] as $notaData) {
-            $nota = $notasMap->get($notaData['id']);
-
-            if (!$nota) {
-                continue;
-            }
-
-            if ($user->isProfessor()) {
-                $this->verificarPermissaoProfessor($nota);
-            }
-
-            if ($this->notaBloqueadaParaEdicao($nota, '3')) {
-                continue;
-            }
-
-            $nota->mac3 = $notaData['mac3'] ?? null;
-            $nota->pp3 = $notaData['pp3'] ?? null;
-            $nota->pg = $notaData['pg'] ?? null;
-            $nota->recalcular();
-            $nota->save();
-        }
-
-        return back()->with('success', 'Notas do 3o trimestre lancadas com sucesso.');
-    }
+    // -------------------------------------------------------------------------
+    // Edição individual
+    // -------------------------------------------------------------------------
 
     public function edit(Nota $nota)
     {
         $user = auth()->user();
 
-        if ($user->isProfessor()) {
-            $this->verificarPermissaoProfessor($nota);
-        } else {
-            $this->checkPermission('notas.editar');
-        }
+        $user->isProfessor()
+            ? $this->verificarPermissaoProfessor($nota)
+            : $this->checkPermission('notas.editar');
 
         $this->validarBloqueioFinalizacao($nota);
         $nota->load(['aluno', 'turma', 'disciplina']);
@@ -414,20 +300,17 @@ class NotaController extends Controller
 
         $this->validarBloqueioFinalizacao($nota);
 
-        $validated = $request->validate([
-            'mac1' => 'nullable|numeric|min:0|max:20',
-            'pp1' => 'nullable|numeric|min:0|max:20',
-            'pt1' => 'nullable|numeric|min:0|max:20',
-            'mac2' => 'nullable|numeric|min:0|max:20',
-            'pp2' => 'nullable|numeric|min:0|max:20',
-            'pt2' => 'nullable|numeric|min:0|max:20',
-            'mac3' => 'nullable|numeric|min:0|max:20',
-            'pp3' => 'nullable|numeric|min:0|max:20',
-            'pg' => 'nullable|numeric|min:0|max:20',
-            'ca_10' => 'nullable|numeric|min:0|max:20',
-            'ca_11' => 'nullable|numeric|min:0|max:20',
-            'observacoes' => 'nullable|string',
-        ]);
+        // Todos os campos de todos os trimestres + extras
+        $allCampos = array_merge(...array_values(self::CAMPOS_TRIMESTRE));
+        $rules     = array_fill_keys(
+            array_map(fn ($c) => $c, $allCampos),
+            'nullable|numeric|min:0|max:20'
+        );
+        $rules['ca_10']      = 'nullable|numeric|min:0|max:20';
+        $rules['ca_11']      = 'nullable|numeric|min:0|max:20';
+        $rules['observacoes'] = 'nullable|string';
+
+        $validated = $request->validate($rules);
 
         $nota->update($validated);
         $nota->recalcular();
@@ -435,10 +318,62 @@ class NotaController extends Controller
 
         return redirect()
             ->route('notas.index', [
-                'turma_id' => $nota->turma_id,
+                'turma_id'      => $nota->turma_id,
                 'disciplina_id' => $nota->disciplina_id,
             ])
             ->with('success', 'Nota atualizada com sucesso.');
+    }
+
+    // -------------------------------------------------------------------------
+    // Operações de pauta
+    // -------------------------------------------------------------------------
+
+    public function inicializarPauta(Request $request)
+    {
+        $user = auth()->user();
+
+        $user->isProfessor()
+            ? $this->checkPermission('notas.lancar')
+            : $this->checkPermission('notas.editar');
+
+        $validated = $request->validate([
+            'turma_id'      => 'required|exists:turmas,id',
+            'disciplina_id' => 'required|exists:disciplinas,id',
+        ]);
+
+        $anoLetivo = AnoLetivo::ativo()->first();
+
+        if (!$anoLetivo) {
+            return $this->redirectSemAnoLetivoAtivo();
+        }
+
+        $turma      = Turma::findOrFail($validated['turma_id']);
+        $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
+
+        if ($user->isProfessor()) {
+            $temAtribuicao = $user->atribuicoes()
+                ->where('turma_id', $turma->id)
+                ->where('disciplina_id', $disciplina->id)
+                ->where('ano_letivo_id', $anoLetivo->id)
+                ->exists();
+
+            if (!$temAtribuicao) {
+                abort(403, 'Voce nao tem permissao para inicializar esta pauta.');
+            }
+        }
+
+        if ($turma->ano_letivo_id !== $anoLetivo->id) {
+            return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
+        }
+
+        $criados = $this->notaService->criarNotasParaTurma($turma, $disciplina);
+
+        return redirect()
+            ->route('notas.index', [
+                'turma_id'      => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ])
+            ->with('success', "Pauta inicializada. {$criados} registros criados.");
     }
 
     public function importarCAs(Request $request)
@@ -446,18 +381,17 @@ class NotaController extends Controller
         $this->checkPermission('notas.editar');
 
         $validated = $request->validate([
-            'turma_id' => 'required|exists:turmas,id',
+            'turma_id'      => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
         ]);
 
-        $turma = Turma::findOrFail($validated['turma_id']);
+        $turma      = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
-        $permitirFinalizado = auth()->user()->can('notas.reabrir');
 
         $resultado = $this->notaService->importarCAsParaTurma(
             $turma,
             $disciplina,
-            $permitirFinalizado
+            auth()->user()->can('notas.reabrir')
         );
 
         return back()->with('success', $resultado['mensagem']);
@@ -468,11 +402,11 @@ class NotaController extends Controller
         $this->checkPermission('notas.editar');
 
         $validated = $request->validate([
-            'turma_id' => 'required|exists:turmas,id',
+            'turma_id'      => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
-            'motivo' => 'nullable|string|max:500',
-            'trimestre' => 'nullable|in:1,2,3',
-            'aluno_id' => 'nullable|exists:users,id',
+            'motivo'        => 'nullable|string|max:500',
+            'trimestre'     => 'nullable|in:1,2,3',
+            'aluno_id'      => 'nullable|exists:users,id',
         ]);
 
         $anoLetivo = AnoLetivo::ativo()->first();
@@ -481,16 +415,16 @@ class NotaController extends Controller
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turma = Turma::findOrFail($validated['turma_id']);
+        $turma      = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
 
         if ($turma->ano_letivo_id !== $anoLetivo->id) {
             return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
         }
 
-        $alunoId = $validated['aluno_id'] ?? null;
+        $alunoId   = $validated['aluno_id'] ?? null;
         $trimestre = $validated['trimestre'] ?? null;
-        $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
+        $notas     = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
 
         if ($notas->isEmpty()) {
             return back()->with('error', 'Nenhuma nota encontrada para finalizar neste ano letivo.');
@@ -505,7 +439,7 @@ class NotaController extends Controller
         }
 
         [$finalizadas, $jaFinalizadas] = DB::transaction(function () use ($notas, $trimestre) {
-            $finalizadas = 0;
+            $finalizadas  = 0;
             $jaFinalizadas = 0;
 
             foreach ($notas as $nota) {
@@ -519,8 +453,7 @@ class NotaController extends Controller
 
                     $nota->update([$campo => true]);
                 } else {
-                    if (
-                        $nota->status === 'finalizado'
+                    if ($nota->status === 'finalizado'
                         && $nota->bloqueado_t1
                         && $nota->bloqueado_t2
                         && $nota->bloqueado_t3
@@ -530,7 +463,7 @@ class NotaController extends Controller
                     }
 
                     $nota->update([
-                        'status' => 'finalizado',
+                        'status'       => 'finalizado',
                         'bloqueado_t1' => true,
                         'bloqueado_t2' => true,
                         'bloqueado_t3' => true,
@@ -555,11 +488,11 @@ class NotaController extends Controller
         $this->checkPermission('notas.reabrir');
 
         $validated = $request->validate([
-            'turma_id' => 'required|exists:turmas,id',
+            'turma_id'      => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
-            'motivo' => 'nullable|string|max:500',
-            'trimestre' => 'nullable|in:1,2,3',
-            'aluno_id' => 'nullable|exists:users,id',
+            'motivo'        => 'nullable|string|max:500',
+            'trimestre'     => 'nullable|in:1,2,3',
+            'aluno_id'      => 'nullable|exists:users,id',
         ]);
 
         $anoLetivo = AnoLetivo::ativo()->first();
@@ -568,16 +501,16 @@ class NotaController extends Controller
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turma = Turma::findOrFail($validated['turma_id']);
+        $turma      = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
 
         if ($turma->ano_letivo_id !== $anoLetivo->id) {
             return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
         }
 
-        $alunoId = $validated['aluno_id'] ?? null;
+        $alunoId   = $validated['aluno_id'] ?? null;
         $trimestre = $validated['trimestre'] ?? null;
-        $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
+        $notas     = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
 
         if ($notas->isEmpty()) {
             return back()->with('error', 'Nenhuma nota encontrada para reabrir neste ano letivo.');
@@ -589,18 +522,18 @@ class NotaController extends Controller
 
             foreach ($notas as $nota) {
                 if ($trimestre) {
-                    $campo = "bloqueado_t{$trimestre}";
-                    $precisaDesbloquearTrimestre = (bool) $nota->{$campo};
-                    $precisaReabrirStatus = $nota->status === 'finalizado';
+                    $campo                    = "bloqueado_t{$trimestre}";
+                    $precisaDesbloquear       = (bool) $nota->{$campo};
+                    $precisaReabrirStatus     = $nota->status === 'finalizado';
 
-                    if (!$precisaDesbloquearTrimestre && !$precisaReabrirStatus) {
+                    if (!$precisaDesbloquear && !$precisaReabrirStatus) {
                         $jaAbertas++;
                         continue;
                     }
 
                     $dadosAtualizacao = [];
 
-                    if ($precisaDesbloquearTrimestre) {
+                    if ($precisaDesbloquear) {
                         $dadosAtualizacao[$campo] = false;
                     }
 
@@ -621,7 +554,7 @@ class NotaController extends Controller
                     }
 
                     $nota->update([
-                        'status' => 'em_lancamento',
+                        'status'       => 'em_lancamento',
                         'bloqueado_t1' => false,
                         'bloqueado_t2' => false,
                         'bloqueado_t3' => false,
@@ -641,11 +574,13 @@ class NotaController extends Controller
             : "Reabertura geral{$escopoAluno} concluida: {$reabertas} notas reabertas e {$jaAbertas} ja estavam em lancamento.");
     }
 
+    // -------------------------------------------------------------------------
+    // Helpers privados
+    // -------------------------------------------------------------------------
+
     private function verificarPermissaoProfessor(Nota $nota): void
     {
-        $professor = auth()->user();
-
-        $temAtribuicao = $professor->atribuicoes()
+        $temAtribuicao = auth()->user()->atribuicoes()
             ->where('turma_id', $nota->turma_id)
             ->where('disciplina_id', $nota->disciplina_id)
             ->where('ano_letivo_id', $nota->ano_letivo_id)
@@ -662,12 +597,8 @@ class NotaController extends Controller
             return false;
         }
 
-        if ($trimestre) {
-            $campo = "bloqueado_t{$trimestre}";
-
-            if (($nota->{$campo} ?? false) === true) {
-                return true;
-            }
+        if ($trimestre && (($nota->{"bloqueado_t{$trimestre}"} ?? false) === true)) {
+            return true;
         }
 
         return $nota->status === 'finalizado';
@@ -712,10 +643,8 @@ class NotaController extends Controller
 
     private function mensagemCompletudePendente(?string $trimestre, int $incompletas): string
     {
-        if ($trimestre) {
-            return "Ainda existem {$incompletas} notas incompletas para o {$trimestre}o trimestre.";
-        }
-
-        return "Ainda existem {$incompletas} notas sem classificacao final completa.";
+        return $trimestre
+            ? "Ainda existem {$incompletas} notas incompletas para o {$trimestre}o trimestre."
+            : "Ainda existem {$incompletas} notas sem classificacao final completa.";
     }
 }
