@@ -607,4 +607,46 @@ class RelatorioController extends Controller
 
         return [true, $disciplinasPermitidas];
     }
+
+        public function pautaGeral(Request $request, Turma $turma)
+    {
+        $this->checkPermission('relatorios.pautas');
+
+        $user = auth()->user();
+        $anoLetivoAtivo = AnoLetivo::ativo()->first();
+        $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
+        $trimestre = $request->trimestre ?? 'final';
+
+        $this->regrasAcessoPauta($user, $turma, null, $anoLetivoId, $anoLetivoAtivo);
+
+        $anoLetivo = AnoLetivo::find($anoLetivoId);
+
+        $notas = Nota::where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivoId)
+            ->with(['aluno', 'disciplina'])
+            ->get()
+            ->groupBy('disciplina_id');
+
+        $dados = [
+            'turma'            => $turma,
+            'notasPorDisciplina' => $notas,
+            'trimestre'        => $trimestre,
+            'anoLetivo'        => $anoLetivo,
+        ];
+
+        if ($request->formato === 'xlsx') {
+            return $this->gerarPautaGeralXlsx($dados);
+        }
+
+        if ($request->formato === 'pdf') {
+            return $this->gerarPautaGeralPDF($dados);
+        }
+
+        return view('relatorios.pauta-geral', $dados);
+    }
+
+    private function gerarPautaGeralXlsx(array $dados): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return app(\App\Services\PautaGeralTemplateExporter::class)->download($dados);
+    }
 }
