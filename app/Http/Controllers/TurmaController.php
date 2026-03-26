@@ -353,7 +353,7 @@ class TurmaController extends Controller
     /**
      * Promover turma para próximo ano
      */
-    public function promover(Turma $turma)
+        public function promover(Turma $turma)
     {
         $this->checkPermission('turmas.promote');
 
@@ -389,7 +389,8 @@ class TurmaController extends Controller
         // Guarda: turma sem disciplinas não pode promover ninguém
         // ----------------------------------------------------------------
 
-        $totalDisciplinas = $turma->disciplinas()->count();
+        $disciplinaIds = $turma->disciplinas()->pluck('disciplinas.id');
+        $totalDisciplinas = $disciplinaIds->count();
 
         if ($totalDisciplinas === 0) {
             return back()->with(
@@ -401,28 +402,33 @@ class TurmaController extends Controller
         // ----------------------------------------------------------------
         // Identificar alunos aprovados
         // ----------------------------------------------------------------
-        // Aprovado = tem nota com cfd >= 10 em TODAS as disciplinas da turma
-        //            E NÃO tem nenhuma nota reprovada/incompleta
 
         $alunosAprovados = $turma->alunos()
             ->wherePivot('status', 'matriculado')
+
+            // Não pode ter nenhuma nota reprovada ou incompleta
             ->whereDoesntHave('notas', fn ($q) => $q
                 ->where('turma_id', $turma->id)
                 ->where('ano_letivo_id', $turma->ano_letivo_id)
+                ->whereIn('disciplina_id', $disciplinaIds)
                 ->where(fn ($q) => $q
                     ->whereNull('cfd')
                     ->orWhere('cfd', '<', 10)
                 )
             )
-            ->whereHas(
-                'notas',
-                fn ($q) => $q
-                    ->where('turma_id', $turma->id)
-                    ->where('ano_letivo_id', $turma->ano_letivo_id)
-                    ->where('cfd', '>=', 10),
-                '=',
-                $totalDisciplinas
-            )
+
+            // Cada disciplina da turma deve ter pelo menos uma nota aprovada
+            ->where(function ($query) use ($turma, $disciplinaIds) {
+                foreach ($disciplinaIds as $disciplinaId) {
+                    $query->whereHas('notas', fn ($q) => $q
+                        ->where('turma_id', $turma->id)
+                        ->where('ano_letivo_id', $turma->ano_letivo_id)
+                        ->where('disciplina_id', $disciplinaId)
+                        ->where('cfd', '>=', 10)
+                    );
+                }
+            })
+
             ->get();
 
         if ($alunosAprovados->isEmpty()) {
@@ -433,7 +439,7 @@ class TurmaController extends Controller
         }
 
         // ----------------------------------------------------------------
-        // Transação: criar turma + mover alunos (tudo ou nada)
+        // Transação: criar turma + mover alunos
         // ----------------------------------------------------------------
 
         $novaTurma = DB::transaction(function () use (
@@ -449,10 +455,8 @@ class TurmaController extends Controller
                 'ativo'                => true,
             ]);
 
-            // Copiar disciplinas
             $novaTurma->disciplinas()->attach($turma->disciplinas->pluck('id'));
 
-            // Promover cada aluno aprovado
             foreach ($alunosAprovados as $aluno) {
                 $novaTurma->alunos()->attach($aluno->id, [
                     'data_matricula' => now(),
