@@ -172,9 +172,13 @@ public function show(AnoLetivo $anoLetivo)
         $turmaIds = $anoLetivo->turmas->pluck('id');
 
         // ── QUERY 4: Uma única query agrupada para TODAS as notas
+        // Filtrar notas apenas de alunos matriculados
         $notasPorTurma = \App\Models\Nota::where('ano_letivo_id', $anoLetivo->id)
             ->whereIn('turma_id', $turmaIds)
             ->whereNotNull('cfd')
+            ->whereHas('aluno', fn($q) => $q->whereHas('turmas', 
+                fn($q2) => $q2->wherePivot('status', 'matriculado')
+            ))
             ->groupBy('turma_id')
             ->select('turma_id', DB::raw('COUNT(*) as total'))
             ->pluck('total', 'turma_id');
