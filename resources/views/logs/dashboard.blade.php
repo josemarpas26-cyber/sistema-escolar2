@@ -16,9 +16,9 @@
         <i class="fas fa-list mr-2"></i>
         Ver Lista
     </a>
-    <a href="{{ route('logs.exportar') }}" class="btn btn-primary">
+    <a href="{{ route('logs.exportar', ['contexto' => 'dashboard']) }}" class="btn btn-primary">
         <i class="fas fa-download mr-2"></i>
-        Exportar CSV
+        Exportar XLSX
     </a>
 </div>
 @endsection
