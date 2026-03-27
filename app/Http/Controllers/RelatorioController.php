@@ -274,18 +274,19 @@ class RelatorioController extends Controller
 
         if ($request->formato === 'pdf') {
             return $this->gerarPautaDisciplinaPDF($dados);
-        }
-
+            }
+            
         if ($request->formato === 'excel') {
             return $this->gerarPautaExcel($dados);
-        }
-
+            }
+            
         return view('relatorios.pauta-disciplina', $dados);
-    }
-
+        }
+        
     public function historicoAcademico(Request $request, ?User $aluno = null)
     {
-        if (!$aluno && $request->filled('aluno_id')) {
+        $this->checkPermission('relatorios.historico');
+            if (!$aluno && $request->filled('aluno_id')) {
             $aluno = User::alunos()->findOrFail($request->aluno_id);
         }
 
@@ -293,8 +294,14 @@ class RelatorioController extends Controller
             $aluno = auth()->user();
         }
 
-        $this->checkPermission('relatorios.historico');
-
+            if ($aluno && auth()->user()->isAluno() && $aluno->id !== auth()->id()) {
+            abort(403, 'Não tem permissão para ver o histórico de outro aluno.');
+        }
+        
+        if (!$aluno) {
+            abort(404, 'Aluno não encontrado.');
+        }
+        
         $historico = HistoricoAcademico::porAluno($aluno->id)
             ->with(['disciplina', 'turma', 'anoLetivo'])
             ->get()
@@ -599,5 +606,47 @@ class RelatorioController extends Controller
         }
 
         return [true, $disciplinasPermitidas];
+    }
+
+        public function pautaGeral(Request $request, Turma $turma)
+    {
+        $this->checkPermission('relatorios.pautas');
+
+        $user = auth()->user();
+        $anoLetivoAtivo = AnoLetivo::ativo()->first();
+        $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
+        $trimestre = $request->trimestre ?? 'final';
+
+        $this->regrasAcessoPauta($user, $turma, null, $anoLetivoId, $anoLetivoAtivo);
+
+        $anoLetivo = AnoLetivo::find($anoLetivoId);
+
+        $notas = Nota::where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivoId)
+            ->with(['aluno', 'disciplina'])
+            ->get()
+            ->groupBy('disciplina_id');
+
+        $dados = [
+            'turma'            => $turma,
+            'notasPorDisciplina' => $notas,
+            'trimestre'        => $trimestre,
+            'anoLetivo'        => $anoLetivo,
+        ];
+
+        if ($request->formato === 'xlsx') {
+            return $this->gerarPautaGeralXlsx($dados);
+        }
+
+        if ($request->formato === 'pdf') {
+            return $this->gerarPautaGeralPDF($dados);
+        }
+
+        return view('relatorios.pauta-geral', $dados);
+    }
+
+    private function gerarPautaGeralXlsx(array $dados): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return app(\App\Services\PautaGeralTemplateExporter::class)->download($dados);
     }
 }

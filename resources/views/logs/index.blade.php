@@ -5,9 +5,9 @@
     <i class="fas fa-chart-bar mr-2"></i>
     Dashboard
 </a>
-<a href="{{ route('logs.exportar', request()->query()) }}" class="btn btn-primary">
+<a href="{{ route('logs.exportar', array_merge(request()->query(), ['contexto' => 'lista'])) }}" class="btn btn-primary">
     <i class="fas fa-download mr-2"></i>
-    Exportar CSV
+    Exportar XLSX
 </a>
 @endsection
 

@@ -311,7 +311,10 @@ class NotaController extends Controller
 
                 // Atribui os valores do formulário
                 foreach ($campos as $campo) {
-                    $nota->{$campo} = $notaData[$campo] ?? null;
+                    // Só atribui se o campo foi enviado no request
+                    if (array_key_exists($campo, $notaData)) {
+                        $nota->{$campo} = $notaData[$campo];
+                    }
                 }
 
                 // Só recalcula e salva se algum campo do trimestre realmente mudou

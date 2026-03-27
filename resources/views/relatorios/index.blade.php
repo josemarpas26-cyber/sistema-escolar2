@@ -100,44 +100,46 @@
         </form>
     </x-card>
 
-    {{-- ================= PAUTA GERAL ================= --}}
-    <x-card title="Pauta Geral do Ano Letivo" icon="fas fa-list-check">
-        <form method="GET"
-              id="form-pauta-geral"
-              action="{{ route('relatorios.pauta', ['turma' => $turmas->first()?->id ?? 1]) }}"
-              class="grid grid-cols-1 md:grid-cols-4 gap-3">
-    @csrf
-            <select name="turma_id" id="turma_id_geral" class="form-input" required>
-                <option value="">Turma</option>
-                @foreach($turmas as $turma)
-                    <option value="{{ $turma->id }}">
-                        {{ $turma->nome_completo }}
-                    </option>
-                @endforeach
-            </select>
+{{-- ================= PAUTA GERAL ================= --}}
+<x-card title="Pauta Geral do Ano Letivo" icon="fas fa-list-check">
+    <form method="GET"
+          id="form-pauta-geral"
+          action="{{ route('relatorios.pauta-geral', ['turma' => $turmas->first()?->id ?? 1]) }}"
+          class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        @csrf
 
-            <select name="ano_letivo_id" class="form-input" required>
-                @foreach($anosLetivos as $ano)
-                    <option value="{{ $ano->id }}" @selected($anoLetivo?->id === $ano->id)>
-                        {{ $ano->nome }}
-                    </option>
-                @endforeach
-            </select>
+        <select name="turma_id" id="turma_id_geral" class="form-input" required>
+            <option value="">Turma</option>
+            @foreach($turmas as $turma)
+                <option value="{{ $turma->id }}">
+                    {{ $turma->nome_completo }}
+                </option>
+            @endforeach
+        </select>
 
-            <select name="trimestre" class="form-input">
-                <option value="final">Final (CFD)</option>
-                <option value="1">1º Trimestre</option>
-                <option value="2">2º Trimestre</option>
-                <option value="3">3º Trimestre</option>
-            </select>
+        <select name="ano_letivo_id" class="form-input" required>
+            @foreach($anosLetivos as $ano)
+                <option value="{{ $ano->id }}" @selected($anoLetivo?->id === $ano->id)>
+                    {{ $ano->nome }}
+                </option>
+            @endforeach
+        </select>
 
-            <div class="flex gap-2">
-                <button type="submit" class="btn btn-outline w-full">Ver</button>
-                <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
-            </div>
+        <select name="trimestre" class="form-input">
+            <option value="final">Final (CFD)</option>
+            <option value="1">1º Trimestre</option>
+            <option value="2">2º Trimestre</option>
+            <option value="3">3º Trimestre</option>
+        </select>
 
-        </form>
-    </x-card>
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-outline w-full">Ver</button>
+            <button type="submit" name="formato" value="xlsx" class="btn btn-success w-full">XLSX</button>
+            <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
+        </div>
+
+    </form>
+</x-card>
 
     {{-- ================= HISTÓRICOS ================= --}}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -203,6 +205,19 @@
         
         return BASE_URL + '/' + turmaId;
     }
+    
+
+    const BASE_URL_GERAL = '{{ url("relatorios/pauta-geral") }}';
+
+    const formPautaGeral = document.getElementById('form-pauta-geral');
+    if (formPautaGeral) {
+        formPautaGeral.addEventListener('submit', function(e) {
+            const turmaId = document.getElementById('turma_id_geral').value;
+            if (turmaId) {
+                this.action = BASE_URL_GERAL + '/' + turmaId;
+            }
+        });
+    }
 
     // Form da pauta por disciplina
     const formPauta = document.getElementById('form-pauta');
@@ -219,16 +234,6 @@
     }
 
     // Form da pauta geral
-    const formPautaGeral = document.getElementById('form-pauta-geral');
-    if (formPautaGeral) {
-        formPautaGeral.addEventListener('submit', function(e) {
-            const turmaId = document.getElementById('turma_id_geral').value;
-            const newAction = makePautaAction(turmaId, '');
-            
-            if (newAction) {
-                this.action = newAction;
-            }
-        });
-    }
+
 </script>
 @endpush

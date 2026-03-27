@@ -104,6 +104,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('relatorios/consolidado/{turma}', [RelatorioController::class, 'consolidadoTurma'])
         ->name('relatorios.consolidado');
 
+    Route::get('relatorios/pauta-geral/{turma}', [RelatorioController::class, 'pautaGeral'])
+        ->name('relatorios.pauta-geral');
+
     Route::get('logs', [LogController::class, 'index'])
         ->name('logs.index');
     Route::get('logs/dashboard', [LogController::class, 'dashboard'])

@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Nota;
 use App\Models\NotaLog;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class NotaObserver
 {
