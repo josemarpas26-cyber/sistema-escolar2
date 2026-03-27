@@ -382,6 +382,21 @@ class NotaController extends Controller
 
         $validated = $request->validate($rules);
 
+        // 🔍 Detectar quais campos estão sendo alterados
+        $camposAlterados = array_keys(array_filter(
+            $validated,
+            fn ($value) => !is_null($value)
+        ));
+
+        // 🧠 Mapear campos → trimestre
+        foreach (self::CAMPOS_TRIMESTRE as $trimestre => $campos) {
+            $intersect = array_intersect($camposAlterados, $campos);
+
+            if (!empty($intersect)) {
+                // 🔒 Validar bloqueio específico do trimestre
+                $this->validarBloqueioFinalizacao($nota, $trimestre);
+            }
+        }
         $nota->fill($validated);
         $this->notaService->recalcularNota($nota);
         $nota->save();
