@@ -323,7 +323,9 @@ class NotaController extends Controller
                     continue;
                 }
 
+                \App\Observers\NotaObserver::$suprimirLogs = true;
                 $this->notaService->recalcularNota($nota);
+                \App\Observers\NotaObserver::$suprimirLogs = false;
                 $nota->save();
                 $salvas++;
             }
@@ -398,7 +400,9 @@ class NotaController extends Controller
             }
         }
         $nota->fill($validated);
+        \App\Observers\NotaObserver::$suprimirLogs = true;
         $this->notaService->recalcularNota($nota);
+        \App\Observers\NotaObserver::$suprimirLogs = false;
         $nota->save();
 
         return redirect()
