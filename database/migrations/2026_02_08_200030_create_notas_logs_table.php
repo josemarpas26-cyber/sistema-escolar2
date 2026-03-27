@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('disciplina_id')->constrained()->onDelete('cascade');
             
             // Tipo de alteração
-            $table->enum('acao', ['criacao', 'edicao', 'exclusao'])->default('edicao');
+            $table->enum('acao', ['criacao', 'edicao', 'exclusao', 'finalizacao', 'reabertura'])->default('edicao');
             
             // Campo alterado
             $table->string('campo_alterado'); // Ex: mac1, pp1, mt1, etc
