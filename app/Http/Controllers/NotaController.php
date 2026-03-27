@@ -301,7 +301,7 @@ class NotaController extends Controller
                 }
 
                 if ($user->isProfessor()) {
-                    $this->verificarPermissaoProfessor($nota);
+                    $this->authorize('update', $nota);
                 }
 
                 if ($this->notaBloqueadaParaEdicao($nota, $trimestre)) {
@@ -344,13 +344,10 @@ class NotaController extends Controller
 
     public function edit(Nota $nota)
     {
-        $user = auth()->user();
-
-        $user->isProfessor()
-            ? $this->verificarPermissaoProfessor($nota)
-            : $this->checkPermission('notas.editar');
+        $this->authorize('update', $nota);
 
         $this->validarBloqueioFinalizacao($nota);
+
         $nota->load(['aluno', 'turma', 'disciplina']);
 
         return view('notas.edit', compact('nota'));
@@ -358,25 +355,29 @@ class NotaController extends Controller
 
     public function update(Request $request, Nota $nota)
     {
+        $this->authorize('update', $nota);
+
+        $this->validarBloqueioFinalizacao($nota);
+
         $user = auth()->user();
 
+        // Permissão funcional (separada da Policy)
         if ($user->isProfessor()) {
             $this->checkPermission('notas.lancar');
-            $this->verificarPermissaoProfessor($nota);
         } else {
             $this->checkPermission('notas.editar');
         }
 
-        $this->validarBloqueioFinalizacao($nota);
-
-        // Todos os campos de todos os trimestres + extras
+        // Validação
         $allCampos = array_merge(...array_values(self::CAMPOS_TRIMESTRE));
-        $rules     = array_fill_keys(
-            array_map(fn ($c) => $c, $allCampos),
+
+        $rules = array_fill_keys(
+            $allCampos,
             'nullable|numeric|min:0|max:20'
         );
-        $rules['ca_10']      = 'nullable|numeric|min:0|max:20';
-        $rules['ca_11']      = 'nullable|numeric|min:0|max:20';
+
+        $rules['ca_10'] = 'nullable|numeric|min:0|max:20';
+        $rules['ca_11'] = 'nullable|numeric|min:0|max:20';
         $rules['observacoes'] = 'nullable|string';
 
         $validated = $request->validate($rules);
