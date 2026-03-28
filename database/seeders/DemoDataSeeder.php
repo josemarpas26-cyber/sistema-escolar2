@@ -289,7 +289,8 @@ class DemoDataSeeder extends Seeder
         }
 
         $totalNotas = Nota::count();
-        $this->command->info("✅ {$totalNotas} registos de notas criados (1º e 2º trimestres)");
+        $this->command->info("✅ {$totalNotas} registos de notas criados (1º, 2º e 3º trimestres)");
+
 
         // =============================================
         // RESUMO FINAL
@@ -394,6 +395,16 @@ class DemoDataSeeder extends Seeder
         // MFT2 = média entre MT1 e MT2
         $mft2 = round(($mt1 + $mt2) / 2, 2);
 
+
+                // 3º Trimestre
+        $mac3 = $this->variar($base, 2);
+        $pp3  = $this->variar($base, 3);
+        $pg   = $this->variar($base, 4);
+        $mt3  = round(($mac3 + $pp3) / 2, 2);
+        $cf   = round(($mft2 + $mt3) / 2, 2);
+        $ca   = round((0.6 * $cf) + (0.4 * $pg), 2);
+
+
         Nota::create([
             'aluno_id'     => $alunoId,
             'turma_id'     => $turmaId,
@@ -414,13 +425,15 @@ class DemoDataSeeder extends Seeder
             'mft2' => $mft2,
 
             // 3º Trimestre ainda não lançado
-            'mac3' => null,
-            'pp3'  => null,
-            'mt3'  => null,
-            'cf'   => null,
-            'pg'   => null,
-            'ca'   => null,
-            'cfd'  => null,
+            // 3º Trimestre + finais
+            'mac3' => $mac3,
+            'pp3'  => $pp3,
+            'mt3'  => $mt3,
+            'cf'   => $cf,
+            'pg'   => $pg,
+            'ca'   => $ca,
+            // Como o seed atual usa turmas da 10ª classe, CFD coincide com CA.
+            'cfd'  => $ca,
 
             'status' => 'em_lancamento',
         ]);
