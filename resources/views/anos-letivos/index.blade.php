@@ -77,8 +77,8 @@
     </form>
     @endif
 
-    {{-- Reativar --}}
-    @if(!$ano->ativo && !$ano->encerrado)
+    {{-- Reativar (somente anos encerrados) --}}
+    @if($ano->encerrado)
     <form action="{{ route('anos-letivos.reativar', $ano) }}"
           method="POST"
           class="inline">

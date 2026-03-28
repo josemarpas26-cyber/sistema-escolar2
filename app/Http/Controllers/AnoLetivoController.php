@@ -155,13 +155,14 @@ public function show(AnoLetivo $anoLetivo)
             return back()->with('error', 'Este ano letivo já está encerrado!');
         }
 
-        /* 🔒 Impedir encerramento antes da data de fim (checagem barata primeiro) */
+        /* 🔒 Impedir encerramento antes da data de fim (checagem barata primeiro)
         if (now()->startOfDay()->lt($anoLetivo->data_fim->startOfDay())) {
             return back()->with('error',
                 'Não é possível encerrar o ano letivo antes de '
                 . $anoLetivo->data_fim->format('d/m/Y') . '.'
             );
         }
+            */
 
         // ── QUERY 1, 2, 3: Eager-load (turmas + pivot disciplinas + pivot alunos)
         $anoLetivo->load([
