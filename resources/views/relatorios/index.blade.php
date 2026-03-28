@@ -18,7 +18,7 @@
                 @endforeach
             </select>
 
-            <select name="ano_letivo_id" class="form-input" required>
+            <select name="ano_letivo_id" class="form-input js-ano-filtro-index" required>
                 <option value="">Ano letivo</option>
                 @foreach($anosLetivos as $ano)
                     <option value="{{ $ano->id }}" @selected($anoLetivo?->id === $ano->id)>
@@ -68,7 +68,7 @@
                 @endforeach
             </select>
 
-            <select name="ano_letivo_id" class="form-input" required>
+            <select name="ano_letivo_id" class="form-input js-ano-filtro-index" required>
                 @foreach($anosLetivos as $ano)
                     <option value="{{ $ano->id }}" @selected($anoLetivo?->id === $ano->id)>
                         {{ $ano->nome }}
@@ -117,7 +117,7 @@
             @endforeach
         </select>
 
-        <select name="ano_letivo_id" class="form-input" required>
+        <select name="ano_letivo_id" class="form-input js-ano-filtro-index" required>
             @foreach($anosLetivos as $ano)
                 <option value="{{ $ano->id }}" @selected($anoLetivo?->id === $ano->id)>
                     {{ $ano->nome }}
@@ -233,6 +233,16 @@
         });
     }
 
+    // Ano letivo do índice de relatórios (atualiza listas de turmas/alunos/disciplinas)
+    document.querySelectorAll('.js-ano-filtro-index').forEach((select) => {
+        select.addEventListener('change', function () {
+            if (!this.value) return;
+
+            const url = new URL('{{ route("relatorios.index") }}', window.location.origin);
+            url.searchParams.set('ano_letivo_id', this.value);
+            window.location.href = url.toString();
+        });
+    });
     // Form da pauta geral
 
 </script>

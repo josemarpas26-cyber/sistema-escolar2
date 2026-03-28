@@ -17,17 +17,33 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class RelatorioController extends Controller
 {
-    public function index()
+        public function index(Request $request)
     {
         $this->checkPermission('relatorios.boletins');
 
         $user = auth()->user();
         $anoLetivoAtivo = AnoLetivo::ativo()->first();
+        $anoLetivoSelecionadoId = $request->integer('ano_letivo_id') ?: $anoLetivoAtivo?->id;
+
 
         $anosLetivos = AnoLetivo::orderByDesc('id')->get();
-        $turmas = Turma::with(['curso', 'anoLetivo'])->orderBy('classe')->get();
-        $disciplinas = Disciplina::ativos()->orderBy('nome')->get();
-        $alunos = User::alunos()->orderBy('name')->get();
+        $turmas = Turma::with(['curso', 'anoLetivo'])
+            ->when($anoLetivoSelecionadoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoSelecionadoId))
+            ->orderBy('classe')
+            ->get();
+
+        $disciplinas = Disciplina::ativos()
+            ->when($anoLetivoSelecionadoId, fn($q) => $q->whereHas('notas', fn($qq) => $qq
+                ->where('ano_letivo_id', $anoLetivoSelecionadoId)))
+            ->orderBy('nome')
+            ->get();
+
+        $alunos = User::alunos()
+            ->when($anoLetivoSelecionadoId, fn($q) => $q->whereHas('turmas', fn($qq) => $qq
+                ->where('ano_letivo_id', $anoLetivoSelecionadoId)
+                ->where('turma_aluno.status', 'matriculado')))
+            ->orderBy('name')
+            ->get();
         $professores = User::professores()->orderBy('name')->get();
 
                 if ($this->isProfessorComRestricao($user)) {
@@ -92,7 +108,9 @@ class RelatorioController extends Controller
                 ->get();
         }
 
-        $anoLetivo = $anoLetivoAtivo;
+        $anoLetivo = $anoLetivoSelecionadoId
+            ? $anosLetivos->firstWhere('id', $anoLetivoSelecionadoId)
+            : $anoLetivoAtivo;
 
         return view('relatorios.index', compact(
             'anoLetivo',
