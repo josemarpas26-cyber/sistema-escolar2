@@ -32,6 +32,86 @@
         color="red"
     />
 
+
+</div>
+
+<div class="mb-8 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-2xl p-6 shadow-lg">
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+            <h2 class="text-xl font-bold">Metas Académicas</h2>
+            <p class="text-primary-100 mt-1">Defina a nota-alvo por disciplina e acompanhe o progresso em tempo real.</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ route('metas-disciplina.store') }}" class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
+        @csrf
+        <div class="md:col-span-2">
+            <label class="block text-xs uppercase tracking-wide text-primary-100 mb-1">Disciplina</label>
+            <select name="disciplina_id" class="w-full rounded-lg border-0 text-gray-800 focus:ring-2 focus:ring-white" required>
+                <option value="">Selecionar...</option>
+                @foreach($notas->unique('disciplina_id') as $nota)
+                    <option value="{{ $nota->disciplina_id }}">{{ $nota->disciplina->nome }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs uppercase tracking-wide text-primary-100 mb-1">Meta (0-20)</label>
+            <input type="number" min="0" max="20" step="0.1" name="meta_nota" class="w-full rounded-lg border-0 text-gray-800 focus:ring-2 focus:ring-white" required>
+        </div>
+        <div>
+            <label class="block text-xs uppercase tracking-wide text-primary-100 mb-1">Conclusão prevista</label>
+            <input type="date" name="data_conclusao_prevista" class="w-full rounded-lg border-0 text-gray-800 focus:ring-2 focus:ring-white">
+        </div>
+        <div class="md:col-span-4">
+            <button class="px-4 py-2 rounded-lg bg-white text-primary-700 font-semibold hover:bg-primary-50 transition">Guardar Meta</button>
+        </div>
+    </form>
+
+    @error('disciplina_id')
+        <p class="mt-3 text-sm text-red-100">{{ $message }}</p>
+    @enderror
+
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        @forelse($disciplinas_com_progresso as $item)
+            <div class="bg-white/10 border border-white/20 rounded-xl p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-semibold">{{ $item['nota']->disciplina->nome }}</h3>
+                    @if($item['meta'])
+                        <form method="POST" action="{{ route('metas-disciplina.desativar', $item['meta']) }}">
+                            @csrf
+                            @method('PATCH')
+                            <button class="text-xs px-2 py-1 rounded bg-white/20 hover:bg-white/30">Desativar</button>
+                        </form>
+                    @endif
+                </div>
+
+                @if($item['meta'])
+                    <p class="text-sm text-primary-100 mt-1">
+                        Nota atual: <span class="font-semibold text-white">{{ $item['nota_atual'] !== null ? number_format($item['nota_atual'], 2) : '—' }}</span>
+                        · Meta: <span class="font-semibold text-white">{{ number_format($item['meta']->meta_nota, 2) }}</span>
+                    </p>
+                    <div class="mt-3 w-full h-2 rounded-full bg-white/20 overflow-hidden">
+                        <div class="h-2 bg-emerald-300" style="width: {{ $item['progresso'] }}%"></div>
+                    </div>
+                    <p class="text-xs mt-2 text-primary-100">
+                        Progresso: {{ $item['progresso'] }}%
+                        @if($item['diferenca'] !== null)
+                            ·
+                            @if($item['diferenca'] > 0)
+                                faltam {{ number_format($item['diferenca'], 2) }} valores
+                            @else
+                                meta atingida ✅
+                            @endif
+                        @endif
+                    </p>
+                @else
+                    <p class="text-sm text-primary-100 mt-2">Ainda não definiu meta para esta disciplina.</p>
+                @endif
+            </div>
+        @empty
+            <p class="text-sm text-primary-100">Sem disciplinas disponíveis para metas neste período.</p>
+        @endforelse
+    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
