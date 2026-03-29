@@ -19,51 +19,81 @@ use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+/**
+ * PautaGeralTemplateExporter
+ *
+ * Gera a pauta geral da turma com layout idêntico ao ficheiro oficial.
+ *
+ * Dados institucionais configuráveis em config/escola.php:
+ *   'nome_instituicao', 'nome_director', 'nome_subdirector_pedagogico',
+ *   'director_turma_fallback', 'coordenador_curso_fallback'
+ */
 class PautaGeralTemplateExporter
 {
-    // ── Layout constants ────────────────────────────────────────────────────
-    private const DATA_START_ROW   = 15;
-    private const OBS_COLUMN      = 'CJ';
-    private const RESULT_COLUMN   = 'CK';
+    // ── Linhas fixas ──────────────────────────────────────────────────────
+    private const ROW_DIRECTOR = 5;
+    private const ROW_ASSIN    = 6;
+    private const ROW_NOME_DIR = 7;
+    private const ROW_INFO     = 8;
+    private const ROW_SPACER9  = 9;
+    private const ROW_SPACER10 = 10;
+    private const ROW_SPACER11 = 11;
+    private const ROW_DISC     = 12;
+    private const ROW_HDR1     = 13;
+    private const ROW_HDR2     = 14;
+    private const DATA_START   = 15;
 
-    /**
-     * Cada disciplina ocupa um bloco de 7 colunas:
-     * FALTAS(J), FALTAS(I), MfT2, MAC, NPT, NPT, MT
-     * Blocos: E:K, L:R, S:Y, Z:AF, AG:AM, AN:AS, AT:AY, AZ:BF, BG:BM, BN:BS, BT:BZ, CA:CG
-     */
+    // ── Colunas fixas ─────────────────────────────────────────────────────
+    private const COL_ORD    = 'A';
+    private const COL_PROC   = 'B';
+    private const COL_NOME   = 'C';
+    private const COL_SEXO   = 'D';
+    private const COL_OBS    = 'CH';
+    private const COL_RESULT = 'CI';
+
+    // ── Posições semânticas dentro do bloco de 7 colunas ──────────────────
+    private const POS_FALTAS_J = 0;
+    private const POS_FALTAS_I = 1;
+    private const POS_MT       = 6; // última coluna — sempre bold
+
+    // ── Blocos de 7 colunas por disciplina (máx. 12) ──────────────────────
     private const DISCIPLINE_BLOCKS = [
-        'E:K',  'L:R',  'S:Y',  'Z:AF',
-        'AG:AM','AN:AS','AT:AY','AZ:BF',
-        'BG:BM','BN:BS','BT:BZ','CA:CG',
+        ['E',  'K'],  ['L',  'R'],  ['S',  'Y'],  ['Z',  'AF'],
+        ['AG', 'AM'], ['AN', 'AS'], ['AT', 'AY'], ['AZ', 'BF'],
+        ['BG', 'BM'], ['BN', 'BS'], ['BT', 'BZ'], ['CA', 'CG'],
     ];
 
-    // ── Cores ─────────────────────────────────────────────────────────────
-    private const CLR_HEADER_BG    = 'D9D9D9'; // Cinza claro estilo pauta oficial
-    private const CLR_HEADER_FONT  = '000000';
-    private const CLR_SUBHEADER    = 'E6E6E6';
-    private const CLR_BORDER       = '000000';
-    private const CLR_LIGHT_BORDER = '808080';
-    private const CLR_ROW_ALT      = 'F9F9F9';
-    private const CLR_FOOTER_BG    = 'F5F5F5';
-    private const CLR_FONT_MAIN    = '000000';
-    private const CLR_APROVADO     = '008000';
-    private const CLR_REPROVADO    = 'CC0000';
+    // ── Larguras ──────────────────────────────────────────────────────────
+    private const COL_WIDTHS_FIXED = [
+        'A' => 4.29,  'B' => 7.00,  'C' => 37.43, 'D' => 3.29,
+    ];
+    private const BLOCK_COL_WIDTHS = [2.0, 1.8, 3.0, 4.5, 4.5, 5.0, 4.5];
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Public API
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Cores ─────────────────────────────────────────────────────────────
+    private const CLR_DISC_BG   = 'D9D9D9';
+    private const CLR_BORDER    = '000000';
+    private const CLR_APROVADO  = '008000';
+    private const CLR_REPROVADO = 'CC0000';
+
+    // ── Cache de estilos (inicializado uma vez) ───────────────────────────
+    private ?array $styles = null;
+
+    // =====================================================================
+    // API pública
+    // =====================================================================
 
     public function download(array $dados): BinaryFileResponse
     {
         $spreadsheet = $this->build($dados);
-
         $path = null;
 
         try {
-            $path = tempnam(sys_get_temp_dir(), 'pauta-geral-') . '.xlsx';
-            \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx')->save($path);
+            $path     = tempnam(sys_get_temp_dir(), 'pauta-geral-') . '.xlsx';
+            $filename = 'pauta-' . Str::slug(
+                $dados['turma']->nome_completo ?? $dados['turma']->nome, '-'
+            ) . '.xlsx';
 
-            $filename = 'pauta-' . Str::slug($dados['turma']->nome_completo ?? $dados['turma']->nome, '-') . '.xlsx';
+            \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx')->save($path);
 
             return response()
                 ->download($path, $filename, [
@@ -81,26 +111,26 @@ class PautaGeralTemplateExporter
     public function build(array $dados): Spreadsheet
     {
         /** @var Turma $turma */
-        $turma = $dados['turma'];
-        /** @var AnoLetivo|null $anoLetivo */
+        $turma     = $dados['turma'];
         $anoLetivo = $dados['anoLetivo'] ?? null;
-        $trimestre = (string) ($dados['trimestre'] ?? 'final');
+        $trimestre = (string) ($dados['trimestre'] ?? '3');
 
         $turma->loadMissing(['curso.coordenador', 'coordenador', 'disciplinas']);
         $anoLetivo ??= $turma->anoLetivo;
 
-        /** @var EloquentCollection $alunos */
         $alunos = $turma->alunos()
             ->wherePivot('status', 'matriculado')
             ->orderBy('name')
             ->get();
 
-        $notas      = $this->resolveNotas($turma, $anoLetivo, $dados);
-        $notasIndex = $this->indexarNotas($notas);
+        $notas       = $this->resolveNotas($turma, $anoLetivo, $dados);
+        $notasIndex  = $this->indexarNotas($notas);
         $disciplinas = $this->ordenarDisciplinas($turma->disciplinas)->values();
 
         if ($disciplinas->count() > count(self::DISCIPLINE_BLOCKS)) {
-            throw new \RuntimeException('O template suporta no máximo 12 disciplinas por pauta geral.');
+            throw new \RuntimeException(
+                'O template suporta no máximo ' . count(self::DISCIPLINE_BLOCKS) . ' disciplinas por pauta geral.'
+            );
         }
 
         $atribuicoes = $turma->atribuicoes()
@@ -109,31 +139,207 @@ class PautaGeralTemplateExporter
             ->get()
             ->keyBy('disciplina_id');
 
-        $config = $this->periodoConfig($trimestre);
-
-        // ── Build spreadsheet from scratch ───────────────────────────────────
+        $config      = $this->periodoConfig($trimestre);
         $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Pauta');
 
-        $studentCount = $alunos->count();
-        $lastDataRow  = self::DATA_START_ROW + $studentCount - 1;
-        $footerRow    = $lastDataRow + 3;
+        $lastDataRow = self::DATA_START + $alunos->count() - 1;
 
-        // Build sections
+        // Reset style cache para cada build
+        $this->styles = null;
+
         $this->buildPageSetup($sheet);
-        $this->buildCabecalho($sheet, $turma, $anoLetivo, $config);
-        $this->buildDisciplinaHeaders($sheet, $disciplinas, $config, $atribuicoes);
-        $this->buildAlunoRows($sheet, $alunos, $disciplinas, $notasIndex, $config, $lastDataRow);
-        $this->buildRodape($sheet, $turma, $footerRow, $atribuicoes, $disciplinas, $config);
         $this->applyColumnWidths($sheet, $disciplinas);
+        $this->buildCabecalho($sheet, $turma, $anoLetivo, $config);
+        $this->buildDisciplinaHeaders($sheet, $disciplinas, $config);
+        $this->buildAlunoRows($sheet, $alunos, $disciplinas, $notasIndex, $config, $lastDataRow);
+        $this->buildRodape($sheet, $turma, $lastDataRow, $atribuicoes, $disciplinas);
 
         return $spreadsheet;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Page / print setup
-    // ─────────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    // Cache de estilos — criados UMA vez, reutilizados em todo o export
+    // =====================================================================
+
+    private function getStyles(): array
+    {
+        if ($this->styles !== null) {
+            return $this->styles;
+        }
+
+        $font9        = ['size' => 9, 'name' => 'Arial'];
+        // FIX: FILL_NONE explícito em todos os estilos de dados —
+        // impede que fills herdados de temas ou templates apareçam
+        // nas linhas de alunos (ex.: linha amarela do template original).
+        $noFill       = ['fillType' => Fill::FILL_NONE];
+        $thinBorder   = ['borderStyle' => Border::BORDER_THIN,   'color' => ['rgb' => self::CLR_BORDER]];
+        $mediumBorder = ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => self::CLR_BORDER]];
+
+        $this->styles = [
+            'font9' => $font9,
+
+            // Célula de dados — centro, bordas finas, sem fill
+            'cellCenter' => [
+                'font'      => $font9,
+                'fill'      => $noFill,
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                'borders'   => ['allBorders' => $thinBorder],
+            ],
+
+            // Célula de dados — centro, bordas finas, bold (para MT), sem fill
+            'cellCenterBold' => [
+                'font'      => array_merge($font9, ['bold' => true]),
+                'fill'      => $noFill,
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                'borders'   => ['allBorders' => $thinBorder],
+            ],
+
+            // Nome do aluno — esquerda, bordas laterais médias, sem fill
+            'cellName' => [
+                'font'      => $font9,
+                'fill'      => $noFill,
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER],
+                'borders'   => [
+                    'left'   => $mediumBorder,
+                    'right'  => $mediumBorder,
+                    'top'    => $thinBorder,
+                    'bottom' => $thinBorder,
+                ],
+            ],
+
+            // Separadores de bloco de disciplina — sem fill
+            'borderLeftMedium'  => [
+                'fill'    => $noFill,
+                'borders' => ['left'  => $mediumBorder],
+            ],
+            'borderRightMedium' => [
+                'fill'    => $noFill,
+                'borders' => ['right' => $mediumBorder],
+            ],
+
+            // Cabeçalho institucional
+            'headerInst' => [
+                'font'      => ['bold' => false, 'size' => 9, 'name' => 'Arial'],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER],
+            ],
+
+            // Assinatura no rodapé
+            'sigCenter' => [
+                'font'      => $font9,
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ],
+        ];
+
+        return $this->styles;
+    }
+
+    // =====================================================================
+    // Helpers de escrita — eliminam repetição de setCellValue + getStyle
+    // =====================================================================
+
+    private function writeCell(
+        Worksheet $sheet,
+        string $cell,
+        mixed $value,
+        string $styleName,
+        ?string $dataType = null
+    ): void {
+        if ($dataType !== null) {
+            $sheet->setCellValueExplicit($cell, (string) $value, $dataType);
+        } else {
+            $sheet->setCellValue($cell, $value);
+        }
+
+        $sheet->getStyle($cell)->applyFromArray($this->getStyles()[$styleName]);
+    }
+
+    private function writeMergedCell(
+        Worksheet $sheet,
+        string $range,
+        mixed $value,
+        string $styleName
+    ): void {
+        $sheet->mergeCells($range);
+
+        // Extrair célula inicial do range (ex.: "X5:BE5" → "X5")
+        $startCell = Str::before($range, ':');
+        $sheet->setCellValue($startCell, $value);
+        $sheet->getStyle($range)->applyFromArray($this->getStyles()[$styleName]);
+    }
+
+    /**
+     * Escreve valor numérico com formato 0.00 e estilo do cache.
+     */
+    private function writeNumericCell(Worksheet $sheet, string $cell, mixed $value, bool $bold = false): void
+    {
+        $styles = $this->getStyles();
+
+        if ($value !== null && $value !== '') {
+            $sheet->setCellValueExplicit($cell, (string) $value, DataType::TYPE_NUMERIC);
+            $sheet->getStyle($cell)
+                ->getNumberFormat()
+                ->setFormatCode(NumberFormat::FORMAT_NUMBER_00);
+        } else {
+            $sheet->setCellValue($cell, '');
+        }
+
+        $sheet->getStyle($cell)->applyFromArray(
+            $bold ? $styles['cellCenterBold'] : $styles['cellCenter']
+        );
+    }
+
+    private function setRowHeights(Worksheet $sheet, array $heights): void
+    {
+        foreach ($heights as $row => $height) {
+            $sheet->getRowDimension($row)->setRowHeight($height);
+        }
+    }
+
+    // =====================================================================
+    // Dados institucionais — centralizados, configuráveis via config/escola.php
+    // =====================================================================
+
+    private function cfg(string $key, string $fallback = ''): string
+    {
+        return config("escola.{$key}", $fallback);
+    }
+
+    private function nomeInstituicao(): string
+    {
+        return $this->cfg(
+            'nome_instituicao',
+            'INSTITUTO POLITÉCNICO INDUSTRIAL DO KILAMBA KIAXI Nº 8056 "NOVA VIDA" '
+        );
+    }
+
+    private function nomeDirector(Turma $turma): string
+    {
+        return $turma->director?->name
+            ?? $this->cfg('nome_director', 'Ferreira Manuel Fragoso  Ph,D');
+    }
+
+    private function nomeSubdirectorPedagogico(): string
+    {
+        return $this->cfg('nome_subdirector_pedagogico', 'Carlos Alberto Brito Teixeira da Silva');
+    }
+
+    private function nomeDirectorTurma(Turma $turma): string
+    {
+        return $turma->coordenador?->name
+            ?? $this->cfg('director_turma_fallback', 'Benjamim Mboloquele');
+    }
+
+    private function nomeCoordenadorCurso(Turma $turma): string
+    {
+        return $turma->curso?->coordenador?->name
+            ?? $this->cfg('coordenador_curso_fallback', 'Manuel Gonçalves Victor');
+    }
+
+    // =====================================================================
+    // Configuração de página
+    // =====================================================================
 
     private function buildPageSetup(Worksheet $sheet): void
     {
@@ -148,11 +354,41 @@ class PautaGeralTemplateExporter
             ->setLeft(0.4)->setRight(0.4);
 
         $sheet->getSheetView()->setZoomScale(75);
+        $sheet->freezePane('A' . self::DATA_START);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Cabeçalho institucional (rows 1–14)
-    // ─────────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    // Larguras de coluna
+    // =====================================================================
+
+    private function applyColumnWidths(Worksheet $sheet, Collection $disciplinas): void
+    {
+        foreach (self::COL_WIDTHS_FIXED as $col => $width) {
+            $sheet->getColumnDimension($col)->setWidth($width);
+        }
+
+        foreach (self::DISCIPLINE_BLOCKS as $idx => [$startCol]) {
+            $startIdx      = Coordinate::columnIndexFromString($startCol);
+            $hasDisciplina = $disciplinas->has($idx);
+
+            foreach (self::BLOCK_COL_WIDTHS as $pos => $w) {
+                $col = Coordinate::stringFromColumnIndex($startIdx + $pos);
+
+                if (!$hasDisciplina) {
+                    $sheet->getColumnDimension($col)->setVisible(false)->setWidth(0);
+                } else {
+                    $sheet->getColumnDimension($col)->setWidth($w);
+                }
+            }
+        }
+
+        $sheet->getColumnDimension(self::COL_OBS)->setWidth(7.57);
+        $sheet->getColumnDimension(self::COL_RESULT)->setWidth(10.86);
+    }
+
+    // =====================================================================
+    // Cabeçalho institucional (linhas 1–11)
+    // =====================================================================
 
     private function buildCabecalho(
         Worksheet $sheet,
@@ -160,206 +396,165 @@ class PautaGeralTemplateExporter
         ?AnoLetivo $anoLetivo,
         array $config
     ): void {
-        $lastCol = self::RESULT_COLUMN;
+        $styles = $this->getStyles();
 
-        // ── Row 1: Institution banner ──
-        $sheet->mergeCells("A1:{$lastCol}1");
-        $sheet->setCellValue('A1', 'INSTITUTO POLITÉCNICO INDUSTRIAL DO KILAMBA KIAXI Nº 8056 "NOVA VIDA"');
-        $this->style($sheet, "A1:{$lastCol}1", [
-            'font'      => ['bold' => true, 'size' => 11, 'color' => self::CLR_HEADER_FONT, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        $this->setRowHeights($sheet, [
+            1 => 12.75, 2 => 12.75, 3 => 12.75, 4 => 12.75,
+            self::ROW_DIRECTOR => 17.25,
+            self::ROW_ASSIN    => 17.25,
+            self::ROW_NOME_DIR => 17.25,
+            self::ROW_INFO     => 17.25,
+            self::ROW_SPACER9  => 17.25,
+            self::ROW_SPACER10 => 6.75,
+            self::ROW_SPACER11 => 6.75,
+            self::ROW_DISC     => 13.5,
+            self::ROW_HDR1     => 14.1,
+            self::ROW_HDR2     => 11.65,
         ]);
-        $sheet->getRowDimension(1)->setRowHeight(22);
 
-        // ── Row 2: Director signature line ──
-        $sheet->mergeCells("B2:C2");
-        $sheet->setCellValue('B2', 'O DIRECTOR');
-        $sheet->getStyle('B2')->applyFromArray([
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => self::CLR_BORDER]]],
-        ]);
-        $sheet->getRowDimension(2)->setRowHeight(18);
+        // ── Linha 5: "O DIRECTOR" + Instituição ──────────────────────────
+        $this->writeCell($sheet, 'C5', 'O DIRECTOR', 'font9');
+        $this->writeMergedCell($sheet, 'X5:BE5', $this->nomeInstituicao(), 'headerInst');
 
-        // ── Row 3: Title + Ano Lectivo ──
-        $sheet->mergeCells("A3:D3");
-        $sheet->mergeCells("E3:{$lastCol}3");
-        $sheet->setCellValue('A3', 'Ano Lectivo:');
-        $sheet->setCellValue('E3', $config['titulo']);
+        // ── Linha 6: Assinatura + Ano Lectivo + Título ───────────────────
+        $this->writeCell($sheet, 'C6', '______________________________', 'font9');
+        $this->writeCell($sheet, 'I6', 'Ano Lectivo', 'font9');
 
-        $this->style($sheet, 'A3', ['font' => ['bold' => true, 'size' => 9, 'name' => 'Arial']]);
-        $this->style($sheet, "E3:{$lastCol}3", [
-            'font' => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
-        $sheet->getRowDimension(3)->setRowHeight(20);
+        $anoNome = $anoLetivo?->nome ?? ($turma->anoLetivo?->nome ?? date('Y') . '/' . (date('Y') + 1));
+        $this->writeCell($sheet, 'M6', ':' . $anoNome, 'font9');
+        $this->writeMergedCell($sheet, 'X6:BE6', $config['titulo'], 'headerInst');
 
-        // ── Row 4: Director name ──
-        $sheet->mergeCells("B4:C4");
-        $sheet->setCellValue('B4', 'Ferreira Manuel Fragoso Ph,D');
-        $sheet->getStyle('B4')->applyFromArray([
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
-        $sheet->getRowDimension(4)->setRowHeight(16);
+        // ── Linha 7: Nome do director ────────────────────────────────────
+        $this->writeCell($sheet, 'C7', $this->nomeDirector($turma), 'font9');
 
-        // ── Row 5: Date line ──
-        $sheet->mergeCells("A5:C5");
-        $sheet->setCellValue('A5', 'Data: _____/_____/_________');
-        $sheet->getStyle('A5')->applyFromArray([
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-        $sheet->getRowDimension(5)->setRowHeight(16);
+        // ── Linha 8: Data + Info turma ───────────────────────────────────
+        $this->writeCell($sheet, 'C8', 'Data: _____/_____/_________', 'font9');
 
-        // ── Row 6: Classe / Turma / Área / Curso ──
-        $sheet->mergeCells("A6:{$lastCol}6");
-        $sheet->setCellValue('A6', sprintf(
-            '%sª Classe   TURMA: %s   ÁREA: %s   CURSO: %s',
-            $turma->classe,
-            $turma->nome,
-            $turma->curso?->nome ?? '-',
-            $turma->curso?->nome ?? '-'
-        ));
-        $this->style($sheet, "A6:{$lastCol}6", [
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-        $sheet->getRowDimension(6)->setRowHeight(18);
-
-        // ── Row 7: Código da Turma / Sala / Área / Curso (repetido) ──
-        $sheet->mergeCells("A7:{$lastCol}7");
-        $sheet->setCellValue('A7', sprintf(
-            '%s   SALA: %s   ÁREA: %s   CURSO: %s',
-            strtoupper($turma->nome . $turma->classe),
+        $infoTurma = sprintf(
+            '%s   SALA:%s   ÁREA: %s   CURSO: %s',
+            strtoupper($turma->nome . ($turma->classe ?? '')),
             $turma->sala ?? '08',
-            $turma->curso?->nome ?? '-',
-            $turma->curso?->nome ?? '-'
-        ));
-        $this->style($sheet, "A7:{$lastCol}7", [
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-        $sheet->getRowDimension(7)->setRowHeight(16);
+            strtoupper($turma->curso?->area?->nome ?? $turma->curso?->nome ?? 'INFORMÁTICA'),
+            strtoupper($turma->curso?->nome ?? 'INFORMÁTICA')
+        );
 
-        // ── Rows 8–10: Blank spacers ──
-        foreach ([8, 9, 10] as $row) {
-            $sheet->getRowDimension($row)->setRowHeight(6);
-        }
-
-        // ── Rows 11–14: Fixed left headers (Nº, Proc, Nome, Sexo) + OBS/RESULT ──
-        $this->buildFixedHeaders($sheet);
+        $this->writeMergedCell($sheet, 'P8:BR8', $infoTurma, 'headerInst');
     }
 
-    private function buildFixedHeaders(Worksheet $sheet): void
-    {
-        // Merge A11:A14 → "Nº ORD"
-        $sheet->mergeCells('A11:A14');
-        $sheet->setCellValue('A11', "Nº\nORD");
-        $this->style($sheet, 'A11:A14', $this->headerCellStyle());
-
-        // Merge B11:B14 → "Nº PROC."
-        $sheet->mergeCells('B11:B14');
-        $sheet->setCellValue('B11', "Nº\nPROC.");
-        $this->style($sheet, 'B11:B14', $this->headerCellStyle());
-
-        // Merge C11:C14 → "NOME COMPLETO"
-        $sheet->mergeCells('C11:C14');
-        $sheet->setCellValue('C11', 'NOME COMPLETO');
-        $this->style($sheet, 'C11:C14', $this->headerCellStyle());
-
-        // Merge D11:D14 → "SEXO"
-        $sheet->mergeCells('D11:D14');
-        $sheet->setCellValue('D11', 'SEXO');
-        $this->style($sheet, 'D11:D14', $this->headerCellStyle());
-
-        // Merge OBS column rows 11–14
-        $sheet->mergeCells(self::OBS_COLUMN . '11:' . self::OBS_COLUMN . '14');
-        $sheet->setCellValue(self::OBS_COLUMN . '11', 'OBSERV.');
-        $this->style($sheet, self::OBS_COLUMN . '11:' . self::OBS_COLUMN . '14', $this->headerCellStyle());
-
-        // Merge RESULT column rows 11–14
-        $sheet->mergeCells(self::RESULT_COLUMN . '11:' . self::RESULT_COLUMN . '14');
-        $sheet->setCellValue(self::RESULT_COLUMN . '11', 'RESULTADO');
-        $this->style($sheet, self::RESULT_COLUMN . '11:' . self::RESULT_COLUMN . '14', $this->headerCellStyle());
-
-        // Row heights for discipline header rows
-        $sheet->getRowDimension(11)->setRowHeight(14);
-        $sheet->getRowDimension(12)->setRowHeight(14);
-        $sheet->getRowDimension(13)->setRowHeight(28); // Discipline name (taller)
-        $sheet->getRowDimension(14)->setRowHeight(20); // Labels row
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Discipline column headers (rows 11–14)
-    // ─────────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    // Cabeçalhos das disciplinas (linhas 12–14) — BUG DO FOREACH CORRIGIDO
+    // =====================================================================
 
     private function buildDisciplinaHeaders(
         Worksheet $sheet,
         Collection $disciplinas,
-        array $config,
-        Collection $atribuicoes
+        array $config
     ): void {
-        foreach (self::DISCIPLINE_BLOCKS as $index => $range) {
-            [$startCol, $endCol] = explode(':', $range);
-            $allCols = $this->columnsInRange($startCol, $endCol);
+        $r12 = self::ROW_DISC;
+        $r13 = self::ROW_HDR1;
+        $r14 = self::ROW_HDR2;
 
-            $disciplina = $disciplinas->get($index);
+        $headerStyle = $this->headerCellStyle();
+
+        // ── Colunas fixas A–D (linhas 13–14) ─────────────────────────────
+        $fixedHeaders = [
+            "A{$r13}" => 'Nº',   "A{$r14}" => 'ORD',
+            "B{$r13}" => 'Nº',   "B{$r14}" => 'PROC.',
+        ];
+
+        foreach ($fixedHeaders as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+            $sheet->getStyle($cell)->applyFromArray($headerStyle);
+        }
+
+        foreach (["C{$r13}:C{$r14}" => 'NOME COMPLETO', "D{$r13}:D{$r14}" => 'SEXO'] as $range => $value) {
+            $sheet->mergeCells($range);
+            $sheet->setCellValue(Str::before($range, ':'), $value);
+            $sheet->getStyle($range)->applyFromArray($headerStyle);
+        }
+
+        // ── OBS / RESULTADO (lado direito) ───────────────────────────────
+        $obsCell    = self::COL_OBS . $r14;
+        $resultCell = self::COL_RESULT . $r14;
+
+        $sheet->setCellValue($obsCell, 'OBSERV.');
+        $sheet->setCellValue($resultCell, 'RESULTADO');
+        $sheet->getStyle($obsCell)->applyFromArray($headerStyle);
+        $sheet->getStyle($resultCell)->applyFromArray($headerStyle);
+
+        // ── Blocos de disciplinas ─────────────────────────────────────────
+        $labels = $config['labels'] ?? ['F.J', 'F.I', 'MfT2', 'MAC', 'NPT', 'NPT', 'MT'];
+
+        foreach (self::DISCIPLINE_BLOCKS as $idx => [$startCol, $endCol]) {
+            $disciplina = $disciplinas->get($idx);
 
             if (!$disciplina) {
-                // Hide entire block
-                foreach ($allCols as $col) {
-                    $sheet->getColumnDimension($col)->setVisible(false);
-                }
                 continue;
             }
 
-            // ── Rows 11–12: blank (reserved for fixed headers on left) ──
-            // ── Row 13: Discipline name merged across all 7 cols ──
-            $mergeRange = "{$startCol}13:{$endCol}13";
-            $sheet->mergeCells($mergeRange);
-            $sheet->setCellValue("{$startCol}13", $this->abreviarDisciplina($disciplina));
-            $this->style($sheet, $mergeRange, [
-                'font'      => ['bold' => true, 'size' => 9, 'color' => self::CLR_HEADER_FONT, 'name' => 'Arial'],
-                'fill'      => self::solidFill(self::CLR_HEADER_BG),
-                'alignment' => [
-                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                    'vertical'   => Alignment::VERTICAL_CENTER,
-                    'wrapText'   => true,
-                ],
-                'borders' => [
-                    'allBorders' => self::borderDef(Border::BORDER_THIN, self::CLR_BORDER),
-                ],
-            ]);
+            $cols = $this->columnsInRange($startCol, $endCol);
 
-            // ── Row 14: Labels (FALTAS J, FALTAS I, MfT2, MAC, NPT, NPT, MT) ──
-            $labels = $config['labels'] ?? ['F.J', 'F.I', 'MfT2', 'MAC', 'NPT', 'NPT', 'MT'];
-            foreach ($allCols as $pos => $col) {
-                $label = $labels[$pos] ?? '';
-                $sheet->setCellValue("{$col}14", $label);
-                $this->style($sheet, "{$col}14", [
-                    'font'      => ['bold' => true, 'size' => 8, 'color' => self::CLR_HEADER_FONT, 'name' => 'Arial'],
-                    'fill'      => self::solidFill(self::CLR_SUBHEADER),
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                    'borders'   => ['allBorders' => self::borderDef(Border::BORDER_THIN, self::CLR_BORDER)],
-                ]);
+            // Linha 12: nome da disciplina (merge sobre 7 colunas)
+            $this->buildDiscNameHeader($sheet, $startCol, $endCol, $r12, $disciplina);
+
+            // Linha 13: FALTAS (merge FJ+FI)
+            $mergeFaltas = "{$cols[self::POS_FALTAS_J]}{$r13}:{$cols[self::POS_FALTAS_I]}{$r13}";
+            $sheet->mergeCells($mergeFaltas);
+            $sheet->setCellValue("{$cols[self::POS_FALTAS_J]}{$r13}", 'FALTAS');
+            $sheet->getStyle($mergeFaltas)->applyFromArray($this->headerCellStyle(4));
+
+            // Linhas 13–14: colunas com merge vertical (MfT2, MAC, NPT, NPT, MT)
+            $verticalHeaders = [];
+            for ($pos = 2; $pos < count($cols); $pos++) {
+                $verticalHeaders[$cols[$pos]] = $labels[$pos] ?? '';
             }
-        }
 
-        // OBS / RESULTADO header styles for label row
-        $this->style($sheet, self::OBS_COLUMN . '14', [
-            'fill'    => self::solidFill(self::CLR_SUBHEADER),
-            'borders' => ['allBorders' => self::borderDef(Border::BORDER_THIN, self::CLR_BORDER)],
-        ]);
-        $this->style($sheet, self::RESULT_COLUMN . '14', [
-            'fill'    => self::solidFill(self::CLR_SUBHEADER),
-            'borders' => ['allBorders' => self::borderDef(Border::BORDER_THIN, self::CLR_BORDER)],
+            $smallHeader = $this->headerCellStyle(5);
+
+            foreach ($verticalHeaders as $col => $label) {
+                $mergeV = "{$col}{$r13}:{$col}{$r14}";
+                $sheet->mergeCells($mergeV);
+                $sheet->setCellValue("{$col}{$r13}", $label);
+                $sheet->getStyle($mergeV)->applyFromArray($smallHeader);
+            }
+
+            // Linha 14: J | I (sub-cabeçalho das faltas)
+            $sheet->setCellValue("{$cols[self::POS_FALTAS_J]}{$r14}", 'J');
+            $sheet->setCellValue("{$cols[self::POS_FALTAS_I]}{$r14}", 'I');
+            $sheet->getStyle("{$cols[self::POS_FALTAS_J]}{$r14}")->applyFromArray($smallHeader);
+            $sheet->getStyle("{$cols[self::POS_FALTAS_I]}{$r14}")->applyFromArray($smallHeader);
+        }
+    }
+
+    /**
+     * Célula de nome de disciplina (linha 12) com estilo e merge.
+     */
+    private function buildDiscNameHeader(
+        Worksheet $sheet,
+        string $startCol,
+        string $endCol,
+        int $row,
+        Disciplina $disciplina
+    ): void {
+        $range = "{$startCol}{$row}:{$endCol}{$row}";
+        $sheet->mergeCells($range);
+        $sheet->setCellValue("{$startCol}{$row}", $this->abreviarDisciplina($disciplina));
+        $sheet->getStyle($range)->applyFromArray([
+            'font'      => ['bold' => false, 'size' => 8, 'name' => 'Arial'],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::CLR_DISC_BG]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders'   => [
+                'top'    => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => self::CLR_BORDER]],
+                'bottom' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => self::CLR_BORDER]],
+                'left'   => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => self::CLR_BORDER]],
+                'right'  => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => self::CLR_BORDER]],
+            ],
         ]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Data rows (alunos)
-    // ─────────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    // Linhas de dados dos alunos — dividido em sub-métodos
+    // =====================================================================
 
     private function buildAlunoRows(
         Worksheet $sheet,
@@ -369,322 +564,277 @@ class PautaGeralTemplateExporter
         array $config,
         int $lastDataRow
     ): void {
-        $lastCol = self::RESULT_COLUMN;
-
-        foreach ($alunos as $offset => $aluno) {
-            $row    = self::DATA_START_ROW + $offset;
-            $isAlt  = ($offset % 2 === 1);
-            $fillHex = $isAlt ? self::CLR_ROW_ALT : 'FFFFFF';
-
-            // Base row style
-            $sheet->getRowDimension($row)->setRowHeight(18);
-            $this->style($sheet, "A{$row}:{$lastCol}{$row}", [
-                'fill'      => self::solidFill($fillHex),
-                'font'      => ['size' => 9, 'color' => self::CLR_FONT_MAIN, 'name' => 'Arial'],
-                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-                'borders'   => [
-                    'allBorders' => self::borderDef(Border::BORDER_THIN, self::CLR_LIGHT_BORDER),
-                ],
-            ]);
-
-            // Fixed columns
-            $sheet->setCellValueExplicit("A{$row}", (string) ($offset + 1), DataType::TYPE_NUMERIC);
-            $sheet->setCellValueExplicit("B{$row}", (string) ($aluno->numero_processo ?? ''), DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit("C{$row}", $aluno->name, DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit("D{$row}", strtoupper((string) ($aluno->genero ?? '')), DataType::TYPE_STRING);
-
-            $this->style($sheet, "A{$row}", ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]]);
-            $this->style($sheet, "B{$row}", ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]]);
-            $this->style($sheet, "D{$row}", ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]]);
-            $sheet->getStyle("C{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-
-            $notasAluno = $notasIndex[$aluno->id] ?? [];
-
-            // Note columns per discipline
-            foreach ($disciplinas->values() as $index => $disciplina) {
-                [$startCol, $endCol] = explode(':', self::DISCIPLINE_BLOCKS[$index]);
-                $allCols = $this->columnsInRange($startCol, $endCol);
-                $nota = $notasAluno[$disciplina->id] ?? null;
-
-                // Campos do 3º trimestre conforme solicitado: MAC3, PP3, (sem PT3), PG atribuída
-                $campos = $config['campos'] ?? ['faltas_j', 'faltas_i', 'mft2', 'mac3', 'pp3', 'pg', 'mt3'];
-
-                foreach ($allCols as $pos => $col) {
-                    $campo = $campos[$pos] ?? null;
-                    $value = null;
-
-                    if ($campo) {
-                        if (Str::startsWith($campo, 'faltas')) {
-                            $value = ''; // Faltas podem ser preenchidas manualmente
-                        } elseif ($campo === 'mft2') {
-                            $value = $nota?->mft2;
-                        } elseif ($campo === 'pg') {
-                            // PG é ATRIBUÍDA, não calculada - exibe o valor direto
-                            $value = $nota?->pg;
-                        } elseif ($campo === 'mt3') {
-                            // MT3 calculado apenas com MAC3+PP3 (sem PT3)
-                            $value = $nota?->mt3;
-                        } else {
-                            $value = $nota?->{$campo};
-                        }
-                    }
-
-                    if ($value === null || $value === '') {
-                        $sheet->setCellValue("{$col}{$row}", '');
-                    } else {
-                        $sheet->setCellValueExplicit("{$col}{$row}", (string) $value, DataType::TYPE_NUMERIC);
-                        $sheet->getStyle("{$col}{$row}")
-                            ->getNumberFormat()
-                            ->setFormatCode(NumberFormat::FORMAT_NUMBER_00);
-                    }
-
-                    $this->style($sheet, "{$col}{$row}", [
-                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                    ]);
-                }
-            }
-
-            // OBS / Resultado
-            [$obs, $resultado] = $this->resolverResultadoAluno(
-                $disciplinas, $notasAluno, $config['mostrarResultado'] ?? false, $aluno
-            );
-
-            $sheet->setCellValueExplicit(self::OBS_COLUMN . $row, $obs, DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit(self::RESULT_COLUMN . $row, $resultado, DataType::TYPE_STRING);
-
-            // Cor do resultado
-            $resultadoStyle = [
-                'font'      => ['bold' => !empty($resultado), 'size' => 9, 'name' => 'Arial'],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-            ];
-            if (stripos($resultado, 'transita') !== false || stripos($resultado, 'aprov') !== false) {
-                $resultadoStyle['font']['color'] = ['rgb' => self::CLR_APROVADO];
-            } elseif (stripos($resultado, 'não transita') !== false || stripos($resultado, 'reprov') !== false) {
-                $resultadoStyle['font']['color'] = ['rgb' => self::CLR_REPROVADO];
-            }
-
-            $this->style($sheet, self::RESULT_COLUMN . $row, $resultadoStyle);
-            $this->style($sheet, self::OBS_COLUMN . $row, [
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                'font' => ['size' => 9, 'name' => 'Arial'],
-            ]);
+        // FIX: Reset de fill em toda a zona de dados de uma vez, antes de
+        // escrever qualquer célula. Garante que nenhuma linha herda um fill
+        // colorido (ex.: amarelo) de temas, estilos globais ou templates.
+        if ($alunos->isNotEmpty()) {
+            $sheet->getStyle('A' . self::DATA_START . ':' . self::COL_RESULT . $lastDataRow)
+                  ->applyFromArray(['fill' => ['fillType' => Fill::FILL_NONE]]);
         }
 
-        // Outer border around entire data area
-        $this->style($sheet, "A" . self::DATA_START_ROW . ":{$lastCol}{$lastDataRow}", [
+        foreach ($alunos as $offset => $aluno) {
+            $row        = self::DATA_START + $offset;
+            $notasAluno = $notasIndex[$aluno->id] ?? [];
+
+            $sheet->getRowDimension($row)->setRowHeight(13.5);
+
+            $this->writeAlunoFixedColumns($sheet, $aluno, $row, $offset + 1);
+            $this->writeAlunoDisciplinaNotas($sheet, $row, $disciplinas, $notasAluno, $config);
+            $this->writeAlunoResultado($sheet, $row, $disciplinas, $notasAluno, $config);
+        }
+
+        // Bordas externas da tabela de dados
+        $sheet->getStyle('A' . self::DATA_START . ':' . self::COL_RESULT . $lastDataRow)->applyFromArray([
             'borders' => [
-                'outline' => self::borderDef(Border::BORDER_MEDIUM, self::CLR_BORDER),
+                'outline' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => self::CLR_BORDER]],
             ],
         ]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Rodapé (assinaturas dos professores e direção)
-    // ─────────────────────────────────────────────────────────────────────────
+    /**
+     * Colunas A–D: ordinal, nº processo, nome, sexo.
+     */
+    private function writeAlunoFixedColumns(Worksheet $sheet, object $aluno, int $row, int $ordinal): void
+    {
+        $styles = $this->getStyles();
+
+        $sheet->setCellValueExplicit("A{$row}", (string) $ordinal, DataType::TYPE_NUMERIC);
+        $sheet->getStyle("A{$row}")->applyFromArray($styles['cellCenter']);
+
+        $sheet->setCellValueExplicit("B{$row}", (string) ($aluno->numero_processo ?? ''), DataType::TYPE_STRING);
+        $sheet->getStyle("B{$row}")->applyFromArray($styles['cellCenter']);
+
+        $sheet->setCellValueExplicit("C{$row}", $aluno->name, DataType::TYPE_STRING);
+        $sheet->getStyle("C{$row}")->applyFromArray($styles['cellName']);
+
+        $sheet->setCellValueExplicit("D{$row}", strtoupper((string) ($aluno->genero ?? '')), DataType::TYPE_STRING);
+        $sheet->getStyle("D{$row}")->applyFromArray($styles['cellCenter']);
+    }
+
+    /**
+     * Notas de todas as disciplinas para um aluno numa linha.
+     */
+    private function writeAlunoDisciplinaNotas(
+        Worksheet $sheet,
+        int $row,
+        Collection $disciplinas,
+        array $notasAluno,
+        array $config
+    ): void {
+        $styles = $this->getStyles();
+        $campos = $config['campos'];
+
+        foreach ($disciplinas->values() as $idx => $disciplina) {
+            [$startCol, $endCol] = self::DISCIPLINE_BLOCKS[$idx];
+            $cols = $this->columnsInRange($startCol, $endCol);
+            $nota = $notasAluno[$disciplina->id] ?? null;
+
+            foreach ($cols as $pos => $col) {
+                $value = $this->resolverValorCelula($nota, $campos[$pos] ?? null);
+                $bold  = ($pos === self::POS_MT);
+
+                $this->writeNumericCell($sheet, "{$col}{$row}", $value, $bold);
+            }
+
+            // Bordas médias nas extremidades do bloco (separador visual)
+            $sheet->getStyle("{$startCol}{$row}")->applyFromArray($styles['borderLeftMedium']);
+            $sheet->getStyle("{$endCol}{$row}")->applyFromArray($styles['borderRightMedium']);
+        }
+    }
+
+    /**
+     * Resolve o valor de uma célula a partir do campo e da nota.
+     */
+    private function resolverValorCelula(?object $nota, ?string $campo): mixed
+    {
+        if ($campo === null) {
+            return null;
+        }
+
+        if (in_array($campo, ['faltas_j', 'faltas_i'], true)) {
+            return '';
+        }
+
+        return $nota?->{$campo};
+    }
+
+    /**
+     * Colunas OBS e RESULTADO para um aluno.
+     */
+    private function writeAlunoResultado(
+        Worksheet $sheet,
+        int $row,
+        Collection $disciplinas,
+        array $notasAluno,
+        array $config
+    ): void {
+        $styles    = $this->getStyles();
+        $obsCol    = self::COL_OBS;
+        $resultCol = self::COL_RESULT;
+
+        [$obs, $resultado] = $this->resolverResultadoAluno(
+            $disciplinas,
+            $notasAluno,
+            $config['mostrarResultado'] ?? false
+        );
+
+        $sheet->setCellValueExplicit("{$obsCol}{$row}", $obs, DataType::TYPE_STRING);
+        $sheet->getStyle("{$obsCol}{$row}")->applyFromArray($styles['cellCenter']);
+
+        $sheet->setCellValueExplicit("{$resultCol}{$row}", $resultado, DataType::TYPE_STRING);
+
+        $resultStyle = $styles['cellCenter'];
+
+        if (!empty($resultado)) {
+            $resultStyle['font']['bold'] = true;
+
+            if ($this->isTransita($resultado)) {
+                $resultStyle['font']['color'] = ['rgb' => self::CLR_APROVADO];
+            } elseif ($this->isNaoTransita($resultado)) {
+                $resultStyle['font']['color'] = ['rgb' => self::CLR_REPROVADO];
+            }
+        }
+
+        $sheet->getStyle("{$resultCol}{$row}")->applyFromArray($resultStyle);
+    }
+
+    private function isTransita(string $resultado): bool
+    {
+        return stripos($resultado, 'transita') !== false
+            && stripos($resultado, 'não') === false;
+    }
+
+    private function isNaoTransita(string $resultado): bool
+    {
+        return stripos($resultado, 'não') !== false
+            || stripos($resultado, 'reprov') !== false;
+    }
+
+    // =====================================================================
+    // Rodapé
+    // =====================================================================
 
     private function buildRodape(
         Worksheet $sheet,
         Turma $turma,
-        int $footerRow,
+        int $lastDataRow,
         Collection $atribuicoes,
-        Collection $disciplinas,
-        array $config
+        Collection $disciplinas
     ): void {
-        $lastCol = self::RESULT_COLUMN;
+        $styles = $this->getStyles();
+        $font9  = $styles['font9'];
 
-        // Blank gap row
-        $sheet->getRowDimension($footerRow - 1)->setRowHeight(8);
+        // Linha em branco
+        $this->setRowHeights($sheet, [$lastDataRow + 1 => 8]);
 
-        // Row: "Data do Conselho de Turma" + nomes dos professores por disciplina
-        $sheet->mergeCells("A{$footerRow}:D{$footerRow}");
-        $sheet->setCellValue("A{$footerRow}", 'Data do Conselho de Turma');
-        $this->style($sheet, "A{$footerRow}:D{$footerRow}", [
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
+        // ── Professores por disciplina ───────────────────────────────────
+        $rConselho = $lastDataRow + 2;
+        $sheet->getRowDimension($rConselho)->setRowHeight(14);
+        $this->writeCell($sheet, "A{$rConselho}", 'Data do Conselho de Turma', 'font9');
 
-        $dateRow = $footerRow + 1;
-        $sheet->mergeCells("A{$dateRow}:D{$dateRow}");
-        $sheet->setCellValue("A{$dateRow}", '_____/_____/________');
-        $this->style($sheet, "A{$dateRow}:D{$dateRow}", [
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-
-        // Professor names under each discipline block
-        foreach ($disciplinas->values() as $index => $disciplina) {
-            [$startCol] = explode(':', self::DISCIPLINE_BLOCKS[$index]);
+        foreach ($disciplinas->values() as $idx => $disciplina) {
+            [$startCol] = self::DISCIPLINE_BLOCKS[$idx];
             $professor  = $atribuicoes->get($disciplina->id)?->professor?->name ?? '';
-            
+
             if ($professor) {
-                $sheet->setCellValue("{$startCol}{$footerRow}", $professor);
-                $this->style($sheet, "{$startCol}{$footerRow}", [
-                    'font' => ['size' => 8, 'name' => 'Arial'],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                ]);
+                $this->writeCell($sheet, "{$startCol}{$rConselho}", $professor, 'sigCenter');
             }
         }
 
-        $sheet->getRowDimension($footerRow)->setRowHeight(14);
-        $sheet->getRowDimension($dateRow)->setRowHeight(14);
+        // ── Data do conselho ─────────────────────────────────────────────
+        $rData = $rConselho + 1;
+        $sheet->getRowDimension($rData)->setRowHeight(14);
+        $this->writeCell($sheet, "A{$rData}", '_____/______/________', 'font9');
 
-        // Observações
-        $obsStart = $footerRow + 3;
-        $sheet->mergeCells("A{$obsStart}:{$lastCol}{$obsStart}");
-        $sheet->setCellValue("A{$obsStart}", 'Observações:');
-        $this->style($sheet, "A{$obsStart}", [
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-        ]);
+        // ── Observações ──────────────────────────────────────────────────
+        $rObs = $rData + 2; // +1 linha vazia
+        $this->setRowHeights($sheet, [$rData + 1 => 8]);
 
-        $obsTexts = [
+        $this->buildObservacoes($sheet, $rObs);
+
+        // ── Assinaturas ──────────────────────────────────────────────────
+        $rSigLabel = $rObs + 4; // 1 label + 3 linhas de obs
+        $this->buildAssinaturas($sheet, $turma, $rSigLabel);
+    }
+
+    private function buildObservacoes(Worksheet $sheet, int $startRow): void
+    {
+        $resultCol = self::COL_RESULT;
+
+        $this->writeMergedCell($sheet, "A{$startRow}:{$resultCol}{$startRow}", 'Observações:', 'font9');
+        $sheet->getRowDimension($startRow)->setRowHeight(12);
+
+        $textos = [
             'Na coluna Resultado utilizar: Transita; Não Transita; Anulação de matrícula (AM); Transferido.',
             'Na coluna CF indicar EEF (excluído por excesso de faltas) quando for o caso.',
             'Na coluna Observações escrever "Exame" quando o aluno não obteve aprovação a alguma disciplina terminal e o Regime de Avaliação dos Alunos o permitir.',
         ];
 
-        foreach ($obsTexts as $i => $text) {
-            $row = $obsStart + 1 + $i;
-            $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
-            $sheet->setCellValue("A{$row}", $text);
-            $this->style($sheet, "A{$row}", [
-                'font' => ['size' => 8, 'italic' => true, 'name' => 'Arial'],
+        foreach ($textos as $i => $texto) {
+            $row = $startRow + 1 + $i;
+            $sheet->mergeCells("A{$row}:{$resultCol}{$row}");
+            $sheet->setCellValue("A{$row}", $texto);
+            $sheet->getStyle("A{$row}")->applyFromArray([
+                'font'      => $this->getStyles()['font9'],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
             ]);
+            $sheet->getRowDimension($row)->setRowHeight(12);
         }
-
-        // Assinaturas: Diretor de Turma, Coordenador de Curso, Subdirector Pedagógico
-        $sigStart = $obsStart + 5;
-        $sheet->getRowDimension($sigStart)->setRowHeight(8);
-
-        // Director de Turma
-        $sigRow = $sigStart + 1;
-        $sheet->mergeCells("A{$sigRow}:G{$sigRow}");
-        $sheet->setCellValue("A{$sigRow}", 'O DIRECTOR DE TURMA');
-        $this->style($sheet, "A{$sigRow}", [
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-
-        $lineRow = $sigRow + 1;
-        $sheet->mergeCells("A{$lineRow}:G{$lineRow}");
-        $sheet->getStyle("A{$lineRow}")->applyFromArray([
-            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => self::CLR_BORDER]]],
-        ]);
-
-        $nameRow = $lineRow + 1;
-        $sheet->mergeCells("A{$nameRow}:G{$nameRow}");
-        $sheet->setCellValue("A{$nameRow}", $turma->coordenador?->name ?? '_____________________________');
-        $this->style($sheet, "A{$nameRow}", [
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-
-        // Coordenador de Curso (coluna central)
-        $cursoCol = 'AN';
-        $sheet->mergeCells("{$cursoCol}{$sigRow}:{$cursoCol}G{$sigRow}"); // Ajustar merge para coluna única
-        $sheet->setCellValue("{$cursoCol}{$sigRow}", 'O COORDENADOR DE CURSO');
-        $this->style($sheet, "{$cursoCol}{$sigRow}", [
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
-        $sheet->getStyle("{$cursoCol}{$lineRow}")->applyFromArray([
-            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => self::CLR_BORDER]]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
-        $sheet->setCellValue("{$cursoCol}{$nameRow}", $turma->curso?->coordenador?->name ?? '_____________________________');
-        $this->style($sheet, "{$cursoCol}{$nameRow}", [
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
-
-        // Subdirector Pedagógico (coluna direita)
-        $subCol = 'BY';
-        $sheet->setCellValue("{$subCol}{$sigRow}", 'O SUBDIRECTOR PEDAGÓGICO');
-        $this->style($sheet, "{$subCol}{$sigRow}", [
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-        $sheet->getStyle("{$subCol}{$lineRow}")->applyFromArray([
-            'borders' => ['bottom' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => self::CLR_BORDER]]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-        $sheet->setCellValue("{$subCol}{$nameRow}", 'Carlos Alberto Brito Teixeira da Silva');
-        $this->style($sheet, "{$subCol}{$nameRow}", [
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-
-        // Light background for footer area
-        $this->style($sheet, "A{$footerRow}:{$lastCol}" . ($nameRow + 2), [
-            'fill' => self::solidFill(self::CLR_FOOTER_BG),
-        ]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Column widths
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private function applyColumnWidths(Worksheet $sheet, Collection $disciplinas): void
+    private function buildAssinaturas(Worksheet $sheet, Turma $turma, int $startRow): void
     {
-        $sheet->getColumnDimension('A')->setWidth(6);    // Nº ORD
-        $sheet->getColumnDimension('B')->setWidth(14);   // Nº PROC.
-        $sheet->getColumnDimension('C')->setWidth(38);   // NOME COMPLETO
-        $sheet->getColumnDimension('D')->setWidth(6);    // SEXO
+        $rLabel = $startRow + 1;
+        $rRisco = $rLabel + 1;
+        $rNome  = $rRisco + 1;
 
-        // Discipline blocks: 7 cols each (F.J, F.I, MfT2, MAC, NPT, NPT, MT)
-        foreach (self::DISCIPLINE_BLOCKS as $index => $range) {
-            [$startCol, $endCol] = explode(':', $range);
-            $hasDisciplina = $disciplinas->get($index) !== null;
+        $this->setRowHeights($sheet, [
+            $rLabel => 14, $rRisco => 14, $rNome => 14,
+        ]);
 
-            foreach ($this->columnsInRange($startCol, $endCol) as $pos => $col) {
-                if (!$hasDisciplina) {
-                    $sheet->getColumnDimension($col)->setVisible(false);
-                } else {
-                    // Faltas mais estreitas, notas um pouco mais largas
-                    $width = in_array($pos, [0, 1]) ? 6 : 8;
-                    $sheet->getColumnDimension($col)->setWidth($width);
-                }
-            }
+        $signatarios = [
+            // [colLabel, label, colRisco, risco, colNome, nome]
+            ['I',  'O DIRECTOR DE TURMA',      'D',  '______________________________', 'H',  $this->nomeDirectorTurma($turma)],
+            ['AQ', 'O COORDENADOR DE CURSO',   'AG', '______________________________', 'AQ', $this->nomeCoordenadorCurso($turma)],
+            ['BW', 'O SUBDIRECTOR PEDAGÓGICO', 'BY', '____________________________________', 'BY', $this->nomeSubdirectorPedagogico()],
+        ];
+
+        foreach ($signatarios as [$colL, $label, $colR, $risco, $colN, $nome]) {
+            $this->writeCell($sheet, "{$colL}{$rLabel}", $label, 'sigCenter');
+            $this->writeCell($sheet, "{$colR}{$rRisco}", $risco, 'font9');
+            $this->writeCell($sheet, "{$colN}{$rNome}", $nome, 'sigCenter');
         }
-
-        $sheet->getColumnDimension(self::OBS_COLUMN)->setWidth(12);   // OBSERV.
-        $sheet->getColumnDimension(self::RESULT_COLUMN)->setWidth(14); // RESULTADO
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Business logic helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    // Lógica de negócio
+    // =====================================================================
 
     private function resolveNotas(Turma $turma, ?AnoLetivo $anoLetivo, array $dados): Collection
     {
-        $notas = collect();
-
         if (isset($dados['notas']) && $dados['notas'] instanceof Collection) {
-            $notas = $dados['notas'];
-        } elseif (isset($dados['notasPorDisciplina']) && $dados['notasPorDisciplina'] instanceof Collection) {
-            $notas = $dados['notasPorDisciplina']->flatten(1);
+            return $dados['notas']->values();
         }
 
-        if ($notas->isEmpty()) {
-            $notas = $turma->notas()
-                ->where('ano_letivo_id', $anoLetivo?->id ?? $turma->ano_letivo_id)
-                ->with(['aluno', 'disciplina'])
-                ->get();
+        if (isset($dados['notasPorDisciplina']) && $dados['notasPorDisciplina'] instanceof Collection) {
+            return $dados['notasPorDisciplina']->flatten(1)->values();
         }
 
-        if ($notas instanceof EloquentCollection) {
-            $notas->loadMissing(['aluno', 'disciplina']);
-        }
-
-        return $notas->values();
+        return $turma->notas()
+            ->where('ano_letivo_id', $anoLetivo?->id ?? $turma->ano_letivo_id)
+            ->with(['aluno', 'disciplina'])
+            ->get()
+            ->values();
     }
 
     private function indexarNotas(Collection $notas): array
     {
         $index = [];
+
         foreach ($notas as $nota) {
             $index[$nota->aluno_id][$nota->disciplina_id] = $nota;
         }
+
         return $index;
     }
 
@@ -692,27 +842,27 @@ class PautaGeralTemplateExporter
     {
         return match ($trimestre) {
             '1' => [
-                'titulo'         => 'PAUTA DE APROVEITAMENTO - Iº TRIMESTRE',
-                'labels'         => ['F.J', 'F.I', 'MfT2', 'MAC1', 'PP1', 'PT1', 'MT1'],
-                'campos'         => ['faltas_j', 'faltas_i', 'mft2', 'mac1', 'pp1', 'pt1', 'mt1'],
+                'titulo'           => 'PAUTA DE APROVEITAMENTO - Iº TRIMESTRE',
+                'labels'           => ['F.J', 'F.I', 'MfT2', 'MAC1', 'NPT1', 'NPT1', 'MT1'],
+                'campos'           => ['faltas_j', 'faltas_i', 'mft2', 'mac1', 'pp1', 'pt1', 'mt1'],
                 'mostrarResultado' => false,
             ],
             '2' => [
-                'titulo'         => 'PAUTA DE APROVEITAMENTO - IIº TRIMESTRE',
-                'labels'         => ['F.J', 'F.I', 'MfT2', 'MAC2', 'PP2', 'PT2', 'MT2'],
-                'campos'         => ['faltas_j', 'faltas_i', 'mft2', 'mac2', 'pp2', 'pt2', 'mt2'],
+                'titulo'           => 'PAUTA DE APROVEITAMENTO - IIº TRIMESTRE',
+                'labels'           => ['F.J', 'F.I', 'MfT2', 'MAC2', 'NPT2', 'NPT2', 'MT2'],
+                'campos'           => ['faltas_j', 'faltas_i', 'mft2', 'mac2', 'pp2', 'pt2', 'mt2'],
                 'mostrarResultado' => false,
             ],
             '3' => [
-                'titulo'         => 'PAUTA DE APROVEITAMENTO - IIIº TRIMESTRE',
-                'labels'         => ['F.J', 'F.I', 'MfT2', 'MAC3', 'PP3', 'PG', 'MT3'],
-                'campos'         => ['faltas_j', 'faltas_i', 'mft2', 'mac3', 'pp3', 'pg', 'mt3'],
+                'titulo'           => 'PAUTA DE APROVEITAMENTO - IIIº TRIMESTRE',
+                'labels'           => ['F.J', 'F.I', 'MfT2', 'MAC3', 'NPT2', 'PG', 'MT3'],
+                'campos'           => ['faltas_j', 'faltas_i', 'mft2', 'mac3', 'pp3', 'pg', 'mt3'],
                 'mostrarResultado' => false,
             ],
             default => [
-                'titulo'         => 'PAUTA GERAL DO ANO LETIVO',
-                'labels'         => ['F.J', 'F.I', 'CF', 'MT1', 'MT2', 'PG', 'CFD'],
-                'campos'         => ['faltas_j', 'faltas_i', 'cf', 'mt1', 'mt2', 'pg', 'cfd'],
+                'titulo'           => 'PAUTA GERAL DO ANO LETIVO',
+                'labels'           => ['F.J', 'F.I', 'CF', 'MT1', 'MT2', 'PG', 'CFD'],
+                'campos'           => ['faltas_j', 'faltas_i', 'cf', 'mt1', 'mt2', 'pg', 'cfd'],
                 'mostrarResultado' => true,
             ],
         };
@@ -721,8 +871,7 @@ class PautaGeralTemplateExporter
     private function resolverResultadoAluno(
         Collection $disciplinas,
         array $notasAluno,
-        bool $mostrarResultado,
-        $aluno = null
+        bool $mostrarResultado
     ): array {
         if (!$mostrarResultado) {
             return ['', ''];
@@ -731,12 +880,11 @@ class PautaGeralTemplateExporter
         $temNota = $temPendente = $temReprovacao = $temExame = $temEEF = false;
 
         foreach ($disciplinas as $disciplina) {
-            $nota  = $notasAluno[$disciplina->id] ?? null;
-            $cfd   = $nota?->cfd;
-            $cf    = $nota?->cf;
+            $nota = $notasAluno[$disciplina->id] ?? null;
+            $cf   = $nota?->cf;
+            $cfd  = $nota?->cfd;
 
-            // Verificar EEF (excesso de faltas) - se CF for "EEF" ou se faltas > limite
-            if ($cf === 'EEF' || (is_string($cf) && strtoupper($cf) === 'EEF')) {
+            if (is_string($cf) && strtoupper($cf) === 'EEF') {
                 $temEEF = true;
                 continue;
             }
@@ -747,10 +895,11 @@ class PautaGeralTemplateExporter
             }
 
             $temNota = true;
-            $valorFinal = $cfd ?? $cf;
+            $val     = $cfd ?? $cf;
 
-            if ($valorFinal !== null && (float) $valorFinal < 10) {
+            if ($val !== null && (float) $val < 10) {
                 $temReprovacao = true;
+
                 if ($disciplina->disciplina_terminal) {
                     $temExame = true;
                 }
@@ -761,7 +910,6 @@ class PautaGeralTemplateExporter
             return ['', ''];
         }
 
-        // EEF tem prioridade
         if ($temEEF) {
             return ['EEF', 'Não Transita'];
         }
@@ -772,6 +920,10 @@ class PautaGeralTemplateExporter
 
         return [$temExame ? 'Exame' : '', 'Não Transita'];
     }
+
+    // =====================================================================
+    // Helpers de ordenação / abreviação
+    // =====================================================================
 
     private function ordenarDisciplinas(Collection $disciplinas): Collection
     {
@@ -784,28 +936,30 @@ class PautaGeralTemplateExporter
         ];
 
         return $disciplinas->sortBy(function (Disciplina $d) use ($ordem) {
-            $n    = $this->normalize($d->nome);
-            $rank = $ordem[$n] ?? 999;
-            return str_pad((string) $rank, 4, '0', STR_PAD_LEFT) . '-' . $n;
+            $n = $this->normalize($d->nome);
+            return str_pad((string) ($ordem[$n] ?? 999), 4, '0', STR_PAD_LEFT) . '-' . $n;
         });
     }
 
     private function abreviarDisciplina(Disciplina $disciplina): string
     {
         $aliases = [
-            'LINGUA PORTUGUESA' => 'L. PORTUGUESA',
-            'INGLES'            => 'INGLÊS',
-            'EDUCACAO FISICA'   => 'ED. FÍSICA',
-            'MATEMATICA'        => 'MATEMAT.',
-            'FISICA'            => 'FÍSICA',
-            'QUIMICA'           => 'QUÍMICA',
-            'EMPREENDEDORISMO'  => 'EMPREEND.',
-            'INFORMATICA'       => 'INF.',
+            'LINGUA PORTUGUESA'      => 'L. PORTUGUESA',
+            'PORTUGUES'              => 'L. PORTUGUESA',
+            'INGLES'                 => 'INGLÊS',
+            'EDUCACAO FISICA'        => 'ED. FÍSICA',
+            'MATEMATICA'             => 'MATEMAT.',
+            'FISICA'                 => 'FÍSICA',
+            'QUIMICA'               => 'QUÍMICA',
+            'ELECTROTECNIA'          => 'ELECTROTECNIA',
+            'EMPREENDEDORISMO'       => 'EMPREEND.',
+            'INFORMATICA'            => 'TIC',
             'TECNOLOGIAS INFORMACAO' => 'TIC',
         ];
 
         $normalized = $this->normalize($disciplina->nome);
-        return $aliases[$normalized] ?? Str::upper(Str::limit($disciplina->nome, 18, ''));
+
+        return $aliases[$normalized] ?? Str::upper(Str::limit($disciplina->nome, 14, ''));
     }
 
     private function normalize(string $value): string
@@ -815,58 +969,34 @@ class PautaGeralTemplateExporter
 
     private function columnsInRange(string $startCol, string $endCol): array
     {
-        $start   = Coordinate::columnIndexFromString($startCol);
-        $end     = Coordinate::columnIndexFromString($endCol);
-        $columns = [];
+        $start = Coordinate::columnIndexFromString($startCol);
+        $end   = Coordinate::columnIndexFromString($endCol);
+        $cols  = [];
+
         for ($c = $start; $c <= $end; $c++) {
-            $columns[] = Coordinate::stringFromColumnIndex($c);
+            $cols[] = Coordinate::stringFromColumnIndex($c);
         }
-        return $columns;
+
+        return $cols;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // =====================================================================
     // Style helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // =====================================================================
 
-    private function style(Worksheet $sheet, string $range, array $def): void
-    {
-        array_walk_recursive($def, function (&$v, $k) {
-            if ($k === 'color' && is_string($v) && strlen($v) === 6) {
-                $v = ['rgb' => $v];
-            }
-        });
-        $sheet->getStyle($range)->applyFromArray($def);
-    }
-
-    private function headerCellStyle(): array
+    private function headerCellStyle(int $fontSize = 9): array
     {
         return [
-            'font'      => ['bold' => true, 'size' => 9, 'color' => self::CLR_HEADER_FONT, 'name' => 'Arial'],
-            'fill'      => self::solidFill(self::CLR_HEADER_BG),
+            'font' => ['bold' => false, 'size' => $fontSize, 'name' => 'Arial'],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::CLR_DISC_BG]],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical'   => Alignment::VERTICAL_CENTER,
                 'wrapText'   => true,
             ],
             'borders' => [
-                'allBorders' => self::borderDef(Border::BORDER_THIN, self::CLR_BORDER),
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => self::CLR_BORDER]],
             ],
-        ];
-    }
-
-    private static function solidFill(string $hex): array
-    {
-        return [
-            'fillType'   => Fill::FILL_SOLID,
-            'startColor' => ['rgb' => $hex],
-        ];
-    }
-
-    private static function borderDef(string $style, string $hex): array
-    {
-        return [
-            'borderStyle' => $style,
-            'color'       => ['rgb' => $hex],
         ];
     }
 }
