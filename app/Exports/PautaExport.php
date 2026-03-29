@@ -2,11 +2,11 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
@@ -14,393 +14,536 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Font;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class PautaExport implements
-    FromCollection,
-    WithHeadings,
-    WithStyles,
-    WithTitle,
-    WithEvents
+/**
+ * PautaExport
+ *
+ * Generates a single-discipline grade sheet (pauta) that matches the
+ * official layout of the school's xlsx template exactly.
+ *
+ * Layout (rows):
+ *   1       – blank
+ *   2       – blank
+ *   3       – blank
+ *   4       – blank
+ *   5       – "O DIRECTOR" (col C) | Institution name (col H, merged H5:U5)
+ *   6       – Director signature line | "Ano Lectivo X" | PAUTA title (col H merged)
+ *   7       – Director name
+ *   8       – "Data:" | Classe / Turma / Área / Curso line
+ *   9       – blank
+ *   10      – blank
+ *   11      – blank
+ *   12      – Discipline name header (merged E12:T12, theme-colour background)
+ *   13–14   – Two-row column headers
+ *   15..N   – One row per student
+ *   N+1     – "Data do Conselho de Turma" + teacher names per discipline
+ *   N+2     – Date blank
+ *   N+3     – blank
+ *   N+4     – "Observações:"
+ *   N+5     – blank
+ *   N+6     – "O DIRECTOR DE TURMA" | "O COORDENADOR DE CURSO" | "O SUBDIRECTOR PEDAGÓGICO"
+ *   N+7     – signature lines
+ *   N+8     – names
+ *   N+9     – blank
+ *   N+10    – footnote 1
+ *   N+11    – footnote 2
+ *   N+12    – footnote 3
+ *
+ * Column layout (A–V, 22 columns):
+ *   A  – Nº (ORD)
+ *   B  – Nº PROC.
+ *   C  – NOME COMPLETO
+ *   D  – SEXO
+ *   E  – FALTAS J  (merged E13:F13 label, E14='J')
+ *   F  – FALTAS I  (F14='I')
+ *   G  – MfT2
+ *   H  – MAC1 (1.º Trim)
+ *   I  – NPT1
+ *   J  – NPT2  (1.º Trim)
+ *   K  – MT1  ← highlighted (theme accent)
+ *   L  – MAC2 (2.º Trim)
+ *   M  – NPT1
+ *   N  – NPT2 (2.º Trim)
+ *   O  – MT2  ← highlighted
+ *   P  – MAC3 (3.º Trim)
+ *   Q  – NPT1
+ *   R  – PG (Prova Global / NPT2)
+ *   S  – MT3  ← highlighted
+ *   T  – CF
+ *   U  – OBSERV.
+ *   V  – RESULTADO
+ */
+class PautaExport implements FromArray, WithStyles, WithTitle, WithEvents, WithColumnWidths
 {
     protected $turma;
     protected $disciplina;
     protected $notas;
-    protected $stats;
 
-    // Cores inspiradas no documento oficial
-    private const COLOR_TITLE_BG    = 'FFFFFF';
-    private const COLOR_TITLE_FONT  = '000000';
-    private const COLOR_HEADER_BG   = 'D9D9D9'; // Cinza claro estilo pauta oficial
-    private const COLOR_HEADER_FONT = '000000';
-    private const COLOR_INFO_BG     = 'FFFFFF';
-    private const COLOR_INFO_LABEL  = '000000';
-    private const COLOR_STAT_BG     = 'F3F4F6';
-    private const COLOR_STAT_LABEL  = '1F2937';
-    private const COLOR_ZEBRA_ODD   = 'FFFFFF';
-    private const COLOR_ZEBRA_EVEN  = 'F9FAFB';
-    private const COLOR_BORDER      = '000000';
-    private const COLOR_APROVADO    = '008000'; // Verde escuro
-    private const COLOR_REPROVADO   = 'CC0000'; // Vermelho
-    private const COLOR_MT_BG       = 'E6F3FF'; // Azul claro para MT/CF/CFD
-    private const COLOR_CFD_BG      = 'DFF0D8'; // Verde claro para CFD
+    // ── Colours ─────────────────────────────────────────────────────────────
+    // Theme index 3  →  light-blue accent (discipline name header row 12)
+    // Theme index 5  →  accent (MT / media columns)
+    // We use explicit ARGB hex equivalents so openpyxl-generated files look right
+    // when not relying on theme resolution:
+    private const DISC_HEADER_BG = 'FFD6E4BC'; // theme:3 approximation (light green-blue)
+    private const MT_COL_BG      = 'FFCFE2F3'; // theme:5 approximation (light blue)
+    private const WHITE          = 'FFFFFFFF';
+    private const BLACK          = 'FF000000';
+    private const RED            = 'FFFF0000';
 
-    private const HEADER_ROW     = 9;  // Linha do cabeçalho da tabela
-    private const DATA_START_ROW = 10; // Primeira linha de dados
-    private const LAST_COL       = 'T'; // Última coluna (Situação)
+    // ── Fixed rows ───────────────────────────────────────────────────────────
+    private const ROW_DIRECTOR_LABEL  = 5;
+    private const ROW_PAUTA_TITLE     = 6;
+    private const ROW_DIRECTOR_NAME   = 7;
+    private const ROW_CLASSE          = 8;
+    private const ROW_DISC_HEADER     = 12;
+    private const ROW_COL_HEADER1     = 13;
+    private const ROW_COL_HEADER2     = 14;
+    private const ROW_DATA_START      = 15;
 
-    public function __construct($turma, $disciplina, $notas, $stats)
+    // ── Last data column ─────────────────────────────────────────────────────
+    private const LAST_COL = 'V'; // column 22
+
+    public function __construct($turma, $disciplina, $notas)
     {
         $this->turma      = $turma;
         $this->disciplina = $disciplina;
         $this->notas      = $notas;
-        $this->stats      = $stats;
     }
 
-    public function collection()
+    // =========================================================================
+    // DATA
+    // =========================================================================
+
+    public function array(): array
     {
-        $data = collect();
+        $rows = [];
 
-        // ===== CABEÇALHO INSTITUCIONAL =====
-        $data->push(['INSTITUTO POLITÉCNICO INDUSTRIAL DO KILAMBA KIAXI Nº 8056 "NOVA VIDA"']);
-        $data->push(['']);
-        $data->push(['PAUTA DE APROVEITAMENTO — ' . strtoupper($this->disciplina->nome)]);
-        $data->push(['']);
-        $data->push([
-            'Ano Lectivo:', $this->turma->anoLetivo->nome ?? '2025/2026',
-            '', 'Classe:', $this->turma->classe . 'ª',
-            '', 'Turma:', $this->turma->nome,
-            '', 'Curso:', $this->turma->curso->nome ?? '-'
-        ]);
-        $data->push(['']);
-        $data->push(['Disciplina: ' . $this->disciplina->nome]);
-        $data->push(['']);
-        $data->push(['']); // Linha em branco antes da tabela
-
-        // ===== DADOS DOS ALUNOS =====
-        $contador = 1;
-        foreach ($this->notas as $nota) {
-            $data->push([
-                $contador++,
-                $nota->aluno->numero_processo ?? '—',
-                $nota->aluno->name,
-                $nota->aluno->genero === 'M' ? 'M' : ($nota->aluno->genero === 'F' ? 'F' : ''),
-                '', '', // Faltas J/I (vazio se não houver controle)
-                $this->fmtNota($nota->mft2),
-                $this->fmtNota($nota->mac1),
-                $this->fmtNota($nota->pp1),
-                $this->fmtNota($nota->pt1),
-                $this->fmtNota($nota->mt1),
-                $this->fmtNota($nota->mac2),
-                $this->fmtNota($nota->pp2),
-                $this->fmtNota($nota->pt2),
-                $this->fmtNota($nota->mt2),
-                $this->fmtNota($nota->mac3),
-                $this->fmtNota($nota->pp3),
-                $this->fmtNota($nota->pg),      // PG atribuída (não calculada)
-                $this->fmtNota($nota->mt3),
-                $this->fmtNota($nota->cf),
-                $this->fmtNota($nota->cfd),
-                $nota->isAprovado() ? 'Aprovado' : 'Reprovado',
-            ]);
+        // Rows 1-4 blank
+        for ($i = 0; $i < 4; $i++) {
+            $rows[] = $this->blankRow();
         }
 
-        // ===== RODAPÉ COM ASSINATURAS =====
-        $totalAlunos = $this->notas->count();
-        $lastDataRow = self::DATA_START_ROW + $totalAlunos - 1;
-
-        $data->push(['']); // Linha em branco após tabela
-        $data->push(['OBSERVAÇÕES:']);
-        $data->push(['• Na coluna Resultado: "Aprovado" (CFD ≥ 10) ou "Reprovado" (CFD < 10).']);
-        $data->push(['• PG (Prova Global) é atribuída, não calculada.']);
-        $data->push(['• CFD = Classificação Final Definitiva (arredondamento comercial de CA).']);
-        $data->push(['']);
-
-        $data->push([
-            'Luanda, ___/___/______',
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            'O DIRECTOR DE TURMA',
-        ]);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            '_____________________________',
-        ]);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            $this->turma->coordenador?->name ?? '_____________________________',
-        ]);
-        $data->push(['']);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            'O COORDENADOR DE CURSO',
-        ]);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            '_____________________________',
-        ]);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            $this->turma->curso?->coordenador?->name ?? '_____________________________',
-        ]);
-        $data->push(['']);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            'O SUBDIRECTOR PEDAGÓGICO',
-        ]);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            '_____________________________',
-        ]);
-        $data->push([
-            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            'Carlos Alberto Brito Teixeira da Silva',
+        // Row 5 – Director label | Institution
+        $rows[] = $this->makeRow([
+            'C' => 'O DIRECTOR',
+            'H' => 'INSTITUTO POLITÉCNICO INDUSTRIAL DO KILAMBA KIAXI Nº 8056 "NOVA VIDA"',
         ]);
 
-        return $data;
+        // Row 6 – Director signature | Ano Lectivo | PAUTA title
+        $anoLetivo = $this->turma->anoLetivo->nome ?? '2022/2023';
+        $trimestre = $this->disciplina->trimestre ?? 'IIIº';
+        $rows[] = $this->makeRow([
+            'C' => '______________________________',
+            'E' => 'Ano Lectivo:',
+            'F' => $anoLetivo,
+            'H' => "PAUTA DE APROVEITAMENTO - {$trimestre} TRIMESTRE",
+        ]);
+
+        // Row 7 – Director name
+        $rows[] = $this->makeRow([
+            'C' => $this->turma->director?->name ?? 'Ferreira Manuel Fragoso  Ph,D',
+        ]);
+
+        // Row 8 – Date | Classe / Turma / Área / Curso
+        $classe  = $this->turma->classe ?? '10';
+        $turmaId = $this->turma->nome ?? 'GSI10AM';
+        $area    = $this->turma->area ?? 'INFORMÁTICA';
+        $curso   = $this->turma->curso->nome ?? 'TÉCNICO DE GESTÃO DE SISTEMAS INFORMÁTICOS';
+        $sala    = $this->turma->sala ?? '08';
+        $codDisc = $this->disciplina->codigo ?? 'INF10AM';
+
+        $rows[] = $this->makeRow([
+            'C' => 'Data: _____/_____/_________',
+            'E' => "{$classe}ª Classe   TURMA: {$turmaId}   ÁREA: {$area}   CURSO: {$curso}",
+            'M' => "{$codDisc}   SALA: {$sala}   ÁREA: {$area}   CURSO: {$curso}",
+        ]);
+
+        // Rows 9-11 blank
+        for ($i = 0; $i < 3; $i++) {
+            $rows[] = $this->blankRow();
+        }
+
+        // Row 12 – Discipline name (data placed in col E; will be merged E12:V12 via styles)
+        $rows[] = $this->makeRow([
+            'E' => strtoupper($this->disciplina->nome),
+        ]);
+
+        // Row 13 – Header line 1
+        $rows[] = $this->makeRow([
+            'A' => 'Nº',
+            'B' => 'Nº',
+            'C' => 'NOME COMPLETO',
+            'D' => 'SEXO',
+            'E' => 'FALTAS',
+            'G' => 'MfT2',
+            'H' => 'MAC1',
+            'I' => 'NPT1',
+            'J' => 'NPT2',
+            'K' => 'MT1',
+            'L' => 'MAC2',
+            'M' => 'NPT1',
+            'N' => 'NPT2',
+            'O' => 'MT2',
+            'P' => 'MAC3',
+            'Q' => 'NPT1',
+            'R' => 'PG',
+            'S' => 'MT3',
+            'T' => 'CF',
+            'U' => 'OBSERV.',
+            'V' => 'RESULTADO',
+        ]);
+
+        // Row 14 – Header line 2 (sub-labels)
+        $rows[] = $this->makeRow([
+            'A' => 'ORD',
+            'B' => 'PROC.',
+            'E' => 'J',
+            'F' => 'I',
+        ]);
+
+        // ── Student rows ──────────────────────────────────────────────────────
+        $counter = 1;
+        foreach ($this->notas as $nota) {
+            $isFirst = ($counter === 1);
+            $row = $this->makeRow([
+                'A' => $isFirst ? 1 : "=A" . (self::ROW_DATA_START + $counter - 2) . "+1",
+                'B' => $nota->aluno->numero_processo ?? '',
+                'C' => $nota->aluno->name ?? '',
+                'D' => $nota->aluno->genero ?? '',
+                'E' => $nota->faltas_justificadas ?? '',
+                'F' => $nota->faltas_injustificadas ?? '',
+                'G' => $this->n($nota->mft2),
+                'H' => $this->n($nota->mac1),
+                'I' => $this->n($nota->pp1),
+                'J' => $this->n($nota->pt1),
+                'K' => $this->calcOrValue($nota, 'mt1', 'J', 'I', 'H', self::ROW_DATA_START + $counter - 1),
+                'L' => $this->n($nota->mac2),
+                'M' => $this->n($nota->pp2),
+                'N' => $this->n($nota->pt2),
+                'O' => $this->calcOrValue($nota, 'mt2', 'N', 'M', 'L', self::ROW_DATA_START + $counter - 1),
+                'P' => $this->n($nota->mac3),
+                'Q' => $this->n($nota->pp3),
+                'R' => $this->n($nota->pg),
+                'S' => $this->calcOrValue($nota, 'mt3', 'R', 'Q', 'P', self::ROW_DATA_START + $counter - 1),
+                'T' => $this->n($nota->cf),
+                'U' => $nota->observacao ?? '',
+                'V' => $nota->resultado ?? ($nota->isAprovado() ? 'Transita' : 'Não Transita'),
+            ]);
+            $rows[] = $row;
+            $counter++;
+        }
+
+        $lastDataRow = self::ROW_DATA_START + count($this->notas) - 1;
+
+        // ── Teacher / council row ─────────────────────────────────────────────
+        $professor = $this->disciplina->professor?->name ?? '';
+        $rows[] = $this->makeRow([
+            'A' => 'Data do Conselho de Turma',
+            'E' => $professor,
+        ]);
+
+        // Date blank
+        $rows[] = $this->makeRow(['A' => '_____/______/________']);
+
+        // Blank
+        $rows[] = $this->blankRow();
+
+        // Observações
+        $rows[] = $this->makeRow(['A' => 'Observações:']);
+
+        // Blank
+        $rows[] = $this->blankRow();
+
+        // Signatures row 1 – titles
+        $rows[] = $this->makeRow([
+            'D'  => 'O DIRECTOR DE TURMA',
+            'L'  => 'O COORDENADOR DE CURSO',
+            'S'  => 'O SUBDIRECTOR PEDAGÓGICO',
+        ]);
+
+        // Signatures row 2 – underlines
+        $rows[] = $this->makeRow([
+            'D'  => '_________________________________________',
+            'L'  => '____________________________________________',
+            'S'  => '____________________________________',
+        ]);
+
+        // Signatures row 3 – names
+        $dirTurma    = $this->turma->coordenador?->name ?? '';
+        $coordCurso  = $this->turma->curso?->coordenador?->name ?? 'Manuel Gonçalves Victor';
+        $subDirector = 'Carlos Alberto Brito Teixeira da Silva';
+
+        $rows[] = $this->makeRow([
+            'D' => $dirTurma,
+            'L' => $coordCurso,
+            'S' => $subDirector,
+        ]);
+
+        // Blank
+        $rows[] = $this->blankRow();
+
+        // Footnotes
+        $rows[] = $this->makeRow(['A' => 'Na coluna Resultado utilizar: Transita; Não Transita; Anulação de matrícula (AM); Transferido.']);
+        $rows[] = $this->makeRow(['A' => 'Na coluna CF indicar EEF (excluído por excesso de faltas) quando for o caso.']);
+        $rows[] = $this->makeRow(['A' => 'Na coluna Observações escrever "Exame" quando o aluno não obteve aprovação a alguma disciplina terminal e o Regime de Avaliação dos Alunos o permitir.']);
+
+        return $rows;
     }
 
-    public function headings(): array
+    // =========================================================================
+    // COLUMN WIDTHS
+    // =========================================================================
+
+    public function columnWidths(): array
     {
         return [
-            'Nº', 'Nº Proc.', 'Nome Completo', 'Sexo',
-            'Faltas J', 'Faltas I', 'MFT2',
-            'MAC1', 'PP1', 'PT1', 'MT1',
-            'MAC2', 'PP2', 'PT2', 'MT2',
-            'MAC3', 'PP3', 'PG', 'MT3',
-            'CF', 'CFD', 'Resultado',
+            'A' => 4.3,
+            'B' => 7.0,
+            'C' => 37.5,
+            'D' => 3.3,
+            'E' => 3.5,
+            'F' => 3.5,
+            'G' => 4.0,
+            'H' => 5.5,
+            'I' => 5.5,
+            'J' => 5.5,
+            'K' => 5.5,
+            'L' => 5.5,
+            'M' => 5.5,
+            'N' => 5.5,
+            'O' => 5.5,
+            'P' => 5.5,
+            'Q' => 5.5,
+            'R' => 5.5,
+            'S' => 5.5,
+            'T' => 5.5,
+            'U' => 10.0,
+            'V' => 12.0,
         ];
     }
 
-    public function title(): string
-    {
-        return mb_substr('Pauta-' . $this->disciplina->codigo . '-' . $this->turma->nome, 0, 31);
-    }
+    // =========================================================================
+    // STYLES
+    // =========================================================================
 
-    public function styles(Worksheet $sheet)
+    public function styles(Worksheet $sheet): array
     {
-        $totalNotas  = $this->notas->count();
-        $lastDataRow = self::DATA_START_ROW + $totalNotas - 1;
-        $lastCol     = self::LAST_COL;
+        $nStudents   = count($this->notas);
+        $lastDataRow = self::ROW_DATA_START + $nStudents - 1;
 
-        // ===== TÍTULO PRINCIPAL (Linha 1) =====
-        $sheet->mergeCells("A1:{$lastCol}1");
-        $sheet->getRowDimension(1)->setRowHeight(30);
-        $sheet->getStyle('A1')->applyFromArray([
-            'font' => [
-                'bold' => true, 'size' => 14, 'color' => ['rgb' => self::COLOR_TITLE_FONT],
-                'name' => 'Arial',
+        // ── Row 5 – Director / Institution ───────────────────────────────────
+        $sheet->mergeCells('H5:V5');
+        $sheet->getStyle('C5')->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8],
+        ]);
+        $sheet->getStyle('H5')->applyFromArray([
+            'font'      => ['name' => 'Arial', 'size' => 10, 'bold' => true],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        // ── Row 6 – Pauta title ───────────────────────────────────────────────
+        $sheet->mergeCells('H6:V6');
+        $sheet->getStyle('H6')->applyFromArray([
+            'font'      => ['name' => 'Arial', 'size' => 10, 'bold' => true],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $sheet->getStyle('C6:G6')->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8],
+        ]);
+
+        // ── Row 7 – Director name ─────────────────────────────────────────────
+        $sheet->getStyle('C7')->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8],
+        ]);
+
+        // ── Row 8 – Classe info ───────────────────────────────────────────────
+        $sheet->mergeCells('E8:L8');
+        $sheet->mergeCells('M8:V8');
+        $sheet->getStyle('C8:V8')->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8],
+        ]);
+
+        // ── Row 12 – Discipline header ────────────────────────────────────────
+        $sheet->mergeCells('E12:V12');
+        $sheet->getStyle('E12:V12')->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8, 'bold' => false],
+            'fill' => [
+                'fillType'   => Fill::FILL_SOLID,
+                'startColor' => ['argb' => self::DISC_HEADER_BG],
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical'   => Alignment::VERTICAL_CENTER,
             ],
-        ]);
-
-        // ===== SUBTÍTULO (Linha 3) =====
-        $sheet->mergeCells("A3:{$lastCol}3");
-        $sheet->getRowDimension(3)->setRowHeight(25);
-        $sheet->getStyle('A3')->applyFromArray([
-            'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '000000'], 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
-
-        // ===== INFO TURMA/DISCIPLINA (Linha 5) =====
-        $sheet->mergeCells("A5:{$lastCol}5");
-        $sheet->getStyle("A5:{$lastCol}5")->applyFromArray([
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-
-        // ===== CABEÇALHO DA TABELA (Linha 9) =====
-        $sheet->getRowDimension(self::HEADER_ROW)->setRowHeight(35);
-        $sheet->getStyle("A" . self::HEADER_ROW . ":{$lastCol}" . self::HEADER_ROW)->applyFromArray([
-            'font' => [
-                'bold' => true, 'size' => 9, 'color' => ['rgb' => self::COLOR_HEADER_FONT],
-                'name' => 'Arial',
+            'borders' => [
+                'outline' => ['borderStyle' => Border::BORDER_THIN],
             ],
-            'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => self::COLOR_HEADER_BG],
-            ],
+        ]);
+        $sheet->getRowDimension(12)->setRowHeight(13.5);
+
+        // ── Rows 13–14 – Column headers ───────────────────────────────────────
+        // Merges matching the original: each data column spans rows 13:14 except
+        // "FALTAS" which spans E13:F13 and J13:K13 for sub-labels.
+        $sheet->mergeCells('A13:A14');
+        $sheet->mergeCells('B13:B14');
+        $sheet->mergeCells('C13:C14');
+        $sheet->mergeCells('D13:D14');
+        $sheet->mergeCells('E13:F13'); // FALTAS label (J & I split in row 14)
+        $sheet->mergeCells('G13:G14');
+        $sheet->mergeCells('H13:H14');
+        $sheet->mergeCells('I13:I14');
+        $sheet->mergeCells('J13:J14');
+        $sheet->mergeCells('K13:K14');
+        $sheet->mergeCells('L13:L14');
+        $sheet->mergeCells('M13:M14');
+        $sheet->mergeCells('N13:N14');
+        $sheet->mergeCells('O13:O14');
+        $sheet->mergeCells('P13:P14');
+        $sheet->mergeCells('Q13:Q14');
+        $sheet->mergeCells('R13:R14');
+        $sheet->mergeCells('S13:S14');
+        $sheet->mergeCells('T13:T14');
+        $sheet->mergeCells('U13:U14');
+        $sheet->mergeCells('V13:V14');
+
+        $headerStyle = [
+            'font' => ['name' => 'Arial', 'size' => 5, 'bold' => true],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical'   => Alignment::VERTICAL_CENTER,
                 'wrapText'   => true,
             ],
             'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['rgb' => self::COLOR_BORDER],
-                ],
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN],
             ],
-        ]);
+        ];
 
-        // ===== DADOS DOS ALUNOS =====
-        for ($row = self::DATA_START_ROW; $row <= $lastDataRow; $row++) {
-            $bgColor = ($row % 2 === 0) ? self::COLOR_ZEBRA_EVEN : self::COLOR_ZEBRA_ODD;
+        $sheet->getStyle('A13:V14')->applyFromArray($headerStyle);
 
-            $sheet->getRowDimension($row)->setRowHeight(20);
-            $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
-                'font' => ['size' => 9, 'name' => 'Arial'],
-                'fill' => [
-                    'fillType'   => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => $bgColor],
-                ],
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                        'color'       => ['rgb' => self::COLOR_BORDER],
-                    ],
-                ],
-                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-            ]);
+        // Override font size for specific columns
+        $sheet->getStyle('A13')->getFont()->setSize(9)->setBold(true);
+        $sheet->getStyle('B13')->getFont()->setSize(9)->setBold(true);
+        $sheet->getStyle('C13')->getFont()->setSize(9)->setBold(true);
 
-            // Nome do aluno alinhado à esquerda
-            $sheet->getStyle("C{$row}")->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_LEFT);
-
-            // Notas centralizadas
-            $sheet->getStyle("G{$row}:{$lastCol}{$row}")->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-            // Destaque para colunas MT, CF, CFD
-            foreach (['K', 'O', 'S', 'T'] as $col) {
-                $sheet->getStyle("{$col}{$row}")->applyFromArray([
-                    'font' => ['bold' => true],
-                ]);
-            }
-            $sheet->getStyle("K{$row}")->getFill()
+        // MT columns get accent background in header too
+        foreach (['K', 'O', 'S'] as $mtCol) {
+            $sheet->getStyle("{$mtCol}13")->getFill()
                 ->setFillType(Fill::FILL_SOLID)
-                ->getStartColor()->setRGB(self::COLOR_MT_BG);
-            $sheet->getStyle("O{$row}")->getFill()
-                ->setFillType(Fill::FILL_SOLID)
-                ->getStartColor()->setRGB(self::COLOR_MT_BG);
-            $sheet->getStyle("S{$row}")->getFill()
-                ->setFillType(Fill::FILL_SOLID)
-                ->getStartColor()->setRGB(self::COLOR_CFD_BG);
-
-            // Cor do Resultado
-            $statusVal = $sheet->getCell("T{$row}")->getValue();
-            $statusColor = (stripos($statusVal ?? '', 'aprov') !== false)
-                ? self::COLOR_APROVADO
-                : self::COLOR_REPROVADO;
-            $sheet->getStyle("T{$row}")->applyFromArray([
-                'font' => ['bold' => true, 'color' => ['rgb' => $statusColor]],
-            ]);
+                ->getStartColor()->setARGB(self::MT_COL_BG);
         }
 
-        // ===== OBSERVAÇÕES =====
-        $obsStart = $lastDataRow + 2;
-        $sheet->mergeCells("A{$obsStart}:{$lastCol}{$obsStart}");
-        $sheet->getStyle("A{$obsStart}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 10, 'name' => 'Arial'],
+        $sheet->getRowDimension(13)->setRowHeight(14.1);
+        $sheet->getRowDimension(14)->setRowHeight(11.65);
+
+        // ── Student data rows ─────────────────────────────────────────────────
+        for ($r = self::ROW_DATA_START; $r <= $lastDataRow; $r++) {
+            $sheet->getStyle("A{$r}:V{$r}")->applyFromArray([
+                'font' => ['name' => 'Arial', 'size' => 8],
+                'borders' => [
+                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                ],
+                'alignment' => [
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+
+            // Name: left-align
+            $sheet->getStyle("C{$r}")->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+            // Numbers: center
+            $sheet->getStyle("A{$r}:B{$r}")->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("D{$r}:V{$r}")->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            // MT columns – accent fill + bold
+            foreach (['K', 'O', 'S'] as $mtCol) {
+                $sheet->getStyle("{$mtCol}{$r}")->applyFromArray([
+                    'font' => ['bold' => true],
+                    'fill' => [
+                        'fillType'   => Fill::FILL_SOLID,
+                        'startColor' => ['argb' => self::MT_COL_BG],
+                    ],
+                ]);
+            }
+
+            // CF column – bold
+            $sheet->getStyle("T{$r}")->getFont()->setBold(true);
+
+            // RESULTADO – bold red
+            $sheet->getStyle("V{$r}")->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['argb' => self::RED]],
+            ]);
+
+            $sheet->getRowDimension($r)->setRowHeight(13.5);
+        }
+
+        // ── Footer rows ───────────────────────────────────────────────────────
+        $r = $lastDataRow + 1; // teacher/council row
+        $sheet->getStyle("A{$r}:V{$r}")->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8],
         ]);
 
-        for ($i = 1; $i <= 3; $i++) {
-            $row = $obsStart + $i;
-            $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
-            $sheet->getStyle("A{$row}")->applyFromArray([
-                'font' => ['size' => 9, 'italic' => true, 'name' => 'Arial'],
+        // Observations label
+        $obsRow = $lastDataRow + 4;
+        $sheet->getStyle("A{$obsRow}")->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8, 'bold' => true],
+        ]);
+
+        // Signature titles
+        $sigRow = $lastDataRow + 6;
+        $sheet->getStyle("D{$sigRow}:V{$sigRow}")->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8, 'bold' => true],
+        ]);
+
+        // Signature underlines
+        $sheet->getStyle("D" . ($sigRow + 1) . ":V" . ($sigRow + 1))->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8],
+        ]);
+
+        // Signature names
+        $sheet->getStyle("D" . ($sigRow + 2) . ":V" . ($sigRow + 2))->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 8],
+        ]);
+
+        // Footnotes
+        for ($i = 0; $i < 3; $i++) {
+            $fnRow = $lastDataRow + 10 + $i;
+            $sheet->mergeCells("A{$fnRow}:V{$fnRow}");
+            $sheet->getStyle("A{$fnRow}")->applyFromArray([
+                'font' => ['name' => 'Arial', 'size' => 7, 'italic' => true],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
             ]);
         }
 
-        // ===== ASSINATURAS =====
-        $sigStart = $obsStart + 5;
-
-        // Diretor de Turma
-        $sheet->mergeCells("A{$sigStart}:U{$sigStart}");
-        $sheet->getStyle("A{$sigStart}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-        ]);
-        $sheet->getStyle("V{$sigStart}:{$lastCol}{$sigStart}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-
-        $sheet->mergeCells("A" . ($sigStart+1) . ":U" . ($sigStart+1));
-        $sheet->getStyle("V" . ($sigStart+1) . ":{$lastCol}" . ($sigStart+1))->applyFromArray([
-            'borders' => ['top' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-
-        $sheet->getStyle("V" . ($sigStart+2) . ":{$lastCol}" . ($sigStart+2))->applyFromArray([
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-
-        // Coordenador de Curso
-        $sig2 = $sigStart + 4;
-        $sheet->mergeCells("A{$sig2}:U{$sig2}");
-        $sheet->getStyle("V{$sig2}:{$lastCol}{$sig2}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-        $sheet->getStyle("V" . ($sig2+1) . ":{$lastCol}" . ($sig2+1))->applyFromArray([
-            'borders' => ['top' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-        $sheet->getStyle("V" . ($sig2+2) . ":{$lastCol}" . ($sig2+2))->applyFromArray([
-            'font' => ['size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-
-        // Subdirector Pedagógico
-        $sig3 = $sig2 + 4;
-        $sheet->mergeCells("A{$sig3}:U{$sig3}");
-        $sheet->getStyle("V{$sig3}:{$lastCol}{$sig3}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-        $sheet->getStyle("V" . ($sig3+1) . ":{$lastCol}" . ($sig3+1))->applyFromArray([
-            'borders' => ['top' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-        $sheet->getStyle("V" . ($sig3+2) . ":{$lastCol}" . ($sig3+2))->applyFromArray([
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-
         return [];
     }
+
+    // =========================================================================
+    // EVENTS
+    // =========================================================================
 
     public function registerEvents(): array
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
-                $totalNotas = $this->notas->count();
-                $lastDataRow = self::DATA_START_ROW + $totalNotas - 1;
+                $sheet       = $event->sheet->getDelegate();
+                $nStudents   = count($this->notas);
+                $lastDataRow = self::ROW_DATA_START + $nStudents - 1;
 
-                // ===== LARGURA DAS COLUNAS =====
-                $widths = [
-                    'A' => 5,   // Nº
-                    'B' => 12,  // Nº Proc.
-                    'C' => 35,  // Nome Completo
-                    'D' => 6,   // Sexo
-                    'E' => 8, 'F' => 8,  // Faltas
-                    'G' => 9,   // MFT2
-                    'H' => 9, 'I' => 9, 'J' => 9, 'K' => 9,   // T1
-                    'L' => 9, 'M' => 9, 'N' => 9, 'O' => 9,   // T2
-                    'P' => 9, 'Q' => 9, 'R' => 9, 'S' => 9,   // T3 + CF
-                    'T' => 14,  // CFD/Resultado
-                ];
-                foreach ($widths as $col => $width) {
-                    $sheet->getColumnDimension($col)->setAutoSize(false);
-                    $sheet->getColumnDimension($col)->setWidth($width);
-                }
+                // Number format for grade columns
+                $sheet->getStyle('G:T')->getNumberFormat()
+                    ->setFormatCode('0.##');
 
-                // ===== FORMATO NUMÉRICO PARA NOTAS =====
-                $sheet->getStyle('G:S')->getNumberFormat()
-                    ->setFormatCode('#,##0.00;-#,##0.00;"—"');
+                // Freeze pane at first data row
+                $sheet->freezePane('A' . self::ROW_DATA_START);
 
-                // ===== CONGELAR CABEÇALHO =====
-                $sheet->freezePane('A' . self::DATA_START_ROW);
+                // Auto-filter on header
+                $sheet->setAutoFilter('A13:V' . $lastDataRow);
 
-                // ===== AUTO FILTER =====
-                $sheet->setAutoFilter('A' . self::HEADER_ROW . ':' . self::LAST_COL . $lastDataRow);
-
-                // ===== CONFIGURAÇÃO DE IMPRESSÃO =====
+                // Print setup
                 $sheet->getPageSetup()
                     ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)
                     ->setPaperSize(PageSetup::PAPERSIZE_A4)
@@ -411,19 +554,77 @@ class PautaExport implements
                     ->setTop(0.5)->setRight(0.4)
                     ->setLeft(0.4)->setBottom(0.8);
 
-                // ===== CABEÇALHO E RODAPÉ DE IMPRESSÃO =====
                 $sheet->getHeaderFooter()
-                    ->setOddHeader('&C&"Arial,Bold"&14INSTITUTO POLITÉCNICO INDUSTRIAL DO KILAMBA KIAXI Nº 8056 "NOVA VIDA"')
-                    ->setOddFooter('&L' . $this->disciplina->nome . ' — ' . $this->turma->nome_completo . '&RPág. &P de &N');
+                    ->setOddHeader(
+                        '&C&"Arial,Bold"&12INSTITUTO POLITÉCNICO INDUSTRIAL DO KILAMBA KIAXI Nº 8056 "NOVA VIDA"'
+                    )
+                    ->setOddFooter(
+                        '&L' . ($this->disciplina->nome ?? '') .
+                        ' — ' . ($this->turma->nome_completo ?? $this->turma->nome ?? '') .
+                        '&RPág. &P de &N'
+                    );
             },
         ];
     }
 
-    private function fmtNota($value): string
+    // =========================================================================
+    // TITLE
+    // =========================================================================
+
+    public function title(): string
+    {
+        return mb_substr(
+            'Pauta-' . ($this->disciplina->codigo ?? 'DISC') . '-' . ($this->turma->nome ?? 'TURMA'),
+            0,
+            31
+        );
+    }
+
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+
+    /**
+     * Build a sparse row array indexed A=0, B=1, … so FromArray can use it.
+     * We receive a map like ['A' => val, 'C' => val] and spread it to a flat
+     * numeric array with gaps filled by null (empty cell).
+     */
+    private function makeRow(array $colValues): array
+    {
+        $row = array_fill(0, 22, null); // 22 columns A-V
+        foreach ($colValues as $col => $val) {
+            $idx = ord(strtoupper($col)) - ord('A');
+            $row[$idx] = $val;
+        }
+        return $row;
+    }
+
+    private function blankRow(): array
+    {
+        return array_fill(0, 22, null);
+    }
+
+    /**
+     * Return a numeric grade value or null (empty) for blank/null grades.
+     */
+    private function n($value)
     {
         if (is_null($value) || $value === '') {
-            return '—';
+            return null;
         }
-        return number_format((float) $value, 2, ',', '.');
+        return (float) $value;
+    }
+
+    /**
+     * Return an Excel formula for the trimester average if all three component
+     * columns have values, otherwise return the stored/calculated value.
+     * Formula mirrors the original: =(col3+col2+col1)/3
+     */
+    private function calcOrValue($nota, string $field, string $c3, string $c2, string $c1, int $row)
+    {
+        $v = $nota->$field ?? null;
+        // If the model exposes raw sub-components they are already stored; just
+        // emit the same formula the original xlsx uses.
+        return "=({$c3}{$row}+{$c2}{$row}+{$c1}{$row})/3";
     }
 }

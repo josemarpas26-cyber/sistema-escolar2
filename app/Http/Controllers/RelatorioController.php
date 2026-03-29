@@ -14,7 +14,6 @@ use App\Exports\PautaExport;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
-
 class RelatorioController extends Controller
 {
         public function index(Request $request)
