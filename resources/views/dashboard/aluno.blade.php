@@ -5,36 +5,39 @@
 @section('content')
 
 {{-- Stats Cards --}}
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
-    <x-stat-card
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+    <x-dashboard.stats-card
         title="Média Geral"
         :value="number_format($media_geral, 2)"
+        subtitle="Desempenho global"
         icon="fas fa-chart-line"
         color="primary"
     />
-    <x-stat-card
+
+    <x-dashboard.stats-card
         title="Disciplinas"
         :value="$total_disciplinas"
+        subtitle="Com pauta ativa"
         icon="fas fa-book"
-        color="blue"
+        color="info"
     />
-    <x-stat-card
+
+    <x-dashboard.stats-card
         title="Aprovações"
         :value="$aprovacoes"
+        subtitle="Notas finais >= 10"
         icon="fas fa-check-circle"
-        color="green"
+        color="success"
     />
-    <x-stat-card
+
+    <x-dashboard.stats-card
         title="Reprovações"
         :value="$reprovacoes"
-        icon="fas fa-times-circle"
-        color="red"
+        subtitle="Requer plano de estudo"
+        icon="fas fa-exclamation-circle"
+        color="warning"
     />
-
-
 </div>
-
 <div class="mb-8 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-2xl p-6 shadow-lg">
     <div class="flex items-center justify-between gap-4 flex-wrap">
         <div>
