@@ -73,19 +73,23 @@ class NotaLog extends Model
     public function getDescricaoAcaoAttribute(): string
     {
         return match ($this->acao) {
-            'criacao'  => 'Criou',
-            'edicao'   => 'Editou',
-            'exclusao' => 'Excluiu',
-            default    => 'Ação desconhecida',
+            'criacao'     => 'Criou',
+            'edicao'      => 'Editou',
+            'exclusao'    => 'Excluiu',
+            'finalizacao' => 'Finalizou',
+            'reabertura'  => 'Reabriu',
+            default       => 'Ação desconhecida',
         };
     }
 
     public function getTipoBadgeAcaoAttribute(): string
     {
         return match ($this->acao) {
-            'criacao'  => 'success',
-            'exclusao' => 'danger',
-            default    => 'info',
+            'criacao'     => 'success',
+            'exclusao'    => 'danger',
+            'reabertura'  => 'warning',
+            'finalizacao' => 'secondary',
+            default       => 'info',
         };
     }
 

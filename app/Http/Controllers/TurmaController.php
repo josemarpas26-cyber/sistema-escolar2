@@ -7,6 +7,7 @@ use App\Models\Curso;
 use App\Models\AnoLetivo;
 use App\Models\User;
 use App\Models\Disciplina;
+use App\Models\Nota;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -353,7 +354,7 @@ class TurmaController extends Controller
     /**
      * Promover turma para próximo ano
      */
-        public function promover(Turma $turma)
+    public function promover(Turma $turma)
     {
         $this->checkPermission('turmas.promote');
 
@@ -386,10 +387,10 @@ class TurmaController extends Controller
         }
 
         // ----------------------------------------------------------------
-        // Guarda: turma sem disciplinas não pode promover ninguém
+        // Guarda: turma sem disciplinas
         // ----------------------------------------------------------------
 
-        $disciplinaIds = $turma->disciplinas()->pluck('disciplinas.id');
+        $disciplinaIds    = $turma->disciplinas()->pluck('disciplinas.id');
         $totalDisciplinas = $disciplinaIds->count();
 
         if ($totalDisciplinas === 0) {
@@ -400,50 +401,82 @@ class TurmaController extends Controller
         }
 
         // ----------------------------------------------------------------
-        // Identificar alunos aprovados
+        // Identificar todos os alunos matriculados e classificá-los
         // ----------------------------------------------------------------
 
-        $alunosAprovados = $turma->alunos()
+        $todosAlunos = $turma->alunos()
             ->wherePivot('status', 'matriculado')
-
-            // Não pode ter nenhuma nota reprovada ou incompleta
-            ->whereDoesntHave('notas', fn ($q) => $q
-                ->where('turma_id', $turma->id)
-                ->where('ano_letivo_id', $turma->ano_letivo_id)
-                ->whereIn('disciplina_id', $disciplinaIds)
-                ->where(fn ($q) => $q
-                    ->whereNull('cfd')
-                    ->orWhere('cfd', '<', 10)
-                )
-            )
-
-            // Cada disciplina da turma deve ter pelo menos uma nota aprovada
-            ->where(function ($query) use ($turma, $disciplinaIds) {
-                foreach ($disciplinaIds as $disciplinaId) {
-                    $query->whereHas('notas', fn ($q) => $q
-                        ->where('turma_id', $turma->id)
-                        ->where('ano_letivo_id', $turma->ano_letivo_id)
-                        ->where('disciplina_id', $disciplinaId)
-                        ->where('cfd', '>=', 10)
-                    );
-                }
-            })
-
             ->get();
 
-        if ($alunosAprovados->isEmpty()) {
-            return back()->with(
-                'warning',
-                'Nenhum aluno cumpre os critérios de aprovação para promoção.'
-            );
+        if ($todosAlunos->isEmpty()) {
+            return back()->with('warning', 'A turma não tem alunos matriculados.');
+        }
+
+        // Buscar contagens de aprovação por aluno — UMA query
+        $contagensAprovados = Nota::where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $turma->ano_letivo_id)
+            ->whereIn('disciplina_id', $disciplinaIds)
+            ->where('cfd', '>=', 10)
+            ->selectRaw('aluno_id, COUNT(DISTINCT disciplina_id) as aprovadas')
+            ->groupBy('aluno_id')
+            ->pluck('aprovadas', 'aluno_id');
+
+        // Buscar contagens de notas lançadas por aluno — para feedback
+        $contagensLancadas = Nota::where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $turma->ano_letivo_id)
+            ->whereIn('disciplina_id', $disciplinaIds)
+            ->selectRaw('aluno_id, COUNT(DISTINCT disciplina_id) as lancadas')
+            ->groupBy('aluno_id')
+            ->pluck('lancadas', 'aluno_id');
+
+        // Classificar alunos
+        $aprovados     = collect();
+        $reprovados    = collect();
+        $incompletos   = collect();
+
+        foreach ($todosAlunos as $aluno) {
+            $lancadas  = $contagensLancadas->get($aluno->id, 0);
+            $aprovadas = $contagensAprovados->get($aluno->id, 0);
+
+            if ($lancadas < $totalDisciplinas) {
+                // Faltam notas em alguma(s) disciplina(s)
+                $incompletos->push([
+                    'aluno'    => $aluno,
+                    'lancadas' => $lancadas,
+                    'faltam'   => $totalDisciplinas - $lancadas,
+                ]);
+            } elseif ($aprovadas < $totalDisciplinas) {
+                // Tem todas as notas mas reprovou em alguma(s)
+                $reprovados->push([
+                    'aluno'      => $aluno,
+                    'aprovadas'  => $aprovadas,
+                    'reprovadas' => $totalDisciplinas - $aprovadas,
+                ]);
+            } else {
+                $aprovados->push($aluno);
+            }
+        }
+
+        if ($aprovados->isEmpty()) {
+            $mensagem = 'Nenhum aluno cumpre os critérios de aprovação.';
+
+            if ($incompletos->isNotEmpty()) {
+                $mensagem .= " {$incompletos->count()} aluno(s) com notas incompletas.";
+            }
+
+            if ($reprovados->isNotEmpty()) {
+                $mensagem .= " {$reprovados->count()} aluno(s) reprovados.";
+            }
+
+            return back()->with('warning', $mensagem);
         }
 
         // ----------------------------------------------------------------
-        // Transação: criar turma + mover alunos
+        // Transacção: criar turma + mover alunos aprovados
         // ----------------------------------------------------------------
 
         $novaTurma = DB::transaction(function () use (
-            $turma, $novaClasse, $proximoAno, $alunosAprovados
+            $turma, $novaClasse, $proximoAno, $aprovados
         ) {
             $novaTurma = Turma::create([
                 'nome'                 => $turma->nome,
@@ -457,7 +490,7 @@ class TurmaController extends Controller
 
             $novaTurma->disciplinas()->attach($turma->disciplinas->pluck('id'));
 
-            foreach ($alunosAprovados as $aluno) {
+            foreach ($aprovados as $aluno) {
                 $novaTurma->alunos()->attach($aluno->id, [
                     'data_matricula' => now(),
                     'status'         => 'matriculado',
@@ -471,13 +504,25 @@ class TurmaController extends Controller
             return $novaTurma;
         });
 
-        $total = $alunosAprovados->count();
+        // ----------------------------------------------------------------
+        // Feedback detalhado
+        // ----------------------------------------------------------------
+
+        $partes = ["{$aprovados->count()} aluno(s) aprovado(s) e transferido(s)."];
+
+        if ($reprovados->isNotEmpty()) {
+            $partes[] = "{$reprovados->count()} reprovado(s).";
+        }
+
+        if ($incompletos->isNotEmpty()) {
+            $partes[] = "{$incompletos->count()} com notas incompletas (não promovido(s)).";
+        }
 
         return redirect()
             ->route('turmas.show', $novaTurma)
             ->with(
                 'success',
-                "Turma promovida para {$novaClasse}ª classe. {$total} aluno(s) aprovado(s) transferido(s)."
+                "Turma promovida para {$novaClasse}ª classe. " . implode(' ', $partes)
             );
     }
 }

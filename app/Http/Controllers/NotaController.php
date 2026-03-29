@@ -301,7 +301,7 @@ class NotaController extends Controller
                 }
 
                 if ($user->isProfessor()) {
-                    $this->verificarPermissaoProfessor($nota);
+                    $this->authorize('update', $nota);
                 }
 
                 if ($this->notaBloqueadaParaEdicao($nota, $trimestre)) {
@@ -323,7 +323,9 @@ class NotaController extends Controller
                     continue;
                 }
 
+                \App\Observers\NotaObserver::$suprimirLogs = true;
                 $this->notaService->recalcularNota($nota);
+                \App\Observers\NotaObserver::$suprimirLogs = false;
                 $nota->save();
                 $salvas++;
             }
@@ -344,13 +346,10 @@ class NotaController extends Controller
 
     public function edit(Nota $nota)
     {
-        $user = auth()->user();
-
-        $user->isProfessor()
-            ? $this->verificarPermissaoProfessor($nota)
-            : $this->checkPermission('notas.editar');
+        $this->authorize('update', $nota);
 
         $this->validarBloqueioFinalizacao($nota);
+
         $nota->load(['aluno', 'turma', 'disciplina']);
 
         return view('notas.edit', compact('nota'));
@@ -358,31 +357,52 @@ class NotaController extends Controller
 
     public function update(Request $request, Nota $nota)
     {
+        $this->authorize('update', $nota);
+
+        $this->validarBloqueioFinalizacao($nota);
+
         $user = auth()->user();
 
+        // Permissão funcional (separada da Policy)
         if ($user->isProfessor()) {
             $this->checkPermission('notas.lancar');
-            $this->verificarPermissaoProfessor($nota);
         } else {
             $this->checkPermission('notas.editar');
         }
 
-        $this->validarBloqueioFinalizacao($nota);
-
-        // Todos os campos de todos os trimestres + extras
+        // Validação
         $allCampos = array_merge(...array_values(self::CAMPOS_TRIMESTRE));
-        $rules     = array_fill_keys(
-            array_map(fn ($c) => $c, $allCampos),
+
+        $rules = array_fill_keys(
+            $allCampos,
             'nullable|numeric|min:0|max:20'
         );
-        $rules['ca_10']      = 'nullable|numeric|min:0|max:20';
-        $rules['ca_11']      = 'nullable|numeric|min:0|max:20';
+
+        $rules['ca_10'] = 'nullable|numeric|min:0|max:20';
+        $rules['ca_11'] = 'nullable|numeric|min:0|max:20';
         $rules['observacoes'] = 'nullable|string';
 
         $validated = $request->validate($rules);
 
+        // 🔍 Detectar quais campos estão sendo alterados
+        $camposAlterados = array_keys(array_filter(
+            $validated,
+            fn ($value) => !is_null($value)
+        ));
+
+        // 🧠 Mapear campos → trimestre
+        foreach (self::CAMPOS_TRIMESTRE as $trimestre => $campos) {
+            $intersect = array_intersect($camposAlterados, $campos);
+
+            if (!empty($intersect)) {
+                // 🔒 Validar bloqueio específico do trimestre
+                $this->validarBloqueioFinalizacao($nota, $trimestre);
+            }
+        }
         $nota->fill($validated);
+        \App\Observers\NotaObserver::$suprimirLogs = true;
         $this->notaService->recalcularNota($nota);
+        \App\Observers\NotaObserver::$suprimirLogs = false;
         $nota->save();
 
         return redirect()
@@ -499,9 +519,12 @@ class NotaController extends Controller
             return back()->with('error', 'Nenhuma nota encontrada para finalizar neste ano letivo.');
         }
 
+                // DEPOIS
         [$finalizadas, $jaFinalizadas] = DB::transaction(function () use ($notas, $trimestre) {
-            $finalizadas  = 0;
+            $finalizadas   = 0;
             $jaFinalizadas = 0;
+
+            \App\Observers\NotaObserver::$suprimirLogs = true;
 
             foreach ($notas as $nota) {
                 if ($trimestre) {
@@ -531,8 +554,27 @@ class NotaController extends Controller
                     ]);
                 }
 
+                // Um único log por nota — evento de finalização
+                \App\Models\NotaLog::create([
+                    'nota_id'        => $nota->id,
+                    'usuario_id'     => \Illuminate\Support\Facades\Auth::id(),
+                    'aluno_id'       => $nota->aluno_id,
+                    'turma_id'       => $nota->turma_id,
+                    'disciplina_id'  => $nota->disciplina_id,
+                    'acao'           => 'finalizacao',
+                    'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'pauta_completa',
+                    'valor_anterior' => 'em_lancamento',
+                    'valor_novo'     => 'finalizado',
+                    'trimestre'      => $trimestre,
+                    'motivo'         => request()?->input('motivo'),
+                    'ip_address'     => request()?->ip(),
+                    'data_alteracao' => now(),
+                ]);
+
                 $finalizadas++;
             }
+
+            \App\Observers\NotaObserver::$suprimirLogs = false;
 
             return [$finalizadas, $jaFinalizadas];
         });
@@ -577,15 +619,18 @@ class NotaController extends Controller
             return back()->with('error', 'Nenhuma nota encontrada para reabrir neste ano letivo.');
         }
 
+        // DEPOIS
         [$reabertas, $jaAbertas] = DB::transaction(function () use ($notas, $trimestre) {
             $reabertas = 0;
             $jaAbertas = 0;
 
+            \App\Observers\NotaObserver::$suprimirLogs = true;
+
             foreach ($notas as $nota) {
                 if ($trimestre) {
-                    $campo                    = "bloqueado_t{$trimestre}";
-                    $precisaDesbloquear       = (bool) $nota->{$campo};
-                    $precisaReabrirStatus     = $nota->status === 'finalizado';
+                    $campo                = "bloqueado_t{$trimestre}";
+                    $precisaDesbloquear   = (bool) $nota->{$campo};
+                    $precisaReabrirStatus = $nota->status === 'finalizado';
 
                     if (!$precisaDesbloquear && !$precisaReabrirStatus) {
                         $jaAbertas++;
@@ -622,8 +667,27 @@ class NotaController extends Controller
                     ]);
                 }
 
+                // Um único log por nota — evento de reabertura
+                \App\Models\NotaLog::create([
+                    'nota_id'        => $nota->id,
+                    'usuario_id'     => \Illuminate\Support\Facades\Auth::id(),
+                    'aluno_id'       => $nota->aluno_id,
+                    'turma_id'       => $nota->turma_id,
+                    'disciplina_id'  => $nota->disciplina_id,
+                    'acao'           => 'reabertura',
+                    'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'pauta_completa',
+                    'valor_anterior' => 'finalizado',
+                    'valor_novo'     => 'em_lancamento',
+                    'trimestre'      => $trimestre,
+                    'motivo'         => request()?->input('motivo'),
+                    'ip_address'     => request()?->ip(),
+                    'data_alteracao' => now(),
+                ]);
+
                 $reabertas++;
             }
+
+            \App\Observers\NotaObserver::$suprimirLogs = false;
 
             return [$reabertas, $jaAbertas];
         });

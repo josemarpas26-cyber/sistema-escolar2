@@ -212,6 +212,7 @@ public function show(AnoLetivo $anoLetivo)
     /**
      * Reativar ano letivo
      */
+
     public function reativar(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.create');
@@ -220,13 +221,22 @@ public function show(AnoLetivo $anoLetivo)
             return back()->with('error', 'Este ano letivo não está encerrado!');
         }
 
-        // Desativar todos os outros anos
-        AnoLetivo::query()->update(['ativo' => false]);
+        DB::transaction(function () use ($anoLetivo) {
 
-        $anoLetivo->update([
-            'ativo' => true,
-            'encerrado' => false,
-        ]);
+            // Lock em todos os anos letivos
+            AnoLetivo::lockForUpdate()->get();
+
+            // Desativa todos
+            AnoLetivo::query()->update([
+                'ativo' => false,
+            ]);
+
+            // Reativa o escolhido
+            $anoLetivo->update([
+                'ativo' => true,
+                'encerrado' => false,
+            ]);
+        });
 
         return back()->with('success', 'Ano letivo reativado com sucesso!');
     }
