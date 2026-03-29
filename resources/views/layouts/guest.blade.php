@@ -42,6 +42,15 @@
                 </div>
             </div>
             @endif
+            
+            @if(session('warning'))
+            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-4 mb-6">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3"></i>
+                    <span>{{ session('warning') }}</span>
+                </div>
+            </div>
+            @endif
 
             @if(session('error'))
             <div class="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-6">
