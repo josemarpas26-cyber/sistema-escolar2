@@ -155,13 +155,14 @@ public function show(AnoLetivo $anoLetivo)
             return back()->with('error', 'Este ano letivo já está encerrado!');
         }
 
-        // 🔒 Impedir encerramento antes da data de fim (checagem barata primeiro)
+        /* 🔒 Impedir encerramento antes da data de fim (checagem barata primeiro)
         if (now()->startOfDay()->lt($anoLetivo->data_fim->startOfDay())) {
             return back()->with('error',
                 'Não é possível encerrar o ano letivo antes de '
                 . $anoLetivo->data_fim->format('d/m/Y') . '.'
             );
         }
+            */
 
         // ── QUERY 1, 2, 3: Eager-load (turmas + pivot disciplinas + pivot alunos)
         $anoLetivo->load([
@@ -176,9 +177,14 @@ public function show(AnoLetivo $anoLetivo)
         $notasPorTurma = \App\Models\Nota::where('ano_letivo_id', $anoLetivo->id)
             ->whereIn('turma_id', $turmaIds)
             ->whereNotNull('cfd')
-            ->whereHas('aluno', fn($q) => $q->whereHas('turmas', 
-                fn($q2) => $q2->wherePivot('status', 'matriculado')
-            ))
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('turma_aluno')
+                    ->whereColumn('turma_aluno.aluno_id', 'notas.aluno_id')
+                    ->whereColumn('turma_aluno.turma_id', 'notas.turma_id')
+                    ->where('turma_aluno.status', 'matriculado');
+            })
+            
             ->groupBy('turma_id')
             ->select('turma_id', DB::raw('COUNT(*) as total'))
             ->pluck('total', 'turma_id');

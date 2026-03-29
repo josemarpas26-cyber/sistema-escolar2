@@ -263,9 +263,24 @@ class TurmaController extends Controller
             return back()->with('error', 'A turma não possui vagas disponíveis!');
         }
 
-        // Verificar se já está matriculado
-        if ($turma->alunos()->where('aluno_id', $validated['aluno_id'])->exists()) {
-            return back()->with('error', 'Aluno já está matriculado nesta turma!');
+        $statusAtual = DB::table('turma_aluno')
+            ->where('turma_id', $turma->id)
+            ->where('aluno_id', $validated['aluno_id'])
+            ->value('status');
+
+        // Já existe pivot para este aluno nesta turma
+        if ($statusAtual !== null) {
+            if ($statusAtual === 'matriculado') {
+                return back()->with('error', 'Aluno já está matriculado nesta turma!');
+            }
+
+            // Reativar matrícula existente (a tabela possui unique por turma+aluno)
+            $turma->alunos()->updateExistingPivot($validated['aluno_id'], [
+                'data_matricula' => $validated['data_matricula'],
+                'status' => 'matriculado',
+            ]);
+
+            return back()->with('success', 'Matrícula do aluno reativada com sucesso!');
         }
 
         $turma->alunos()->attach($validated['aluno_id'], [

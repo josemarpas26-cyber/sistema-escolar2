@@ -13,7 +13,7 @@
     </a>
 
     {{-- Encerrar Ano Letivo --}}
-    @if(!$anoLetivo->encerrado)
+        @if($anoLetivo->ativo && !$anoLetivo->encerrado)
         <form action="{{ route('anos-letivos.encerrar', $anoLetivo) }}" 
               method="POST"
               onsubmit="return confirm('Tem certeza que deseja encerrar este ano letivo? Esta ação não poderá ser desfeita.')">
@@ -27,12 +27,30 @@
         </form>
     @endif
 
+
+        {{-- Reativar Ano Letivo --}}
+    @if($anoLetivo->encerrado)
+        <form action="{{ route('anos-letivos.reativar', $anoLetivo) }}"
+              method="POST"
+              onsubmit="return confirm('Deseja reativar este ano letivo? O ano atualmente ativo será desativado.')">
+            @csrf
+
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-play mr-2"></i>
+                Reativar
+            </button>
+        </form>
+    @endif
+
+
     {{-- Editar --}}
-    <a href="{{ route('anos-letivos.edit', $anoLetivo) }}" 
-       class="btn btn-primary">
-        <i class="fas fa-edit mr-2"></i>
-        Editar
-    </a>
+    @if(!$anoLetivo->encerrado)
+        <a href="{{ route('anos-letivos.edit', $anoLetivo) }}" 
+           class="btn btn-primary">
+            <i class="fas fa-edit mr-2"></i>
+            Editar
+        </a>
+    @endif
 
 </div>
 @endsection
