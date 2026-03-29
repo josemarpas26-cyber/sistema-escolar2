@@ -223,8 +223,8 @@ public function show(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.create');
 
-        if (!$anoLetivo->encerrado) {
-            return back()->with('error', 'Este ano letivo não está encerrado!');
+        if ($anoLetivo->ativo && !$anoLetivo->encerrado) {
+            return back()->with('error', 'Este ano letivo já está ativo!');
         }
 
         DB::transaction(function () use ($anoLetivo) {
@@ -244,7 +244,7 @@ public function show(AnoLetivo $anoLetivo)
             ]);
         });
 
-        return back()->with('success', 'Ano letivo reativado com sucesso!');
+        return back()->with('success', 'Ano letivo ativado com sucesso!');
     }
 
     /**
