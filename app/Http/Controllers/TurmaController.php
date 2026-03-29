@@ -10,6 +10,7 @@ use App\Models\Disciplina;
 use App\Models\Nota;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\HistoricoAcademico;
 
 class TurmaController extends Controller
 {
@@ -155,7 +156,7 @@ class TurmaController extends Controller
             'anoLetivo',
             'coordenador',
             'disciplinas',
-            'alunos' => fn($q) => $q->wherePivot('status', 'matriculado'),
+            'alunos' => fn($q) => $q->orderBy('name'),
             'atribuicoes' => fn($q) => $q->with(['professor', 'disciplina']),
         ]);
 
@@ -491,7 +492,7 @@ class TurmaController extends Controller
         // ----------------------------------------------------------------
 
         $novaTurma = DB::transaction(function () use (
-            $turma, $novaClasse, $proximoAno, $aprovados
+        $turma, $novaClasse, $proximoAno, $aprovados, $disciplinaIds
         ) {
             $novaTurma = Turma::create([
                 'nome'                 => $turma->nome,
@@ -505,6 +506,14 @@ class TurmaController extends Controller
 
             $novaTurma->disciplinas()->attach($turma->disciplinas->pluck('id'));
 
+            $notasFinais = Nota::where('turma_id', $turma->id)
+                ->where('ano_letivo_id', $turma->ano_letivo_id)
+                ->whereIn('disciplina_id', $disciplinaIds)
+                ->whereIn('aluno_id', $aprovados->pluck('id'))
+                ->get()
+                ->groupBy('aluno_id');
+
+
             foreach ($aprovados as $aluno) {
                 $novaTurma->alunos()->attach($aluno->id, [
                     'data_matricula' => now(),
@@ -514,6 +523,24 @@ class TurmaController extends Controller
                 $turma->alunos()->updateExistingPivot($aluno->id, [
                     'status' => 'concluido',
                 ]);
+
+                foreach ($notasFinais->get($aluno->id, collect()) as $nota) {
+                    HistoricoAcademico::updateOrCreate(
+                        [
+                            'aluno_id' => $aluno->id,
+                            'turma_id' => $turma->id,
+                            'disciplina_id' => $nota->disciplina_id,
+                            'ano_letivo_id' => $turma->ano_letivo_id,
+                        ],
+                        [
+                            'classe' => (string) $turma->classe,
+                            'classificacao_final' => (float) ($nota->cfd ?? $nota->ca ?? 0),
+                            'resultado' => (($nota->cfd ?? 0) >= 10) ? 'aprovado' : 'reprovado',
+                            'observacoes' => 'Registo automático na promoção da turma.',
+                            'data_conclusao' => now(),
+                        ]
+                    );
+                }
             }
 
             return $novaTurma;

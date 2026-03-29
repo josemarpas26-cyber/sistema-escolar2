@@ -90,7 +90,7 @@
                         @endif
                     </div>
 
-                    @if($turma->alunos->where('pivot.status', 'matriculado')->count() > 0)
+                                        @if($turma->alunos->where('pivot.status', 'matriculado')->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -105,7 +105,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
-                                @foreach($turma->alunos->where('pivot.status', 'matriculado') as $aluno)
+                                                                @foreach($turma->alunos as $aluno)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4">
                                         <a href="{{ route('users.show', $aluno) }}" class="font-medium text-primary-600 hover:text-primary-900">
@@ -117,10 +117,15 @@
                                         {{ \Carbon\Carbon::parse($aluno->pivot->data_matricula)->format('d/m/Y') }}
                                     </td>
                                     <td class="px-6 py-4 text-center">
-                                        <x-badge type="success">{{ ucfirst($aluno->pivot->status) }}</x-badge>
+                                                                                <x-badge type="{{ $aluno->pivot->status === 'matriculado' ? 'success' : 'gray' }}">
+                                            {{ ucfirst($aluno->pivot->status) }}
+                                        </x-badge>
+
                                     </td>
                                         @if($canManageTurma)
                                     <td class="px-6 py-4 text-right">
+                                                                                @if($aluno->pivot->status === 'matriculado')
+
                                         <form method="POST" action="{{ route('turmas.remover-aluno', [$turma, $aluno]) }}" class="inline">
                                             @csrf
                                             @method('DELETE')
@@ -129,6 +134,8 @@
                                                 <i class="fas fa-user-minus"></i>
                                             </button>
                                         </form>
+                                    @endif
+
                                     </td>
                                 @endif
                                 </tr>
