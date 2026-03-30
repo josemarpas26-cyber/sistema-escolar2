@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Disciplina;
 use App\Models\Nota;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 class TurmaController extends Controller
@@ -69,14 +70,12 @@ class TurmaController extends Controller
     }
 
     $cursos = Curso::ativos()->get();
-    $professores = User::professores()->ativos()->get();
     $disciplinas = Disciplina::ativos()->get();
     $anosLetivos = AnoLetivo::orderByDesc('created_at')->get(); 
 
     return view('turmas.create', compact(
         'cursos',
         'anoAtivo',
-        'professores',
         'disciplinas',
         'anosLetivos' 
     ));
@@ -105,9 +104,8 @@ class TurmaController extends Controller
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
-            'coordenador_turma_id' => 'nullable|exists:users,id',
             'capacidade' => 'required|integer|min:1|max:100',
-            'disciplinas' => 'nullable|array',
+            'disciplinas' => 'required|array|min:1',
             'disciplinas.*' => 'exists:disciplinas,id',
         ]);
 
@@ -118,24 +116,24 @@ class TurmaController extends Controller
                 ->with('error', 'Só é permitido criar turmas no ano letivo ativo.');
         }
 
-        // 4️⃣ Verificar se já existe turma com mesmo nome no mesmo ano
+        // 4️⃣ Verificar se já existe turma com mesma combinação (curso + classe + nome + ano letivo)
         $turmaExiste = Turma::where('nome', $validated['nome'])
+            ->where('classe', $validated['classe'])
+            ->where('curso_id', $validated['curso_id'])
             ->where('ano_letivo_id', $validated['ano_letivo_id'])
             ->exists();
 
         if ($turmaExiste) {
             return back()
                 ->withInput()
-                ->with('error', 'Já existe uma turma com este nome neste ano letivo.');
+                ->with('error', 'Já existe uma turma com este nome para o mesmo curso, classe e ano letivo.');
         }
 
         // 5️⃣ Criar turma
         $turma = Turma::create($validated);
 
         // Associar disciplinas
-        if ($request->filled('disciplinas')) {
-            $turma->disciplinas()->attach($request->disciplinas);
-        }
+        $turma->disciplinas()->attach($validated['disciplinas']);
 
         return redirect()
             ->route('turmas.show', $turma)
@@ -199,27 +197,60 @@ class TurmaController extends Controller
         $this->checkPermission('turmas.edit');
 
         $validated = $request->validate([
-            'nome' => 'required|string|max:10',
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
             'coordenador_turma_id' => 'nullable|exists:users,id',
             'capacidade' => 'required|integer|min:1|max:100',
             'ativo' => 'boolean',
-            'disciplinas' => 'nullable|array',
+            'disciplinas' => 'required|array|min:1',
             'disciplinas.*' => 'exists:disciplinas,id',
+            'nome' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::unique('turmas')->where(function ($query) use ($request) {
+                    return $query->where('curso_id', $request->curso_id)
+                        ->where('classe', $request->classe)
+                        ->where('ano_letivo_id', $request->ano_letivo_id);
+                })->ignore($turma->id),
+            ],
         ]);
+
+        $anoAtivo = AnoLetivo::ativo()->first();
+        if (!$anoAtivo || (int) $validated['ano_letivo_id'] !== (int) $anoAtivo->id) {
+            return back()
+                ->withInput()
+                ->with('error', 'Só é permitido editar turmas no ano letivo ativo.');
+        }
+
+        if (array_key_exists('coordenador_turma_id', $validated) && !$this->podeGerirCoordenadorTurma()) {
+            return back()
+                ->withInput()
+                ->with('error', 'Apenas admin, secretaria ou director podem definir o coordenador de turma.');
+        }
 
         $turma->update($validated);
 
         // Atualizar disciplinas
-        if ($request->has('disciplinas')) {
-            $turma->disciplinas()->sync($request->disciplinas);
-        }
+        $turma->disciplinas()->sync($validated['disciplinas']);
 
         return redirect()
             ->route('turmas.show', $turma)
             ->with('success', 'Turma atualizada com sucesso!');
+    }
+
+    private function podeGerirCoordenadorTurma(): bool
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        return $user->isAdmin()
+            || $user->isSecretaria()
+            || $user->role?->name === 'director';
     }
 
     /**

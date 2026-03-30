@@ -43,17 +43,19 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label class="label">Coordenador</label>
-                        <select name="coordenador_turma_id" class="input">
-                            <option value="">Sem coordenador</option>
-                            @foreach($professores as $prof)
-                            <option value="{{ $prof->id }}" {{ $turma->coordenador_turma_id == $prof->id ? 'selected' : '' }}>
-                                {{ $prof->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @if(auth()->user()?->isAdmin() || auth()->user()?->isSecretaria() || auth()->user()?->role?->name === 'director')
+                        <div>
+                            <label class="label">Coordenador</label>
+                            <select name="coordenador_turma_id" class="input">
+                                <option value="">Sem coordenador</option>
+                                @foreach($professores as $prof)
+                                <option value="{{ $prof->id }}" {{ $turma->coordenador_turma_id == $prof->id ? 'selected' : '' }}>
+                                    {{ $prof->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
 
                     <div>
                         <label class="label">Capacidade (Alunos) *</label>

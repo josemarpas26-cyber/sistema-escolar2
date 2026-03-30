@@ -56,19 +56,6 @@
                         @enderror
                     </div>
 
-                    <!-- Coordenador -->
-                    <div>
-                        <label class="label">Coordenador</label>
-                        <select name="coordenador_id" class="input">
-                            <option value="">Sem coordenador</option>
-                            @foreach($professores as $prof)
-                            <option value="{{ $prof->id }}" {{ old('coordenador_id') == $prof->id ? 'selected' : '' }}>
-                                {{ $prof->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-
                     <!-- Capacidade -->
                     <div>
                         <label class="label">Capacidade (Alunos) *</label>
