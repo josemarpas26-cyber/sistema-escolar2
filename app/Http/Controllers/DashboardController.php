@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
 use App\Services\DashboardService;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -11,35 +12,38 @@ class DashboardController extends Controller
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
 
         return match (true) {
-            $user->isAdmin() => $this->adminDashboard(),
-            $user->isSecretaria() => $this->secretariaDashboard(),
-            $user->isProfessor() => $this->professorDashboard(),
-            $user->isAluno() => $this->alunoDashboard(),
+            $user->isAdmin() => $this->adminDashboard($request),
+            $user->isSecretaria() => $this->secretariaDashboard($request),
+            $user->isProfessor() => $this->professorDashboard($request),
+            $user->isAluno() => $this->alunoDashboard($request),
             default => abort(403, 'Papel de usuário não reconhecido'),
         };
     }
 
-    private function adminDashboard()
+    private function adminDashboard(Request $request)
     {
-        $stats = $this->dashboardService->adminStats();
+        $stats = $this->dashboardService->adminStats($request->only(['curso_id', 'turma_id', 'disciplina_id', 'q']));
 
         return view('dashboard.admin', $stats);
     }
 
-    private function secretariaDashboard()
+    private function secretariaDashboard(Request $request)
     {
         $anoLetivo = AnoLetivo::ativo()->first();
-        $stats = $this->dashboardService->secretariaStats($anoLetivo);
+        $stats = $this->dashboardService->secretariaStats(
+            $anoLetivo,
+            $request->only(['curso_id', 'turma_id', 'disciplina_id', 'q'])
+        );
 
         return view('dashboard.secretaria', $stats);
     }
 
-    private function professorDashboard()
+    private function professorDashboard(Request $request)
     {
         $professor = auth()->user();
         $anoLetivo = AnoLetivo::ativo()->first();
@@ -48,12 +52,16 @@ class DashboardController extends Controller
             return view('dashboard.sem-ano-letivo');
         }
 
-        $stats = $this->dashboardService->professorStats($professor, $anoLetivo);
+        $stats = $this->dashboardService->professorStats(
+            $professor,
+            $anoLetivo,
+            $request->only(['curso_id', 'turma_id', 'disciplina_id', 'q'])
+        );
 
         return view('dashboard.professor', $stats);
     }
 
-    private function alunoDashboard()
+    private function alunoDashboard(Request $request)
     {
         $aluno = auth()->user();
         $anoLetivo = AnoLetivo::ativo()->first();
@@ -62,7 +70,11 @@ class DashboardController extends Controller
             return view('dashboard.sem-ano-letivo');
         }
 
-        $stats = $this->dashboardService->alunoStats($aluno, $anoLetivo);
+        $stats = $this->dashboardService->alunoStats(
+            $aluno,
+            $anoLetivo,
+            $request->only(['curso_id', 'turma_id', 'disciplina_id', 'q'])
+        );
 
         return view('dashboard.aluno', $stats);
     }
