@@ -117,6 +117,34 @@
     </div>
 </div>
 
+<x-card title="Ranking da Minha Turma" icon="fas fa-medal" class="mb-8">
+    @if(isset($ranking_turma) && $ranking_turma->count())
+        <div class="space-y-3">
+            @foreach($ranking_turma as $index => $item)
+                <div class="flex items-center justify-between p-3 rounded-lg border {{ (int) $item->aluno_id === (int) auth()->id() ? 'border-primary-300 bg-primary-50' : 'border-gray-100 bg-gray-50' }}">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-full {{ $index < 3 ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-700' }} text-sm font-bold flex items-center justify-center">
+                            #{{ $index + 1 }}
+                        </span>
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ $item->aluno_nome }}</p>
+                            <p class="text-xs text-gray-500">{{ $item->total_notas }} notas finais lançadas</p>
+                        </div>
+                    </div>
+                    <span class="text-sm font-bold text-primary-700">{{ number_format($item->media_geral, 2) }}</span>
+                </div>
+            @endforeach
+        </div>
+        @if(!is_null($posicao_turma))
+            <p class="mt-3 text-sm text-gray-600">
+                Sua posição atual na turma: <span class="font-semibold text-primary-700">#{{ $posicao_turma }}</span>.
+            </p>
+        @endif
+    @else
+        <p class="text-gray-500 text-sm">Ainda não existem notas finais suficientes para formar um ranking da turma.</p>
+    @endif
+</x-card>
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     {{-- Minha Turma --}}

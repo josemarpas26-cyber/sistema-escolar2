@@ -135,6 +135,31 @@
 
 </div>
 
+<div class="mt-6">
+    <x-card title="Ranking SIGAMOS · Professores" icon="fas fa-ranking-star">
+        @if(isset($ranking_professores) && $ranking_professores->count())
+            <div class="space-y-3">
+                @foreach($ranking_professores as $index => $professor)
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-primary-100 text-primary-700 text-sm font-bold flex items-center justify-center">
+                                #{{ $index + 1 }}
+                            </span>
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ $professor->name }}</p>
+                                <p class="text-xs text-gray-500">{{ $professor->total_pautas }} pautas avaliadas</p>
+                            </div>
+                        </div>
+                        <span class="text-sm font-bold text-primary-700">{{ number_format($professor->media_geral, 2) }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="text-gray-500 text-sm">Sem dados de CFD para montar ranking docente.</p>
+        @endif
+    </x-card>
+</div>
+
 
 <!-- ================= QUICK ACTIONS ================= -->
 

@@ -43,6 +43,29 @@
 </div>
 @endif
 
+<x-card title="Ranking das Minhas Turmas" icon="fas fa-trophy" class="mb-6">
+    @if(isset($ranking_turmas) && $ranking_turmas->count())
+        <div class="space-y-3">
+            @foreach($ranking_turmas as $index => $item)
+                <div class="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-full bg-primary-100 text-primary-700 text-sm font-bold flex items-center justify-center">
+                            #{{ $index + 1 }}
+                        </span>
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ $item->nome }} · {{ $item->classe }}ª</p>
+                            <p class="text-xs text-gray-500">{{ $item->total_alunos }} alunos avaliados</p>
+                        </div>
+                    </div>
+                    <span class="text-sm font-bold text-primary-700">{{ number_format($item->media_geral, 2) }}</span>
+                </div>
+            @endforeach
+        </div>
+    @else
+        <p class="text-gray-500 text-sm">Ainda não há dados suficientes para gerar ranking.</p>
+    @endif
+</x-card>
+
 <!-- Minhas Turmas -->
 <x-card title="Minhas Turmas" icon="fas fa-chalkboard-teacher">
     @if($turmas->count() > 0)

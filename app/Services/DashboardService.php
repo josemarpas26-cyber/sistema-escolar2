@@ -26,29 +26,7 @@ class DashboardService
                 $diasRestantes = (int) now()->diffInDays($anoLetivoAtivo->data_fim, false);
             }
 
-            $rankingProfessores = collect();
-
-            if ($anoLetivoAtivo) {
-                $rankingProfessores = DB::table('notas as n')
-                    ->join('professor_turma_disciplina as ptd', function ($join) {
-                        $join->on('ptd.turma_id', '=', 'n.turma_id')
-                            ->on('ptd.disciplina_id', '=', 'n.disciplina_id')
-                            ->on('ptd.ano_letivo_id', '=', 'n.ano_letivo_id');
-                    })
-                    ->join('users as u', 'u.id', '=', 'ptd.professor_id')
-                    ->where('n.ano_letivo_id', $anoLetivoAtivo->id)
-                    ->whereNotNull('n.cfd')
-                    ->select(
-                        'u.id',
-                        'u.name',
-                        DB::raw('ROUND(AVG(n.cfd), 2) as media_geral'),
-                        DB::raw('COUNT(DISTINCT CONCAT(n.turma_id, "-", n.disciplina_id)) as total_pautas')
-                    )
-                    ->groupBy('u.id', 'u.name')
-                    ->orderByDesc('media_geral')
-                    ->limit(5)
-                    ->get();
-            }
+            $rankingProfessores = $this->obterRankingProfessores($anoLetivoAtivo);
 
             return [
                 'total_usuarios' => User::count(),
@@ -73,6 +51,7 @@ class DashboardService
             'total_professores' => User::professores()->ativos()->count(),
             'total_turmas' => Turma::anoAtivo()->count(),
             'ano_letivo' => $anoLetivo,
+            'ranking_professores' => $this->obterRankingProfessores($anoLetivo),
             'turmas_recentes' => Turma::anoAtivo()
                 ->with(['curso', 'alunos'])
                 ->latest()
@@ -124,6 +103,7 @@ class DashboardService
             'total_alunos' => $totalAlunos,
             'notas_pendentes' => $notasPendentes,
             'turmas' => $turmas,
+            'ranking_turmas' => $this->obterRankingTurmasProfessor($professor, $anoLetivo),
             'ano_letivo' => $anoLetivo,
         ];
     }
@@ -156,6 +136,9 @@ class DashboardService
             ->with(['curso', 'anoLetivo'])
             ->first();
 
+        $rankingTurma = $this->obterRankingAlunosTurma($turmaAtual?->id, $anoLetivo->id);
+        $posicaoAluno = $rankingTurma->search(fn($item) => (int) $item->aluno_id === (int) $aluno->id);
+
         return [
             'turma' => $turmaAtual,
             'notas' => $notas,
@@ -164,8 +147,85 @@ class DashboardService
             'reprovacoes' => $reprovacoes,
             'total_disciplinas' => $notas->count(),
             'disciplinas_com_progresso' => $disciplinasComProgresso,
+            'ranking_turma' => $rankingTurma->take(5),
+            'posicao_turma' => $posicaoAluno === false ? null : $posicaoAluno + 1,
             'ano_letivo' => $anoLetivo,
         ];
+    }
+
+    private function obterRankingProfessores(?AnoLetivo $anoLetivo, int $limite = 5): Collection
+    {
+        if (!$anoLetivo) {
+            return collect();
+        }
+
+        return DB::table('notas as n')
+            ->join('professor_turma_disciplina as ptd', function ($join) {
+                $join->on('ptd.turma_id', '=', 'n.turma_id')
+                    ->on('ptd.disciplina_id', '=', 'n.disciplina_id')
+                    ->on('ptd.ano_letivo_id', '=', 'n.ano_letivo_id');
+            })
+            ->join('users as u', 'u.id', '=', 'ptd.professor_id')
+            ->where('n.ano_letivo_id', $anoLetivo->id)
+            ->whereNotNull('n.cfd')
+            ->select(
+                'u.id',
+                'u.name',
+                DB::raw('ROUND(AVG(n.cfd), 2) as media_geral'),
+                DB::raw('COUNT(DISTINCT CONCAT(n.turma_id, "-", n.disciplina_id)) as total_pautas')
+            )
+            ->groupBy('u.id', 'u.name')
+            ->orderByDesc('media_geral')
+            ->limit($limite)
+            ->get();
+    }
+
+    private function obterRankingTurmasProfessor(User $professor, AnoLetivo $anoLetivo, int $limite = 5): Collection
+    {
+        return DB::table('notas as n')
+            ->join('turmas as t', 't.id', '=', 'n.turma_id')
+            ->join('professor_turma_disciplina as ptd', function ($join) {
+                $join->on('ptd.turma_id', '=', 'n.turma_id')
+                    ->on('ptd.disciplina_id', '=', 'n.disciplina_id')
+                    ->on('ptd.ano_letivo_id', '=', 'n.ano_letivo_id');
+            })
+            ->where('ptd.professor_id', $professor->id)
+            ->where('n.ano_letivo_id', $anoLetivo->id)
+            ->whereNotNull('n.cfd')
+            ->select(
+                't.id',
+                't.nome',
+                't.classe',
+                DB::raw('ROUND(AVG(n.cfd), 2) as media_geral'),
+                DB::raw('COUNT(DISTINCT n.aluno_id) as total_alunos')
+            )
+            ->groupBy('t.id', 't.nome', 't.classe')
+            ->orderByDesc('media_geral')
+            ->limit($limite)
+            ->get();
+    }
+
+    private function obterRankingAlunosTurma(?int $turmaId, int $anoLetivoId): Collection
+    {
+        if (!$turmaId) {
+            return collect();
+        }
+
+        return DB::table('notas as n')
+            ->join('users as u', 'u.id', '=', 'n.aluno_id')
+            ->where('n.turma_id', $turmaId)
+            ->where('n.ano_letivo_id', $anoLetivoId)
+            ->whereNotNull('n.cfd')
+            ->select(
+                'u.id as aluno_id',
+                'u.name as aluno_nome',
+                DB::raw('ROUND(AVG(n.cfd), 2) as media_geral'),
+                DB::raw('COUNT(n.id) as total_notas')
+            )
+            ->groupBy('u.id', 'u.name')
+            ->orderByDesc('media_geral')
+            ->get()
+            ->values();
     }
 
     private function montarDisciplinasComProgresso(Collection $notas, Collection $metasAtivas): Collection
