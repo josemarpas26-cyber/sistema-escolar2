@@ -10,6 +10,7 @@ use App\Models\Turma;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
@@ -25,6 +26,30 @@ class DashboardService
                 $diasRestantes = (int) now()->diffInDays($anoLetivoAtivo->data_fim, false);
             }
 
+            $rankingProfessores = collect();
+
+            if ($anoLetivoAtivo) {
+                $rankingProfessores = DB::table('notas as n')
+                    ->join('professor_turma_disciplina as ptd', function ($join) {
+                        $join->on('ptd.turma_id', '=', 'n.turma_id')
+                            ->on('ptd.disciplina_id', '=', 'n.disciplina_id')
+                            ->on('ptd.ano_letivo_id', '=', 'n.ano_letivo_id');
+                    })
+                    ->join('users as u', 'u.id', '=', 'ptd.professor_id')
+                    ->where('n.ano_letivo_id', $anoLetivoAtivo->id)
+                    ->whereNotNull('n.cfd')
+                    ->select(
+                        'u.id',
+                        'u.name',
+                        DB::raw('ROUND(AVG(n.cfd), 2) as media_geral'),
+                        DB::raw('COUNT(DISTINCT CONCAT(n.turma_id, "-", n.disciplina_id)) as total_pautas')
+                    )
+                    ->groupBy('u.id', 'u.name')
+                    ->orderByDesc('media_geral')
+                    ->limit(5)
+                    ->get();
+            }
+
             return [
                 'total_usuarios' => User::count(),
                 'total_alunos' => User::alunos()->count(),
@@ -32,6 +57,7 @@ class DashboardService
                 'total_turmas' => Turma::count(),
                 'ano_letivo_ativo' => $anoLetivoAtivo,
                 'dias_restantes' => $diasRestantes,
+                'ranking_professores' => $rankingProfessores,
                 'logs_recentes' => NotaLog::with(['usuario', 'aluno', 'disciplina'])
                     ->latest('data_alteracao')
                     ->take(10)

@@ -292,6 +292,38 @@
         @endif
     </x-card>
 
+
+</div>
+
+<div class="mt-8">
+    <x-card title="Ranking SIGAMOS · Desempenho Docente" icon="fas fa-trophy">
+        @if(isset($ranking_professores) && $ranking_professores->count() > 0)
+            <div class="space-y-3">
+                @foreach($ranking_professores as $idx => $prof)
+                    <div class="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 hover:bg-gray-50 transition">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-bold text-sm flex items-center justify-center">
+                                #{{ $idx + 1 }}
+                            </span>
+                            <div class="min-w-0">
+                                <p class="font-semibold text-gray-900 truncate">{{ $prof->name }}</p>
+                                <p class="text-xs text-gray-500">{{ $prof->total_pautas }} pauta(s) com nota final</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-primary-700">{{ number_format($prof->media_geral, 2) }}</p>
+                            <p class="text-xs text-gray-500">média CFD</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <p class="mt-3 text-xs text-gray-500">
+                Ranking calculado no ano letivo ativo com base na média das CFD por professor.
+            </p>
+        @else
+            <p class="text-gray-500 text-center py-4">Sem dados suficientes para gerar o ranking.</p>
+        @endif
+    </x-card>
 </div>
 
 <!-- Quick Actions -->
