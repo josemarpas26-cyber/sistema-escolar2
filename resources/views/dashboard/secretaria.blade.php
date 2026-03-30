@@ -135,6 +135,10 @@
 
 </div>
 
+<div class="mt-6">
+    @include('dashboard.partials.ranking-alunos')
+</div>
+
 
 <!-- ================= QUICK ACTIONS ================= -->
 

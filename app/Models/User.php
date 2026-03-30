@@ -68,6 +68,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(HistoricoAcademico::class, 'aluno_id');
     }
 
+
+    public function metasDisciplina()
+    {
+        return $this->hasMany(MetaDisciplina::class, 'aluno_id');
+    }
+
     // Para professores
     public function atribuicoes()
     {

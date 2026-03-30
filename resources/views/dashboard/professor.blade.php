@@ -43,6 +43,8 @@
 </div>
 @endif
 
+@include('dashboard.partials.ranking-alunos')
+
 <!-- Minhas Turmas -->
 <x-card title="Minhas Turmas" icon="fas fa-chalkboard-teacher">
     @if($turmas->count() > 0)

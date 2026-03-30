@@ -130,3 +130,9 @@
 ::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-400;
 }
+
+@layer utilities {
+    .surface-soft {
+        @apply bg-white border border-slate-200 rounded-2xl;
+    }
+}

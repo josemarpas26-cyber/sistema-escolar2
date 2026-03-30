@@ -292,6 +292,11 @@
         @endif
     </x-card>
 
+
+</div>
+
+<div class="mt-8">
+    @include('dashboard.partials.ranking-alunos')
 </div>
 
 <!-- Quick Actions -->

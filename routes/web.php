@@ -5,6 +5,7 @@ use App\Http\Controllers\CursoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\MetaDisciplinaController;
 use App\Http\Controllers\NotaController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\TurmaController;
@@ -106,6 +107,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('relatorios/pauta-geral/{turma}', [RelatorioController::class, 'pautaGeral'])
         ->name('relatorios.pauta-geral');
+
+
+    Route::post('metas-disciplina', [MetaDisciplinaController::class, 'store'])
+        ->name('metas-disciplina.store');
+    Route::patch('metas-disciplina/{meta}/desativar', [MetaDisciplinaController::class, 'desativar'])
+        ->name('metas-disciplina.desativar');
 
     Route::get('logs', [LogController::class, 'index'])
         ->name('logs.index');
