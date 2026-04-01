@@ -58,14 +58,22 @@
             color: #1F2937;
         }
 
-        .foto-perfil {
+        .foto-perfil-wrap {
             width: 80px;
             height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
             border: 3px solid #3B82F6;
+            border-radius: 50%;
+            overflow: hidden;
             float: right;
             margin-left: 20px;
+            background: #FFFFFF;
+        }
+
+        .foto-perfil {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
         }
 
         table {
@@ -191,7 +199,9 @@
 
     <!-- Informações do Aluno -->
     <div class="info-section">
-        <img src="{{ public_path($aluno->foto_perfil ?: 'storage/fotos_perfil/default.png') }}" alt="Foto" class="foto-perfil">
+        <div class="foto-perfil-wrap">
+            <img src="{{ $aluno->foto_perfil_pdf_src }}" alt="Foto" class="foto-perfil">
+        </div>
         
         <div class="info-row">
             <span class="info-label">Aluno:</span>

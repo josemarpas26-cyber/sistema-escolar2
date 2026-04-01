@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Nota;
-use App\Models\Turma;
-use App\Models\Disciplina;
-use App\Models\User;
-use App\Models\AnoLetivo;
-use App\Models\HistoricoAcademico;
-use App\Models\ProfessorTurmaDisciplina;
 use App\Exports\BoletimExport;
 use App\Exports\PautaExport;
-use Illuminate\Http\Request;
+use App\Models\AnoLetivo;
+use App\Models\Disciplina;
+use App\Models\HistoricoAcademico;
+use App\Models\Nota;
+use App\Models\ProfessorTurmaDisciplina;
+use App\Models\Turma;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+
 class RelatorioController extends Controller
 {
-        public function index(Request $request)
+    public function index(Request $request)
     {
         $this->checkPermission('relatorios.boletins');
 
@@ -24,34 +25,33 @@ class RelatorioController extends Controller
         $anoLetivoAtivo = AnoLetivo::ativo()->first();
         $anoLetivoSelecionadoId = $request->integer('ano_letivo_id') ?: $anoLetivoAtivo?->id;
 
-
         $anosLetivos = AnoLetivo::orderByDesc('id')->get();
         $turmas = Turma::with(['curso', 'anoLetivo'])
-            ->when($anoLetivoSelecionadoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoSelecionadoId))
+            ->when($anoLetivoSelecionadoId, fn ($q) => $q->where('ano_letivo_id', $anoLetivoSelecionadoId))
             ->orderBy('classe')
             ->get();
 
         $disciplinas = Disciplina::ativos()
-            ->when($anoLetivoSelecionadoId, fn($q) => $q->whereHas('notas', fn($qq) => $qq
+            ->when($anoLetivoSelecionadoId, fn ($q) => $q->whereHas('notas', fn ($qq) => $qq
                 ->where('ano_letivo_id', $anoLetivoSelecionadoId)))
             ->orderBy('nome')
             ->get();
 
         $alunos = User::alunos()
-            ->when($anoLetivoSelecionadoId, fn($q) => $q->whereHas('turmas', fn($qq) => $qq
+            ->when($anoLetivoSelecionadoId, fn ($q) => $q->whereHas('turmas', fn ($qq) => $qq
                 ->where('ano_letivo_id', $anoLetivoSelecionadoId)
                 ->where('turma_aluno.status', 'matriculado')))
             ->orderBy('name')
             ->get();
         $professores = User::professores()->orderBy('name')->get();
 
-                if ($this->isProfessorComRestricao($user)) {
+        if ($this->isProfessorComRestricao($user)) {
             $anosLetivos = $anoLetivoAtivo ? collect([$anoLetivoAtivo]) : collect();
 
-                   $anoLetivoAtivoId = $anoLetivoAtivo?->id;
+            $anoLetivoAtivoId = $anoLetivoAtivo?->id;
 
             $atribuicoes = $user->atribuicoes()
-                ->when($anoLetivoAtivoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
+                ->when($anoLetivoAtivoId, fn ($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
                 ->get(['turma_id', 'disciplina_id']);
 
             $turmaIdsPermitidas = $atribuicoes->pluck('turma_id')->unique()->values();
@@ -59,7 +59,7 @@ class RelatorioController extends Controller
 
             if ($this->isCoordenadorTurma($user)) {
                 $turmaCoord = Turma::where('coordenador_turma_id', $user->id)
-                    ->when($anoLetivoAtivoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
+                    ->when($anoLetivoAtivoId, fn ($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
                     ->first();
 
                 if ($turmaCoord) {
@@ -70,10 +70,10 @@ class RelatorioController extends Controller
             if ($this->isCoordenadorCurso($user)) {
                 $cursoId = $user->cursoCoordenado?->id;
 
-            if ($cursoId) {
+                if ($cursoId) {
                     $turmaIdsCurso = Turma::query()
                         ->where('curso_id', $cursoId)
-                        ->when($anoLetivoAtivoId, fn($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
+                        ->when($anoLetivoAtivoId, fn ($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
                         ->pluck('id');
 
                     $turmaIdsPermitidas = $turmaIdsPermitidas
@@ -94,7 +94,7 @@ class RelatorioController extends Controller
                     if ($this->isCoordenadorCurso($user) || $this->isCoordenadorTurma($user)) {
                         $q->orWhereHas('notas', function ($qq) use ($turmaIdsPermitidas, $anoLetivoAtivoId) {
                             $qq->whereIn('turma_id', $turmaIdsPermitidas)
-                                ->when($anoLetivoAtivoId, fn($qf) => $qf->where('ano_letivo_id', $anoLetivoAtivoId));
+                                ->when($anoLetivoAtivoId, fn ($qf) => $qf->where('ano_letivo_id', $anoLetivoAtivoId));
                         });
                     }
                 })
@@ -102,7 +102,7 @@ class RelatorioController extends Controller
                 ->get();
 
             $alunos = User::alunos()
-                ->whereHas('turmas', fn($q) => $q->whereIn('turmas.id', $turmaIdsPermitidas))
+                ->whereHas('turmas', fn ($q) => $q->whereIn('turmas.id', $turmaIdsPermitidas))
                 ->orderBy('name')
                 ->get();
         }
@@ -127,11 +127,11 @@ class RelatorioController extends Controller
 
         $user = auth()->user();
 
-        if (!$aluno && $request->filled('aluno_id')) {
+        if (! $aluno && $request->filled('aluno_id')) {
             $aluno = User::alunos()->findOrFail($request->aluno_id);
         }
 
-        if (!$aluno) {
+        if (! $aluno) {
             if ($user->isAluno()) {
                 $aluno = $user;
                 $this->checkPermission('notas.view_own');
@@ -140,14 +140,14 @@ class RelatorioController extends Controller
             }
         }
 
-        if (!$user->isAluno() || $user->id !== $aluno->id) {
+        if (! $user->isAluno() || $user->id !== $aluno->id) {
             $this->checkPermission('relatorios.boletins');
         }
 
         $anoLetivoAtivo = AnoLetivo::ativo()->first();
         $anoLetivoId = $request->ano_letivo_id ?? $anoLetivoAtivo?->id;
 
-        if (!$anoLetivoId) {
+        if (! $anoLetivoId) {
             return back()->with('error', 'Nenhum ano letivo ativo encontrado!');
         }
 
@@ -156,13 +156,13 @@ class RelatorioController extends Controller
             ->where('ano_letivo_id', $anoLetivo->id)
             ->first();
 
-        if (!$turma) {
+        if (! $turma) {
             return back()->with('error', 'Aluno não possui turma no ano letivo selecionado!');
         }
         $disciplinaId = $request->filled('disciplina_id') ? (int) $request->disciplina_id : null;
         $trimestre = $request->trimestre ?? 'final';
 
-            [$aplicarRestricaoProfessor, $disciplinasPermitidas] = $this->regrasAcessoBoletim(
+        [$aplicarRestricaoProfessor, $disciplinasPermitidas] = $this->regrasAcessoBoletim(
             $user,
             $turma,
             $anoLetivo,
@@ -172,7 +172,7 @@ class RelatorioController extends Controller
         $notasQuery = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
             ->with('disciplina');
-    
+
         if ($aplicarRestricaoProfessor) {
             $notasQuery->whereIn('disciplina_id', $disciplinasPermitidas);
         }
@@ -184,11 +184,11 @@ class RelatorioController extends Controller
         $notas = $notasQuery->get();
 
         $valoresPeriodo = $notas
-            ->map(fn($nota) => $this->valorPeriodo($nota, $trimestre))
-            ->filter(fn($valor) => $valor !== null);
+            ->map(fn ($nota) => $this->valorPeriodo($nota, $trimestre))
+            ->filter(fn ($valor) => $valor !== null);
 
         $mediaGeral = $valoresPeriodo->avg();
-        $aprovacoes = $valoresPeriodo->filter(fn($v) => $v >= 10)->count();
+        $aprovacoes = $valoresPeriodo->filter(fn ($v) => $v >= 10)->count();
         $reprovacoes = $valoresPeriodo->count() - $aprovacoes;
 
         $dados = [
@@ -233,10 +233,10 @@ class RelatorioController extends Controller
             $anoLetivoAtivo
         );
 
-        if (!$disciplina) {
+        if (! $disciplina) {
             $query = Nota::where('turma_id', $turma->id)
                 ->where('ano_letivo_id', $anoLetivoId)
-                    ->with(['aluno', 'disciplina']);
+                ->with(['aluno', 'disciplina']);
 
             if ($aplicarRestricaoProfessor) {
                 $query->whereIn('disciplina_id', $disciplinasPermitidas);
@@ -270,11 +270,11 @@ class RelatorioController extends Controller
             ->get();
 
         $valoresPeriodo = $notas
-            ->map(fn($nota) => $this->valorPeriodo($nota, $trimestre))
-            ->filter(fn($valor) => $valor !== null);
+            ->map(fn ($nota) => $this->valorPeriodo($nota, $trimestre))
+            ->filter(fn ($valor) => $valor !== null);
 
         $mediaGeral = $valoresPeriodo->avg();
-        $aprovacoes = $valoresPeriodo->filter(fn($v) => $v >= 10)->count();
+        $aprovacoes = $valoresPeriodo->filter(fn ($v) => $v >= 10)->count();
         $reprovacoes = $valoresPeriodo->count() - $aprovacoes;
 
         $dados = [
@@ -291,34 +291,34 @@ class RelatorioController extends Controller
 
         if ($request->formato === 'pdf') {
             return $this->gerarPautaDisciplinaPDF($dados);
-            }
-            
+        }
+
         if ($request->formato === 'excel') {
             return $this->gerarPautaExcel($dados);
-            }
-            
-        return view('relatorios.pauta-disciplina', $dados);
         }
-        
+
+        return view('relatorios.pauta-disciplina', $dados);
+    }
+
     public function historicoAcademico(Request $request, ?User $aluno = null)
     {
         $this->checkPermission('relatorios.historico');
-            if (!$aluno && $request->filled('aluno_id')) {
+        if (! $aluno && $request->filled('aluno_id')) {
             $aluno = User::alunos()->findOrFail($request->aluno_id);
         }
 
-        if (!$aluno) {
+        if (! $aluno) {
             $aluno = auth()->user();
         }
 
-            if ($aluno && auth()->user()->isAluno() && $aluno->id !== auth()->id()) {
+        if ($aluno && auth()->user()->isAluno() && $aluno->id !== auth()->id()) {
             abort(403, 'Não tem permissão para ver o histórico de outro aluno.');
         }
-        
-        if (!$aluno) {
+
+        if (! $aluno) {
             abort(404, 'Aluno não encontrado.');
         }
-        
+
         $historico = HistoricoAcademico::porAluno($aluno->id)
             ->with(['disciplina', 'turma', 'anoLetivo'])
             ->get()
@@ -340,11 +340,11 @@ class RelatorioController extends Controller
     {
         $this->checkPermission('relatorios.historico');
 
-        if (!$professor && $request->filled('professor_id')) {
+        if (! $professor && $request->filled('professor_id')) {
             $professor = User::professores()->findOrFail($request->professor_id);
         }
 
-        if (!$professor) {
+        if (! $professor) {
             return back()->with('error', 'Selecione um professor para ver o histórico.');
         }
 
@@ -363,7 +363,7 @@ class RelatorioController extends Controller
             $pdf = Pdf::loadView('relatorios.pdf.historico-professor', $dados)
                 ->setPaper('a4', 'portrait');
 
-            return $pdf->download('historico-professor-' . $professor->id . '.pdf');
+            return $pdf->download('historico-professor-'.$professor->id.'.pdf');
         }
 
         return view('relatorios.historico-professor', $dados);
@@ -382,9 +382,15 @@ class RelatorioController extends Controller
     private function gerarBoletimPDF(array $dados)
     {
         $pdf = Pdf::loadView('relatorios.pdf.boletim', $dados)
-            ->setPaper('a4', 'portrait');
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+                'defaultFont' => 'Arial',
+                'chroot' => base_path(),
+            ]);
 
-        return $pdf->download('boletim-' . $dados['aluno']->numero_processo . '.pdf');
+        return $pdf->download('boletim-'.$dados['aluno']->numero_processo.'.pdf');
     }
 
     private function gerarBoletimExcel(array $dados)
@@ -396,7 +402,7 @@ class RelatorioController extends Controller
                 $dados['notas'],
                 $dados['mediaGeral']
             ),
-            'boletim-' . $dados['aluno']->numero_processo . '.xlsx'
+            'boletim-'.$dados['aluno']->numero_processo.'.xlsx'
         );
     }
 
@@ -406,7 +412,7 @@ class RelatorioController extends Controller
             ->setPaper('a4', 'landscape');
 
         return $pdf->download(
-            'pauta-' . $dados['turma']->nome . '-' . $dados['disciplina']->codigo . '.pdf'
+            'pauta-'.$dados['turma']->nome.'-'.$dados['disciplina']->codigo.'.pdf'
         );
     }
 
@@ -419,7 +425,7 @@ class RelatorioController extends Controller
                 $dados['notas'],
                 $dados
             ),
-            'pauta-' . $dados['turma']->nome . '-' . $dados['disciplina']->codigo . '.xlsx'
+            'pauta-'.$dados['turma']->nome.'-'.$dados['disciplina']->codigo.'.xlsx'
         );
     }
 
@@ -428,13 +434,13 @@ class RelatorioController extends Controller
         $pdf = Pdf::loadView('relatorios.pdf.historico', $dados)
             ->setPaper('a4', 'portrait')
             ->setOptions([
-                'isRemoteEnabled'    => false, // bloqueia requests HTTP externos
+                'isRemoteEnabled' => false, // bloqueia requests HTTP externos
                 'isHtml5ParserEnabled' => true,
-                'defaultFont'        => 'Arial',
-                'chroot'             => storage_path('app/public'), // restringe acesso ao disco
+                'defaultFont' => 'Arial',
+                'chroot' => base_path(),
             ]);
 
-        return $pdf->download('historico-' . $dados['aluno']->numero_processo . '.pdf');
+        return $pdf->download('historico-'.$dados['aluno']->numero_processo.'.pdf');
     }
 
     private function gerarPautaGeralPDF(array $dados)
@@ -442,75 +448,76 @@ class RelatorioController extends Controller
         $pdf = Pdf::loadView('relatorios.pdf.pauta-geral', $dados)
             ->setPaper('a4', 'landscape');
 
-        return $pdf->download('pauta-geral-' . $dados['turma']->nome . '.pdf');
+        return $pdf->download('pauta-geral-'.$dados['turma']->nome.'.pdf');
     }
 
     public function consolidadoTurma(Request $request, Turma $turma)
-{
-    $this->checkPermission('relatorios.pautas');
+    {
+        $this->checkPermission('relatorios.pautas');
 
-    $user = auth()->user();
-    $anoLetivoAtivo = AnoLetivo::ativo()->first();
+        $user = auth()->user();
+        $anoLetivoAtivo = AnoLetivo::ativo()->first();
 
-    $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
-    $trimestre = $request->trimestre ?? 'final';
+        $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
+        $trimestre = $request->trimestre ?? 'final';
 
-    $this->regrasAcessoPauta($user, $turma, null, $anoLetivoId, $anoLetivoAtivo);
-    $anoLetivo = AnoLetivo::findOrFail($anoLetivoId);
+        $this->regrasAcessoPauta($user, $turma, null, $anoLetivoId, $anoLetivoAtivo);
+        $anoLetivo = AnoLetivo::findOrFail($anoLetivoId);
 
-    $notas = Nota::where('turma_id', $turma->id)
-        ->where('ano_letivo_id', $anoLetivoId)
-        ->with(['aluno', 'disciplina'])
-        ->get();
+        $notas = Nota::where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivoId)
+            ->with(['aluno', 'disciplina'])
+            ->get();
 
-    // Agrupa por aluno
-    $notasPorAluno = $notas->groupBy('aluno_id');
+        // Agrupa por aluno
+        $notasPorAluno = $notas->groupBy('aluno_id');
 
-    $dadosAlunos = $notasPorAluno->map(function ($notasAluno) use ($trimestre) {
+        $dadosAlunos = $notasPorAluno->map(function ($notasAluno) use ($trimestre) {
 
-        $valores = $notasAluno
-            ->map(fn($nota) => $this->valorPeriodo($nota, $trimestre))
-            ->filter(fn($valor) => $valor !== null);
+            $valores = $notasAluno
+                ->map(fn ($nota) => $this->valorPeriodo($nota, $trimestre))
+                ->filter(fn ($valor) => $valor !== null);
 
-        $media = $valores->avg();
+            $media = $valores->avg();
 
-        return [
-            'aluno' => $notasAluno->first()->aluno,
-            'media' => round($media ?? 0, 2),
-            'aprovado' => $media !== null && $media >= 10,
+            return [
+                'aluno' => $notasAluno->first()->aluno,
+                'media' => round($media ?? 0, 2),
+                'aprovado' => $media !== null && $media >= 10,
+            ];
+        });
+
+        $mediaGeralTurma = round(
+            $dadosAlunos->avg('media') ?? 0,
+            2
+        );
+
+        $totalAprovados = $dadosAlunos->where('aprovado', true)->count();
+        $totalReprovados = $dadosAlunos->count() - $totalAprovados;
+
+        $dados = [
+            'turma' => $turma,
+            'anoLetivo' => $anoLetivo,
+            'trimestre' => $trimestre,
+            'dadosAlunos' => $dadosAlunos,
+            'mediaGeralTurma' => $mediaGeralTurma,
+            'totalAprovados' => $totalAprovados,
+            'totalReprovados' => $totalReprovados,
         ];
-    });
 
-    $mediaGeralTurma = round(
-        $dadosAlunos->avg('media') ?? 0,
-        2
-    );
+        if ($request->formato === 'pdf') {
+            $pdf = Pdf::loadView('relatorios.pdf.consolidado-turma', $dados)
+                ->setPaper('a4', 'landscape');
 
-    $totalAprovados = $dadosAlunos->where('aprovado', true)->count();
-    $totalReprovados = $dadosAlunos->count() - $totalAprovados;
+            return $pdf->download('consolidado-'.$turma->nome.'.pdf');
+        }
 
-    $dados = [
-        'turma' => $turma,
-        'anoLetivo' => $anoLetivo,
-        'trimestre' => $trimestre,
-        'dadosAlunos' => $dadosAlunos,
-        'mediaGeralTurma' => $mediaGeralTurma,
-        'totalAprovados' => $totalAprovados,
-        'totalReprovados' => $totalReprovados,
-    ];
-
-    if ($request->formato === 'pdf') {
-        $pdf = Pdf::loadView('relatorios.pdf.consolidado-turma', $dados)
-            ->setPaper('a4', 'landscape');
-
-        return $pdf->download('consolidado-' . $turma->nome . '.pdf');
+        return view('relatorios.consolidado-turma', $dados);
     }
 
-    return view('relatorios.consolidado-turma', $dados);
-}
- private function isProfessorComRestricao(User $user): bool
+    private function isProfessorComRestricao(User $user): bool
     {
-        return $user->isProfessor() && !$user->isAdmin() && !$user->isSecretaria();
+        return $user->isProfessor() && ! $user->isAdmin() && ! $user->isSecretaria();
     }
 
     private function isCoordenadorTurma(User $user): bool
@@ -530,28 +537,28 @@ class RelatorioController extends Controller
         ?int $disciplinaId,
         ?AnoLetivo $anoLetivoAtivo
     ): array {
-        if (!$this->isProfessorComRestricao($user)) {
+        if (! $this->isProfessorComRestricao($user)) {
             return [false, []];
         }
 
-            $podeComoCoordenadorCurso = $this->isCoordenadorCurso($user)
-            && $turma->curso_id === $user->cursoCoordenado?->id
-            && $turma->ano_letivo_id === $anoLetivo->id;
+        $podeComoCoordenadorCurso = $this->isCoordenadorCurso($user)
+        && $turma->curso_id === $user->cursoCoordenado?->id
+        && $turma->ano_letivo_id === $anoLetivo->id;
 
-          $podeComoCoordenadorTurma = $this->isCoordenadorTurma($user)
-            && $turma->coordenador_turma_id === $user->id
-            && $turma->ano_letivo_id === $anoLetivo->id;
+        $podeComoCoordenadorTurma = $this->isCoordenadorTurma($user)
+          && $turma->coordenador_turma_id === $user->id
+          && $turma->ano_letivo_id === $anoLetivo->id;
 
-        if ($podeComoCoordenadorCurso || $podeComoCoordenadorTurma) { 
+        if ($podeComoCoordenadorCurso || $podeComoCoordenadorTurma) {
 
             return [false, []];
         }
 
-        if (!$disciplinaId) {
+        if (! $disciplinaId) {
             abort(403, 'Professor deve selecionar uma disciplina específica.');
         }
 
-        if (!$anoLetivoAtivo || $anoLetivo->id !== $anoLetivoAtivo->id) {
+        if (! $anoLetivoAtivo || $anoLetivo->id !== $anoLetivoAtivo->id) {
             abort(403, 'Professor só pode visualizar dados do ano letivo corrente.');
         }
 
@@ -566,7 +573,7 @@ class RelatorioController extends Controller
 
         $disciplinasPermitidas = $atribuicoes->pluck('disciplina_id')->unique()->values()->all();
 
-        if ($disciplinaId && !in_array((int) $disciplinaId, $disciplinasPermitidas, true)) {
+        if ($disciplinaId && ! in_array((int) $disciplinaId, $disciplinasPermitidas, true)) {
             abort(403, 'Sem permissão para visualizar boletim desta disciplina.');
         }
 
@@ -580,7 +587,7 @@ class RelatorioController extends Controller
         int|string $anoLetivoId,
         ?AnoLetivo $anoLetivoAtivo
     ): array {
-        if (!$this->isProfessorComRestricao($user)) {
+        if (! $this->isProfessorComRestricao($user)) {
             return [false, []];
         }
 
@@ -599,11 +606,11 @@ class RelatorioController extends Controller
             return [false, []];
         }
 
-        if (!$disciplina) {
+        if (! $disciplina) {
             abort(403, 'Professor deve selecionar uma disciplina específica.');
         }
 
-        if (!$anoLetivoAtivo || $anoLetivoId !== $anoLetivoAtivo->id) {
+        if (! $anoLetivoAtivo || $anoLetivoId !== $anoLetivoAtivo->id) {
             abort(403, 'Professor só pode visualizar dados do ano letivo corrente.');
         }
 
@@ -618,14 +625,14 @@ class RelatorioController extends Controller
 
         $disciplinasPermitidas = $atribuicoes->pluck('disciplina_id')->unique()->values()->all();
 
-        if ($disciplina && !in_array($disciplina->id, $disciplinasPermitidas, true)) {
+        if ($disciplina && ! in_array($disciplina->id, $disciplinasPermitidas, true)) {
             abort(403, 'Sem permissão para visualizar pauta desta disciplina.');
         }
 
         return [true, $disciplinasPermitidas];
     }
 
-        public function pautaGeral(Request $request, Turma $turma)
+    public function pautaGeral(Request $request, Turma $turma)
     {
         $this->checkPermission('relatorios.pautas');
 
@@ -645,10 +652,10 @@ class RelatorioController extends Controller
             ->groupBy('disciplina_id');
 
         $dados = [
-            'turma'            => $turma,
+            'turma' => $turma,
             'notasPorDisciplina' => $notas,
-            'trimestre'        => $trimestre,
-            'anoLetivo'        => $anoLetivo,
+            'trimestre' => $trimestre,
+            'anoLetivo' => $anoLetivo,
         ];
 
         if ($request->formato === 'xlsx') {
