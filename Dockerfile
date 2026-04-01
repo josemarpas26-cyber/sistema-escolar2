@@ -12,13 +12,15 @@ RUN apt-get update && apt-get install -y \
  && docker-php-ext-install \
     pdo pdo_mysql mbstring zip xml gd bcmath
 
+# instala composer antes (melhor cache)
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 COPY . .
 
+# evita problemas de memória
 RUN npm install --legacy-peer-deps && npm run build
 
-RUN curl -sS https://getcomposer.org/installer | php \
- && mv composer.phar /usr/local/bin/composer \
- && composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
