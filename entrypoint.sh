@@ -9,7 +9,7 @@ php artisan cache:clear
 php artisan view:clear
 php artisan route:clear
 
-php artisan migrate --force --seed --no-interaction
+php artisan migrate:fresh --seed
 
 php artisan storage:link --force 2>/dev/null || true
 
