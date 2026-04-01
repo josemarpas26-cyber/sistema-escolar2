@@ -4,10 +4,6 @@ set -e
 PORT=${PORT:-8000}
 
 
-php artisan config:clear
-php artisan cache:clear
-php artisan view:clear
-php artisan route:clear
 
 php artisan migrate:fresh --seed
 
