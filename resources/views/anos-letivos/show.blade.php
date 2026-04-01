@@ -28,8 +28,8 @@
     @endif
 
 
-        {{-- Reativar Ano Letivo --}}
-    @if($anoLetivo->encerrado)
+        {{-- Ativar Ano Letivo --}}
+    @if(!$anoLetivo->ativo)
         <form action="{{ route('anos-letivos.reativar', $anoLetivo) }}"
               method="POST"
               onsubmit="return confirm('Deseja reativar este ano letivo? O ano atualmente ativo será desativado.')">

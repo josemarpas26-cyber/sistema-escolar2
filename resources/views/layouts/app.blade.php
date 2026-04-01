@@ -254,6 +254,15 @@
                         <span>{{ session('error') }}</span>
                     </div>
                 </div>
+                
+                @endif
+                @if(session('warning'))
+                 <div class="alert alert-warning auto-dismiss mb-6" data-dismiss-after="8000">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-3"></i>
+                        <span>{{ session('warning') }}</span>
+                    </div>
+                </div>
                 @endif
 
                 @if($errors->any())
