@@ -30,7 +30,6 @@ class ExportacoesXlsxTest extends TestCase
         $coordenadorCurso = User::factory()->create();
         $secretaria = User::factory()->create(['role_id' => $secretariaRole->id]);
         /** @var User $secretaria */
-
         $anoLetivo = AnoLetivo::create([
             'nome' => '2025/2026',
             'data_inicio' => '2025-09-01',
@@ -149,24 +148,37 @@ class ExportacoesXlsxTest extends TestCase
         ]);
 
         $sheet = $spreadsheet->getActiveSheet();
+        $templateSheet = IOFactory::load(resource_path('templates/pauta-geral-template.xlsx'))->getActiveSheet();
 
         $this->assertSame('PAUTA GERAL DO ANO LETIVO', $sheet->getCell('X6')->getValue());
+        $this->assertSame($templateSheet->getHighestColumn(), $sheet->getHighestColumn());
+        $this->assertSame($templateSheet->getHighestRow(), $sheet->getHighestRow());
+        $this->assertEquals($templateSheet->getColumnDimension('E')->getWidth(), $sheet->getColumnDimension('E')->getWidth());
+        $this->assertSame(
+            $templateSheet->getStyle('E12')->getFill()->getStartColor()->getRGB(),
+            $sheet->getStyle('E12')->getFill()->getStartColor()->getRGB()
+        );
         $this->assertSame('L. PORTUGUESA', $sheet->getCell('E12')->getValue());
         $this->assertSame('MATEMAT.', $sheet->getCell('L12')->getValue());
-        $this->assertSame('MT1', $sheet->getCell('E13')->getValue());
+        $this->assertSame('FALTAS', $sheet->getCell('E13')->getValue());
+        $this->assertSame('CF', $sheet->getCell('G13')->getValue());
+        $this->assertSame('MT1', $sheet->getCell('H13')->getValue());
         $this->assertSame('CFD', $sheet->getCell('K13')->getValue());
+        $this->assertSame('J', $sheet->getCell('E14')->getValue());
+        $this->assertSame('I', $sheet->getCell('F14')->getValue());
         $this->assertSame('2024001', $sheet->getCell('B15')->getValue());
         $this->assertSame('Aluno A', $sheet->getCell('C15')->getValue());
-        $this->assertSame(13.0, (float) $sheet->getCell('E15')->getCalculatedValue());
+        $this->assertSame(13.0, (float) $sheet->getCell('H15')->getCalculatedValue());
         $this->assertSame(15.0, (float) $sheet->getCell('K15')->getCalculatedValue());
         $this->assertSame('Transita', $sheet->getCell('CI15')->getValue());
+        $this->assertNotSame('FFFF00', $sheet->getStyle('A48')->getFill()->getStartColor()->getRGB());
         $this->assertSame($profPortugues->name, $sheet->getCell('E51')->getValue());
         $this->assertSame($coordenadorTurma->name, $sheet->getCell('H60')->getValue());
         $this->assertSame($coordenadorCurso->name, $sheet->getCell('AQ60')->getValue());
 
         $this->actingAs($secretaria)
-            ->get(route('relatorios.pauta', ['turma' => $turma, 'formato' => 'excel', 'ano_letivo_id' => $anoLetivo->id]))
-            ->assertDownload('pauta-geral-a.xlsx');
+            ->get(route('relatorios.pauta-geral', ['turma' => $turma, 'formato' => 'xlsx', 'ano_letivo_id' => $anoLetivo->id]))
+            ->assertDownload('pauta-10a-a-informatica.xlsx');
     }
 
     public function test_dashboard_de_logs_exporta_workbook_xlsx_formatado(): void
@@ -211,7 +223,16 @@ class ExportacoesXlsxTest extends TestCase
             'ativo' => true,
         ]);
 
+        $nota = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'status' => 'em_lancamento',
+        ]);
+
         NotaLog::create([
+            'nota_id' => $nota->id,
             'usuario_id' => $user->id,
             'aluno_id' => $aluno->id,
             'turma_id' => $turma->id,
