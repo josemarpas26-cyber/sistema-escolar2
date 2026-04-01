@@ -13,6 +13,7 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Style;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -38,8 +39,6 @@ class PautaGeralTemplateExporter
 
     private const DATA_END = 50;
 
-    private const GUIDE_ROW = 48;
-
     private const FOOTER_START = 51;
 
     private const FOOTER_END = 63;
@@ -52,17 +51,25 @@ class PautaGeralTemplateExporter
 
     private const COL_SEXO = 'D';
 
-    private const COL_OBS = 'CH';
+    private const COL_FIRST_DISC = 'E';
 
-    private const COL_RESULT = 'CI';
-
-    private const COL_LAST_DATA = 'CI';
-
-    private const COL_LAST_TEMPLATE = 'DR';
+    private const TEMPLATE_LAST_VISIBLE_COL = 'CI';
 
     private const POS_FALTAS_J = 0;
 
     private const POS_FALTAS_I = 1;
+
+    private const HEADER_TEMPLATE_RANGES = [
+        'instituicao' => ['start' => 24, 'end' => 57], // X:BE
+        'titulo' => ['start' => 24, 'end' => 57],      // X:BE
+        'info_direita' => ['start' => 16, 'end' => 70], // P:BR
+    ];
+
+    private const SIGNATURE_TEMPLATE_RANGES = [
+        'director' => ['start' => 8, 'end' => 22],     // H:V
+        'coordenador' => ['start' => 43, 'end' => 58], // AQ:BF
+        'subdirector' => ['start' => 77, 'end' => 87], // BY:CI
+    ];
 
     private const DISCIPLINE_BLOCKS = [
         ['E', 'K'], ['L', 'R'], ['S', 'Y'], ['Z', 'AF'],
@@ -132,19 +139,20 @@ class PautaGeralTemplateExporter
         $config = $this->periodoConfig($trimestre);
         $spreadsheet = $this->loadTemplateSpreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $styles = $this->capturarEstilosBase($sheet);
 
-        $extraRows = $this->expandirAreaDeDadosSeNecessario($sheet, $alunos->count());
-        $footerStart = self::FOOTER_START + $extraRows;
-        $lastDataRow = max(self::DATA_START, self::DATA_START + $alunos->count() - 1);
-        $dataEnd = self::DATA_END + $extraRows;
+        $footerStart = $this->ajustarEstruturaVertical($sheet, $alunos->count());
+        $layout = $this->podarEstruturaHorizontal($sheet, $disciplinas->count());
+        $lastDataRow = $footerStart - 1;
+        $lastRow = $footerStart + (self::FOOTER_END - self::FOOTER_START);
 
-        $this->limparAreaDeDados($sheet, $dataEnd);
-        $this->removerLinhaGuiaAmarela($sheet, $dataEnd);
-        $this->atualizarCabecalho($sheet, $turma, $anoLetivo, $config);
-        $this->atualizarCabecalhosDeDisciplinas($sheet, $disciplinas, $config);
-        $this->preencherLinhasDosAlunos($sheet, $alunos, $disciplinas, $notasIndex, $config);
-        $this->atualizarRodape($sheet, $turma, $disciplinas, $atribuicoes, $footerStart);
-        $this->ajustarImpressao($sheet, self::FOOTER_END + $extraRows, $lastDataRow);
+        $this->limparAreaDeDados($sheet, $lastDataRow, $layout['lastCol']);
+        $this->normalizarAreaDeDados($sheet, $lastDataRow, $layout['lastCol']);
+        $this->atualizarCabecalho($sheet, $turma, $anoLetivo, $config, $layout['lastCol'], $styles);
+        $this->atualizarCabecalhosDeDisciplinas($sheet, $disciplinas, $config, $layout);
+        $this->preencherLinhasDosAlunos($sheet, $alunos, $disciplinas, $notasIndex, $config, $layout);
+        $this->atualizarRodape($sheet, $turma, $disciplinas, $atribuicoes, $footerStart, $layout, $styles);
+        $this->ajustarImpressao($sheet, $lastRow, $lastDataRow, $layout['lastCol']);
 
         return $spreadsheet;
     }
@@ -160,84 +168,189 @@ class PautaGeralTemplateExporter
         return IOFactory::load($templatePath);
     }
 
-    private function expandirAreaDeDadosSeNecessario(Worksheet $sheet, int $totalAlunos): int
+    private function capturarEstilosBase(Worksheet $sheet): array
+    {
+        return [
+            'instituicao' => clone $sheet->getStyle('X5'),
+            'titulo' => clone $sheet->getStyle('X6'),
+            'info_direita' => clone $sheet->getStyle('P8'),
+            'assinatura_rotulo' => clone $sheet->getStyle('I58'),
+            'assinatura_linha' => clone $sheet->getStyle('AG59'),
+            'assinatura_nome' => clone $sheet->getStyle('H60'),
+        ];
+    }
+
+    private function ajustarEstruturaVertical(Worksheet $sheet, int $totalAlunos): int
     {
         $capacidadeBase = self::DATA_END - self::DATA_START + 1;
         $extraRows = max(0, $totalAlunos - $capacidadeBase);
+        $rowsToRemove = max(0, $capacidadeBase - $totalAlunos);
 
-        if ($extraRows === 0) {
-            return 0;
+        if ($extraRows > 0) {
+            $sheet->insertNewRowBefore(self::FOOTER_START, $extraRows);
+
+            $modeloEstilo = $sheet->getStyle('A'.self::DATA_END.':'.self::TEMPLATE_LAST_VISIBLE_COL.self::DATA_END);
+            $alturaModelo = $sheet->getRowDimension(self::DATA_END)->getRowHeight();
+
+            for ($row = self::DATA_END + 1; $row <= self::DATA_END + $extraRows; $row++) {
+                $sheet->duplicateStyle($modeloEstilo, 'A'.$row.':'.self::TEMPLATE_LAST_VISIBLE_COL.$row);
+                $sheet->getRowDimension($row)->setRowHeight($alturaModelo);
+            }
+        } elseif ($rowsToRemove > 0) {
+            $sheet->removeRow(self::DATA_START + $totalAlunos, $rowsToRemove);
         }
 
-        $sheet->insertNewRowBefore(self::FOOTER_START, $extraRows);
-
-        $modeloEstilo = $sheet->getStyle('A'.self::DATA_END.':'.self::COL_LAST_DATA.self::DATA_END);
-        $alturaModelo = $sheet->getRowDimension(self::DATA_END)->getRowHeight();
-
-        for ($row = self::DATA_END + 1; $row <= self::DATA_END + $extraRows; $row++) {
-            $sheet->duplicateStyle($modeloEstilo, 'A'.$row.':'.self::COL_LAST_DATA.$row);
-            $sheet->getRowDimension($row)->setRowHeight($alturaModelo);
-        }
-
-        return $extraRows;
+        return self::DATA_START + $totalAlunos;
     }
 
-    private function limparAreaDeDados(Worksheet $sheet, int $dataEnd): void
+    private function podarEstruturaHorizontal(Worksheet $sheet, int $disciplinasCount): array
     {
-        $lastColIndex = Coordinate::columnIndexFromString(self::COL_LAST_DATA);
+        if ($disciplinasCount < count(self::DISCIPLINE_BLOCKS)) {
+            $unusedBlocks = array_slice(self::DISCIPLINE_BLOCKS, $disciplinasCount);
+            $firstUnusedCol = $unusedBlocks[0][0];
+            $colsToRemove = collect($unusedBlocks)
+                ->sum(fn (array $block) => $this->columnsCount($block[0], $block[1]));
 
-        for ($row = self::DATA_START; $row <= $dataEnd; $row++) {
+            $sheet->removeColumn($firstUnusedCol, $colsToRemove);
+        }
+
+        $layout = $this->calcularLayoutHorizontal($disciplinasCount);
+        $highestColIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+        $lastColIndex = Coordinate::columnIndexFromString($layout['lastCol']);
+
+        if ($highestColIndex > $lastColIndex) {
+            $sheet->removeColumn(
+                Coordinate::stringFromColumnIndex($lastColIndex + 1),
+                $highestColIndex - $lastColIndex
+            );
+        }
+
+        return $layout;
+    }
+
+    private function calcularLayoutHorizontal(int $disciplinasCount): array
+    {
+        $blocks = array_slice(self::DISCIPLINE_BLOCKS, 0, $disciplinasCount);
+        $firstDiscIndex = Coordinate::columnIndexFromString(self::COL_FIRST_DISC);
+        $usedWidth = collect($blocks)->sum(fn (array $block) => $this->columnsCount($block[0], $block[1]));
+        $obsIndex = $firstDiscIndex + $usedWidth;
+        $resultIndex = $obsIndex + 1;
+
+        return [
+            'disciplineBlocks' => $blocks,
+            'obsCol' => Coordinate::stringFromColumnIndex($obsIndex),
+            'resultCol' => Coordinate::stringFromColumnIndex($resultIndex),
+            'lastCol' => Coordinate::stringFromColumnIndex($resultIndex),
+        ];
+    }
+
+    private function limparAreaDeDados(Worksheet $sheet, int $lastDataRow, string $lastCol): void
+    {
+        if ($lastDataRow < self::DATA_START) {
+            return;
+        }
+
+        $lastColIndex = Coordinate::columnIndexFromString($lastCol);
+
+        for ($row = self::DATA_START; $row <= $lastDataRow; $row++) {
             for ($colIndex = 1; $colIndex <= $lastColIndex; $colIndex++) {
                 $sheet->setCellValue(Coordinate::stringFromColumnIndex($colIndex).$row, null);
             }
         }
     }
 
-    private function removerLinhaGuiaAmarela(Worksheet $sheet, int $dataEnd): void
+    private function normalizarAreaDeDados(Worksheet $sheet, int $lastDataRow, string $lastCol): void
     {
-        $sheet->getStyle('A'.self::DATA_START.':CG'.$dataEnd)
+        if ($lastDataRow < self::DATA_START) {
+            return;
+        }
+
+        $sheet->getStyle('A'.self::DATA_START.':'.$lastCol.$lastDataRow)
             ->getFill()
             ->setFillType(Fill::FILL_NONE);
-
-        $sheet->getStyle('A'.self::GUIDE_ROW.':CG'.self::GUIDE_ROW)
-            ->getFill()
-            ->setFillType(Fill::FILL_SOLID);
-
-        $sheet->getStyle('A'.self::GUIDE_ROW.':CG'.self::GUIDE_ROW)
-            ->getFill()
-            ->getStartColor()
-            ->setRGB('FFFFFF');
     }
 
     private function atualizarCabecalho(
         Worksheet $sheet,
         Turma $turma,
         ?AnoLetivo $anoLetivo,
-        array $config
+        array $config,
+        string $lastCol,
+        array $styles
     ): void {
         $anoNome = $anoLetivo?->nome ?? ($turma->anoLetivo?->nome ?? date('Y').'/'.(date('Y') + 1));
+        $lastColIndex = Coordinate::columnIndexFromString($lastCol);
+
+        $this->desfazerMesclasNasLinhas($sheet, [
+            self::ROW_DIRECTOR,
+            self::ROW_ASSIN,
+            self::ROW_INFO,
+        ]);
 
         $sheet->setCellValue('C'.self::ROW_DIRECTOR, 'O DIRECTOR');
-        $sheet->setCellValue('X'.self::ROW_DIRECTOR, $this->nomeInstituicao());
         $sheet->setCellValue('C'.self::ROW_ASSIN, '______________________________');
         $sheet->setCellValue('I'.self::ROW_ASSIN, 'Ano Lectivo');
         $sheet->setCellValue('M'.self::ROW_ASSIN, ':'.$anoNome);
-        $sheet->setCellValue('X'.self::ROW_ASSIN, $config['titulo']);
         $sheet->setCellValue('C'.self::ROW_NOME_DIR, $this->nomeDirector());
         $sheet->setCellValue('C'.self::ROW_INFO, 'Data: _____/_____/_________');
         $sheet->setCellValue('F'.self::ROW_INFO, $this->infoTurmaLinhaEsquerda($turma));
-        $sheet->setCellValue('P'.self::ROW_INFO, $this->infoTurmaLinhaDireita($turma));
+
+        [$instStart, $instEnd] = $this->resolverFaixaTemplate(
+            self::HEADER_TEMPLATE_RANGES['instituicao'],
+            $lastColIndex,
+            6
+        );
+        [$titleStart, $titleEnd] = $this->resolverFaixaTemplate(
+            self::HEADER_TEMPLATE_RANGES['titulo'],
+            $lastColIndex,
+            6
+        );
+        [$infoStart, $infoEnd] = $this->resolverFaixaTemplate(
+            self::HEADER_TEMPLATE_RANGES['info_direita'],
+            $lastColIndex,
+            5
+        );
+
+        $this->preencherFaixaMesclada(
+            $sheet,
+            $instStart,
+            $instEnd,
+            self::ROW_DIRECTOR,
+            $this->nomeInstituicao(),
+            $styles['instituicao']
+        );
+
+        $this->preencherFaixaMesclada(
+            $sheet,
+            $titleStart,
+            $titleEnd,
+            self::ROW_ASSIN,
+            $config['titulo'],
+            $styles['titulo']
+        );
+
+        if ($infoStart > Coordinate::columnIndexFromString('F')) {
+            $this->preencherFaixaMesclada(
+                $sheet,
+                $infoStart,
+                $infoEnd,
+                self::ROW_INFO,
+                $this->infoTurmaLinhaDireita($turma),
+                $styles['info_direita']
+            );
+        }
     }
 
     private function atualizarCabecalhosDeDisciplinas(
         Worksheet $sheet,
         Collection $disciplinas,
-        array $config
+        array $config,
+        array $layout
     ): void {
-        $sheet->setCellValue(self::COL_OBS.self::ROW_HDR2, 'OBSERV.');
-        $sheet->setCellValue(self::COL_RESULT.self::ROW_HDR2, 'RESULTADO');
+        $sheet->setCellValue($layout['obsCol'].self::ROW_HDR2, 'OBSERV.');
+        $sheet->setCellValue($layout['resultCol'].self::ROW_HDR2, 'RESULTADO');
 
-        foreach (self::DISCIPLINE_BLOCKS as $idx => [$startCol, $endCol]) {
+        foreach ($layout['disciplineBlocks'] as $idx => [$startCol, $endCol]) {
             $disciplina = $disciplinas->get($idx);
             $cols = $this->columnsInRange($startCol, $endCol);
 
@@ -257,7 +370,8 @@ class PautaGeralTemplateExporter
         EloquentCollection $alunos,
         Collection $disciplinas,
         array $notasIndex,
-        array $config
+        array $config,
+        array $layout
     ): void {
         foreach ($alunos as $offset => $aluno) {
             $row = self::DATA_START + $offset;
@@ -269,13 +383,13 @@ class PautaGeralTemplateExporter
             $sheet->setCellValueExplicit(self::COL_SEXO.$row, Str::upper((string) ($aluno->genero ?? '')), DataType::TYPE_STRING);
 
             foreach ($disciplinas->values() as $idx => $disciplina) {
-                [$startCol, $endCol] = self::DISCIPLINE_BLOCKS[$idx];
+                [$startCol, $endCol] = $layout['disciplineBlocks'][$idx];
                 $cols = $this->columnsInRange($startCol, $endCol);
                 $nota = $notasAluno[$disciplina->id] ?? null;
 
                 foreach ($config['campos'] as $pos => $campo) {
-                    if (!isset($cols[$pos])) {
-                        continue; // or break if you prefer
+                    if (! isset($cols[$pos])) {
+                        continue;
                     }
 
                     $cell = $cols[$pos].$row;
@@ -303,8 +417,8 @@ class PautaGeralTemplateExporter
                 $config['mostrarResultado'] ?? false
             );
 
-            $sheet->setCellValueExplicit(self::COL_OBS.$row, $obs, DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit(self::COL_RESULT.$row, $resultado, DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit($layout['obsCol'].$row, $obs, DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit($layout['resultCol'].$row, $resultado, DataType::TYPE_STRING);
         }
     }
 
@@ -313,36 +427,183 @@ class PautaGeralTemplateExporter
         Turma $turma,
         Collection $disciplinas,
         Collection $atribuicoes,
-        int $footerStart
+        int $footerStart,
+        array $layout,
+        array $styles
     ): void {
         $sheet->setCellValue('A'.$footerStart, 'Data do Conselho de Turma');
         $sheet->setCellValue('A'.($footerStart + 1), '_____/______/________');
 
-        foreach (self::DISCIPLINE_BLOCKS as [$startCol]) {
+        foreach ($layout['disciplineBlocks'] as [$startCol]) {
             $sheet->setCellValue($startCol.$footerStart, null);
         }
 
         foreach ($disciplinas->values() as $idx => $disciplina) {
-            [$startCol] = self::DISCIPLINE_BLOCKS[$idx];
+            [$startCol] = $layout['disciplineBlocks'][$idx];
             $professor = $atribuicoes->get($disciplina->id)?->professor?->name ?? '';
             $sheet->setCellValue($startCol.$footerStart, $professor);
         }
 
-        $sheet->setCellValue('H'.($footerStart + 9), $this->nomeDirectorTurma($turma));
-        $sheet->setCellValue('AQ'.($footerStart + 9), $this->nomeCoordenadorCurso($turma));
-        $sheet->setCellValue('BY'.($footerStart + 9), $this->nomeSubdirectorPedagogico());
+        $signatureRows = [
+            'label' => $footerStart + 7,
+            'line' => $footerStart + 8,
+            'name' => $footerStart + 9,
+        ];
+
+        $this->desfazerMesclasNasLinhas($sheet, array_values($signatureRows));
+
+        foreach ($signatureRows as $row) {
+            $sheet->fromArray(array_fill(0, Coordinate::columnIndexFromString($layout['lastCol']), null), null, 'A'.$row);
+        }
+
+        $assinaturas = [
+            'director' => [
+                'label' => 'O DIRECTOR DE TURMA',
+                'name' => $this->nomeDirectorTurma($turma),
+            ],
+            'coordenador' => [
+                'label' => 'O COORDENADOR DE CURSO',
+                'name' => $this->nomeCoordenadorCurso($turma),
+            ],
+            'subdirector' => [
+                'label' => 'O SUBDIRECTOR PEDAGÓGICO',
+                'name' => $this->nomeSubdirectorPedagogico(),
+            ],
+        ];
+
+        foreach ($this->resolverFaixasAssinatura(Coordinate::columnIndexFromString($layout['lastCol'])) as $key => [$start, $end]) {
+            $assinatura = $assinaturas[$key];
+
+            $this->preencherFaixaMesclada(
+                $sheet,
+                $start,
+                $end,
+                $signatureRows['label'],
+                $assinatura['label'],
+                $styles['assinatura_rotulo']
+            );
+
+            $this->preencherFaixaMesclada(
+                $sheet,
+                $start,
+                $end,
+                $signatureRows['line'],
+                '____________________________________',
+                $styles['assinatura_linha']
+            );
+
+            $this->preencherFaixaMesclada(
+                $sheet,
+                $start,
+                $end,
+                $signatureRows['name'],
+                $assinatura['name'],
+                $styles['assinatura_nome']
+            );
+        }
     }
 
-    private function ajustarImpressao(Worksheet $sheet, int $lastRow, int $lastDataRow): void
+    private function ajustarImpressao(Worksheet $sheet, int $lastRow, int $lastDataRow, string $lastCol): void
     {
         $sheet->freezePane('A'.self::DATA_START);
-        $sheet->getPageSetup()->setPrintArea('A1:'.self::COL_LAST_TEMPLATE.$lastRow);
+        $sheet->getPageSetup()->setPrintArea('A1:'.$lastCol.$lastRow);
 
         if ($lastDataRow >= self::DATA_START) {
-            $sheet->getStyle('A'.self::DATA_START.':'.self::COL_LAST_DATA.$lastDataRow)
+            $sheet->getStyle('A'.self::DATA_START.':'.$lastCol.$lastDataRow)
                 ->getFill()
                 ->setFillType(Fill::FILL_NONE);
         }
+    }
+
+    private function resolverFaixaTemplate(array $range, int $lastColIndex, int $minWidth): array
+    {
+        $preferredStart = $range['start'];
+        $preferredEnd = min($range['end'], $lastColIndex);
+
+        if ($lastColIndex >= $preferredStart && ($preferredEnd - $preferredStart + 1) >= $minWidth) {
+            return [$preferredStart, $preferredEnd];
+        }
+
+        $templateLastIndex = Coordinate::columnIndexFromString(self::TEMPLATE_LAST_VISIBLE_COL);
+        $scaledStart = max(1, (int) round(($range['start'] / $templateLastIndex) * $lastColIndex));
+        $scaledEnd = max($scaledStart, (int) round(($range['end'] / $templateLastIndex) * $lastColIndex));
+
+        if (($scaledEnd - $scaledStart + 1) < $minWidth) {
+            $scaledStart = max(1, $lastColIndex - $minWidth + 1);
+            $scaledEnd = $lastColIndex;
+        }
+
+        return [$scaledStart, min($scaledEnd, $lastColIndex)];
+    }
+
+    private function preencherFaixaMesclada(
+        Worksheet $sheet,
+        int $startIndex,
+        int $endIndex,
+        int $row,
+        string $value,
+        Style $style
+    ): void {
+        $startCol = Coordinate::stringFromColumnIndex($startIndex);
+        $endCol = Coordinate::stringFromColumnIndex($endIndex);
+        $range = $startCol.$row.':'.$endCol.$row;
+
+        if ($startIndex !== $endIndex) {
+            $sheet->mergeCells($range);
+        }
+
+        $sheet->duplicateStyle($style, $range);
+        $sheet->setCellValue($startCol.$row, $value);
+    }
+
+    private function resolverFaixasAssinatura(int $lastColIndex): array
+    {
+        $usableStart = $lastColIndex >= 24 ? 8 : 1;
+        $usableWidth = max(3, $lastColIndex - $usableStart + 1);
+        $baseWidth = intdiv($usableWidth, 3);
+        $remainder = $usableWidth % 3;
+        $cursor = $usableStart;
+        $keys = array_keys(self::SIGNATURE_TEMPLATE_RANGES);
+        $ranges = [];
+
+        foreach ($keys as $idx => $key) {
+            $width = $baseWidth + ($idx < $remainder ? 1 : 0);
+            $end = $idx === array_key_last($keys)
+                ? $lastColIndex
+                : max($cursor, $cursor + $width - 1);
+
+            $ranges[$key] = [$cursor, $end];
+            $cursor = $end + 1;
+        }
+
+        return $ranges;
+    }
+
+    private function desfazerMesclasNasLinhas(Worksheet $sheet, array $rows): void
+    {
+        $rowsMap = array_flip($rows);
+
+        foreach (array_keys($sheet->getMergeCells()) as $range) {
+            if (! preg_match('/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/', $range, $matches)) {
+                continue;
+            }
+
+            $startRow = (int) $matches[2];
+            $endRow = (int) $matches[4];
+
+            for ($row = $startRow; $row <= $endRow; $row++) {
+                if (isset($rowsMap[$row])) {
+                    $sheet->unmergeCells($range);
+
+                    break;
+                }
+            }
+        }
+    }
+
+    private function columnsCount(string $startCol, string $endCol): int
+    {
+        return Coordinate::columnIndexFromString($endCol) - Coordinate::columnIndexFromString($startCol) + 1;
     }
 
     private function cfg(string $key, string $fallback = ''): string
@@ -383,7 +644,7 @@ class PautaGeralTemplateExporter
     private function infoTurmaLinhaEsquerda(Turma $turma): string
     {
         return sprintf(
-            '%sª Classe   TURMA: %s   AREA: %s   CURSO:%s',
+            '%sÂª Classe   TURMA: %s   AREA: %s   CURSO:%s',
             $turma->classe ?? '',
             $this->codigoTurma($turma),
             $this->cursoOuArea($turma),
@@ -447,19 +708,19 @@ class PautaGeralTemplateExporter
     {
         return match ($trimestre) {
             '1' => [
-                'titulo' => 'PAUTA DE APROVEITAMENTO - Iº TRIMESTRE',
+                'titulo' => 'PAUTA DE APROVEITAMENTO - IÂº TRIMESTRE',
                 'labels' => ['F.J', 'F.I', 'MfT2', 'MAC1', 'NPT1', 'NPT1', 'MT1'],
                 'campos' => ['faltas_j', 'faltas_i', 'mft2', 'mac1', 'pp1', 'pt1', 'mt1'],
                 'mostrarResultado' => false,
             ],
             '2' => [
-                'titulo' => 'PAUTA DE APROVEITAMENTO - IIº TRIMESTRE',
+                'titulo' => 'PAUTA DE APROVEITAMENTO - IIÂº TRIMESTRE',
                 'labels' => ['F.J', 'F.I', 'MfT2', 'MAC2', 'NPT2', 'NPT2', 'MT2'],
                 'campos' => ['faltas_j', 'faltas_i', 'mft2', 'mac2', 'pp2', 'pt2', 'mt2'],
                 'mostrarResultado' => false,
             ],
             '3' => [
-                'titulo' => 'PAUTA DE APROVEITAMENTO - IIIº TRIMESTRE',
+                'titulo' => 'PAUTA DE APROVEITAMENTO - IIIÂº TRIMESTRE',
                 'labels' => ['F.J', 'F.I', 'MfT2', 'MAC3', 'NPT2', 'PG', 'MT3'],
                 'campos' => ['faltas_j', 'faltas_i', 'mft2', 'mac3', 'pp3', 'pg', 'mt3'],
                 'mostrarResultado' => false,
@@ -531,14 +792,14 @@ class PautaGeralTemplateExporter
         }
 
         if ($temEEF) {
-            return ['EEF', 'Não Transita'];
+            return ['EEF', 'NÃ£o Transita'];
         }
 
         if (! $temReprovacao) {
             return ['', 'Transita'];
         }
 
-        return [$temExame ? 'Exame' : '', 'Não Transita'];
+        return [$temExame ? 'Exame' : '', 'NÃ£o Transita'];
     }
 
     private function ordenarDisciplinas(Collection $disciplinas): Collection
@@ -576,11 +837,11 @@ class PautaGeralTemplateExporter
         $aliases = [
             'LINGUA PORTUGUESA' => 'L. PORTUGUESA',
             'PORTUGUES' => 'L. PORTUGUESA',
-            'INGLES' => 'INGLÊS',
-            'EDUCACAO FISICA' => 'ED. FÍSICA',
+            'INGLES' => 'INGLÃŠS',
+            'EDUCACAO FISICA' => 'ED. FÃSICA',
             'MATEMATICA' => 'MATEMAT.',
-            'FISICA' => 'FÍSICA',
-            'QUIMICA' => 'QUÍMICA',
+            'FISICA' => 'FÃSICA',
+            'QUIMICA' => 'QUÃMICA',
             'ELECTROTECNIA' => 'ELECTROTECNIA',
             'EMPREENDEDORISMO' => 'EMPREEND.',
             'INFORMATICA' => 'TIC',
