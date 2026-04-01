@@ -19,6 +19,7 @@ class NotaLog extends Model
         'aluno_id',
         'turma_id',
         'disciplina_id',
+        'acao_global',
         'acao',
         'campo_alterado',
         'valor_anterior',
@@ -32,6 +33,7 @@ class NotaLog extends Model
     protected $casts = [
         // valor_anterior e valor_novo são string(20) após a migration de correção
         // para suportar tanto valores numéricos como textuais (ex: 'finalizado')
+        'acao_global' => 'boolean',
         'data_alteracao' => 'datetime',
     ];
 
@@ -73,47 +75,58 @@ class NotaLog extends Model
     public function getDescricaoAcaoAttribute(): string
     {
         return match ($this->acao) {
-            'criacao'     => 'Criou',
-            'edicao'      => 'Editou',
-            'exclusao'    => 'Excluiu',
+            'criacao' => 'Criou',
+            'edicao' => 'Editou',
+            'exclusao' => 'Excluiu',
             'finalizacao' => 'Finalizou',
-            'reabertura'  => 'Reabriu',
-            default       => 'Ação desconhecida',
+            'reabertura' => 'Reabriu',
+            default => 'Ação desconhecida',
         };
     }
 
     public function getTipoBadgeAcaoAttribute(): string
     {
         return match ($this->acao) {
-            'criacao'     => 'success',
-            'exclusao'    => 'danger',
-            'reabertura'  => 'warning',
+            'criacao' => 'success',
+            'exclusao' => 'danger',
+            'reabertura' => 'warning',
             'finalizacao' => 'secondary',
-            default       => 'info',
+            default => 'info',
         };
     }
 
     public function getDescricaoCampoAttribute(): string
     {
         $campos = [
-            'mac1'        => 'MAC 1º Trimestre',
-            'pp1'         => 'PP 1º Trimestre',
-            'pt1'         => 'PT 1º Trimestre',
-            'mac2'        => 'MAC 2º Trimestre',
-            'pp2'         => 'PP 2º Trimestre',
-            'pt2'         => 'PT 2º Trimestre',
-            'mac3'        => 'MAC 3º Trimestre',
-            'pp3'         => 'PP 3º Trimestre',
-            'pg'          => 'Prova Global',
-            'ca_10'       => 'CA 10ª Classe',
-            'ca_11'       => 'CA 11ª Classe',
-            'status'      => 'Estado da pauta',
-            'bloqueado_t1'=> 'Bloqueio 1º Trimestre',
-            'bloqueado_t2'=> 'Bloqueio 2º Trimestre',
-            'bloqueado_t3'=> 'Bloqueio 3º Trimestre',
+            'mac1' => 'MAC 1º Trimestre',
+            'pp1' => 'PP 1º Trimestre',
+            'pt1' => 'PT 1º Trimestre',
+            'mac2' => 'MAC 2º Trimestre',
+            'pp2' => 'PP 2º Trimestre',
+            'pt2' => 'PT 2º Trimestre',
+            'mac3' => 'MAC 3º Trimestre',
+            'pp3' => 'PP 3º Trimestre',
+            'pg' => 'Prova Global',
+            'ca_10' => 'CA 10ª Classe',
+            'ca_11' => 'CA 11ª Classe',
+            'status' => 'Estado da pauta',
+            'bloqueado_t1' => 'Bloqueio 1º Trimestre',
+            'bloqueado_t2' => 'Bloqueio 2º Trimestre',
+            'bloqueado_t3' => 'Bloqueio 3º Trimestre',
         ];
 
+        $campos['pauta_completa'] = 'Pauta completa';
+
         return $campos[$this->campo_alterado] ?? $this->campo_alterado;
+    }
+
+    public function getAlvoExibicaoAttribute(): string
+    {
+        if ($this->acao_global) {
+            return 'Todos os alunos';
+        }
+
+        return optional($this->aluno)->name ?? '-';
     }
 
     public function getResumoAlteracaoAttribute(): string
@@ -127,7 +140,7 @@ class NotaLog extends Model
         }
 
         $anterior = $this->formatarValor($this->valor_anterior);
-        $novo     = $this->formatarValor($this->valor_novo);
+        $novo = $this->formatarValor($this->valor_novo);
 
         return "{$anterior} → {$novo}";
     }
@@ -147,12 +160,12 @@ class NotaLog extends Model
 
         // Valores textuais como 'finalizado', 'em_lancamento', etc.
         $labels = [
-            'finalizado'    => 'Finalizado',
+            'finalizado' => 'Finalizado',
             'em_lancamento' => 'Em lançamento',
-            'true'          => 'Sim',
-            'false'         => 'Não',
-            '1'             => 'Sim',
-            '0'             => 'Não',
+            'true' => 'Sim',
+            'false' => 'Não',
+            '1' => 'Sim',
+            '0' => 'Não',
         ];
 
         return $labels[$valor] ?? $valor;

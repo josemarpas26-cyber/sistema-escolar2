@@ -87,7 +87,9 @@
 
                     {{-- Aluno afetado --}}
                     <td class="px-4 py-3">
-                        @if($log->aluno)
+                        @if($log->acao_global)
+                            <span class="font-medium text-gray-700">{{ $log->alvo_exibicao }}</span>
+                        @elseif($log->aluno)
                             <span class="{{ $log->aluno->trashed() ? 'text-gray-400 line-through' : '' }}">
                                 {{ $log->aluno->name }}
                             </span>

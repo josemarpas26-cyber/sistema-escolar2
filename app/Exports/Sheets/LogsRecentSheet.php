@@ -15,9 +15,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class LogsRecentSheet implements FromArray, ShouldAutoSize, WithEvents, WithTitle
 {
-    public function __construct(private readonly Collection $logs)
-    {
-    }
+    public function __construct(private readonly Collection $logs) {}
 
     public function array(): array
     {
@@ -41,13 +39,13 @@ class LogsRecentSheet implements FromArray, ShouldAutoSize, WithEvents, WithTitl
                 optional($log->data_alteracao)->format('d/m/Y H:i:s') ?? '-',
                 optional($log->usuario)->name ?? 'Sistema',
                 $log->descricao_acao,
-                optional($log->aluno)->name ?? '-',
+                $log->alvo_exibicao,
                 optional($log->turma)->nome_completo ?? '-',
                 optional($log->disciplina)->nome ?? '-',
                 $log->descricao_campo,
                 $this->valor($log->valor_anterior),
                 $this->valor($log->valor_novo),
-                $log->trimestre ? $log->trimestre . 'º' : '-',
+                $log->trimestre ? $log->trimestre.'º' : '-',
                 $log->motivo ?? '-',
             ];
         }

@@ -6,6 +6,7 @@ use App\Models\AnoLetivo;
 use App\Models\Curso;
 use App\Models\Disciplina;
 use App\Models\Nota;
+use App\Models\NotaLog;
 use App\Models\Permission;
 use App\Models\ProfessorTurmaDisciplina;
 use App\Models\Role;
@@ -170,6 +171,75 @@ class NotaPautaTest extends TestCase
         $this->assertTrue($nota2->bloqueado_t3);
     }
 
+    public function test_operacoes_gerais_da_pauta_criam_um_unico_log_global(): void
+    {
+        $secretariaRole = $this->createRoleWithPermissions('secretaria', ['notas.editar', 'notas.reabrir']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $secretaria = User::factory()->create(['role_id' => $secretariaRole->id]);
+        $aluno1 = User::factory()->create(['role_id' => $alunoRole->id]);
+        $aluno2 = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
+
+        $nota1 = Nota::create([
+            'aluno_id' => $aluno1->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'status' => 'em_lancamento',
+        ]);
+
+        $nota2 = Nota::create([
+            'aluno_id' => $aluno2->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'status' => 'em_lancamento',
+        ]);
+
+        $this
+            ->actingAs($secretaria)
+            ->post(route('notas.finalizar'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ])
+            ->assertRedirect();
+
+        $nota1->refresh();
+        $nota2->refresh();
+
+        $this->assertSame('finalizado', $nota1->status);
+        $this->assertSame('finalizado', $nota2->status);
+        $this->assertCount(1, NotaLog::where('acao', 'finalizacao')->get());
+
+        $logFinalizacao = NotaLog::where('acao', 'finalizacao')->firstOrFail();
+        $this->assertTrue($logFinalizacao->acao_global);
+        $this->assertSame('pauta_completa', $logFinalizacao->campo_alterado);
+
+        $this
+            ->actingAs($secretaria)
+            ->post(route('notas.reabrir'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+                'trimestre' => '2',
+            ])
+            ->assertRedirect();
+
+        $nota1->refresh();
+        $nota2->refresh();
+
+        $this->assertSame('em_lancamento', $nota1->status);
+        $this->assertSame('em_lancamento', $nota2->status);
+        $this->assertFalse($nota1->bloqueado_t2);
+        $this->assertFalse($nota2->bloqueado_t2);
+        $this->assertCount(1, NotaLog::where('acao', 'reabertura')->get());
+
+        $logReabertura = NotaLog::where('acao', 'reabertura')->firstOrFail();
+        $this->assertTrue($logReabertura->acao_global);
+        $this->assertSame('bloqueado_t2', $logReabertura->campo_alterado);
+    }
+
     public function test_tela_do_professor_bloqueia_apenas_o_trimestre_fechado(): void
     {
         $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
@@ -292,7 +362,7 @@ class NotaPautaTest extends TestCase
 
     private function inputHasAttribute(string $html, string $inputName, string $attribute): bool
     {
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
 
         libxml_use_internal_errors(true);
         $dom->loadHTML($html);
