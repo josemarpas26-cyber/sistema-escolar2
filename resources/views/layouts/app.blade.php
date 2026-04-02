@@ -50,6 +50,13 @@
                         <span class="ml-3 font-medium">Dashboard</span>
                     </a>
 
+                    @if(auth()->user()->isCoordenadorCurso() || auth()->user()->isCoordenadorTurma())
+                    <a href="{{ route('coordenacao.index') }}" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 {{ request()->routeIs('coordenacao.*') ? 'bg-primary-50 text-primary-700' : '' }}">
+                        <i class="fas fa-users-cog w-5"></i>
+                        <span class="ml-3 font-medium">Coordenação</span>
+                    </a>
+                    @endif
+
                     @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
                     <!-- Gestão -->
                     <div class="pt-4">

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnoLetivoController;
 use App\Http\Controllers\CursoController;
+use App\Http\Controllers\CoordenacaoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaController;
 use App\Http\Controllers\LogController;
@@ -21,6 +22,9 @@ Route::get('/', function () {
 Route::view('/forbidden', 'errors.forbidden')->name('forbidden');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/coordenacao', [CoordenacaoController::class, 'index'])
+        ->name('coordenacao.index');
+
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
