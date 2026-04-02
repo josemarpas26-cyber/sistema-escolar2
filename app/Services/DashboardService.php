@@ -17,9 +17,9 @@ class DashboardService
 {
     private const CACHE_TTL_SECONDS = 300;
 
-    public function adminStats(array $filtrosRanking = []): array
+    public function adminStats(): array
     {
-        $stats = Cache::remember('dashboard:admin:stats', self::CACHE_TTL_SECONDS, function () {
+        return Cache::remember('dashboard:admin:stats', self::CACHE_TTL_SECONDS, function () {
             $anoLetivoAtivo = AnoLetivo::ativo()->first();
             $diasRestantes = null;
 
@@ -40,24 +40,15 @@ class DashboardService
                     ->get(),
             ];
         });
-
-        return array_merge($stats, [
-            'ranking_alunos' => $this->obterRankingAlunos($stats['ano_letivo_ativo'], $filtrosRanking),
-            'filtros_ranking' => $this->filtrosRanking($stats['ano_letivo_ativo']),
-            'filtros_ativos' => $filtrosRanking,
-        ]);
     }
 
-    public function secretariaStats(?AnoLetivo $anoLetivo, array $filtrosRanking = []): array
+    public function secretariaStats(?AnoLetivo $anoLetivo): array
     {
         return [
             'total_alunos' => User::alunos()->ativos()->count(),
             'total_professores' => User::professores()->ativos()->count(),
             'total_turmas' => Turma::anoAtivo()->count(),
             'ano_letivo' => $anoLetivo,
-            'ranking_alunos' => $this->obterRankingAlunos($anoLetivo, $filtrosRanking),
-            'filtros_ranking' => $this->filtrosRanking($anoLetivo),
-            'filtros_ativos' => $filtrosRanking,
             'turmas_recentes' => Turma::anoAtivo()
                 ->with(['curso', 'alunos'])
                 ->latest()
@@ -67,7 +58,7 @@ class DashboardService
         ];
     }
 
-    public function professorStats(User $professor, AnoLetivo $anoLetivo, array $filtrosRanking = []): array
+    public function professorStats(User $professor, AnoLetivo $anoLetivo): array
     {
         $turmas = $professor->atribuicoes()
             ->where('ano_letivo_id', $anoLetivo->id)
@@ -109,14 +100,11 @@ class DashboardService
             'total_alunos' => $totalAlunos,
             'notas_pendentes' => $notasPendentes,
             'turmas' => $turmas,
-            'ranking_alunos' => $this->obterRankingAlunos($anoLetivo, $filtrosRanking, $professor),
-            'filtros_ranking' => $this->filtrosRanking($anoLetivo, $professor),
-            'filtros_ativos' => $filtrosRanking,
             'ano_letivo' => $anoLetivo,
         ];
     }
 
-    public function alunoStats(User $aluno, AnoLetivo $anoLetivo, array $filtrosRanking = []): array
+    public function alunoStats(User $aluno, AnoLetivo $anoLetivo): array
     {
         $notas = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
@@ -144,9 +132,6 @@ class DashboardService
             ->with(['curso', 'anoLetivo'])
             ->first();
 
-        $rankingAlunos = $this->obterRankingAlunos($anoLetivo, $filtrosRanking, $aluno);
-        $posicaoAluno = $rankingAlunos->search(fn($item) => (int) $item->aluno_id === (int) $aluno->id);
-
         return [
             'turma' => $turmaAtual,
             'notas' => $notas,
@@ -155,11 +140,27 @@ class DashboardService
             'reprovacoes' => $reprovacoes,
             'total_disciplinas' => $notas->count(),
             'disciplinas_com_progresso' => $disciplinasComProgresso,
-            'ranking_alunos' => $rankingAlunos,
-            'filtros_ranking' => $this->filtrosRanking($anoLetivo, $aluno),
-            'filtros_ativos' => $filtrosRanking,
-            'posicao_turma' => $posicaoAluno === false ? null : $posicaoAluno + 1,
             'ano_letivo' => $anoLetivo,
+        ];
+    }
+
+    public function rankingStats(User $user, array $filtrosRanking = []): array
+    {
+        $anoLetivo = AnoLetivo::ativo()->first();
+        $ranking = $this->obterRankingAlunos($anoLetivo, $filtrosRanking, $user);
+        $posicao = null;
+
+        if ($user->isAluno()) {
+            $posicaoAluno = $ranking->search(fn($item) => (int) $item->aluno_id === (int) $user->id);
+            $posicao = $posicaoAluno === false ? null : $posicaoAluno + 1;
+        }
+
+        return [
+            'ano_letivo' => $anoLetivo,
+            'ranking_alunos' => $ranking,
+            'filtros_ranking' => $this->filtrosRanking($anoLetivo, $user),
+            'filtros_ativos' => $filtrosRanking,
+            'posicao_turma' => $posicao,
         ];
     }
 

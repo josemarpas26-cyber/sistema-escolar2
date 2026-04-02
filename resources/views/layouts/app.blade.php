@@ -137,6 +137,11 @@
                             <i class="fas fa-file-alt w-5"></i>
                             <span class="ml-3 font-medium">Relatórios</span>
                         </a>
+
+                        <a href="{{ route('ranking.index') }}" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 {{ request()->routeIs('ranking.*') ? 'bg-primary-50 text-primary-700' : '' }}">
+                            <i class="fas fa-trophy w-5"></i>
+                            <span class="ml-3 font-medium">Ranking</span>
+                        </a>
                     </div>
 
                     @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())

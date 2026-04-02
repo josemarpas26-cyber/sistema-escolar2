@@ -117,8 +117,6 @@
     </div>
 </div>
 
-@include('dashboard.partials.ranking-alunos')
-
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     {{-- Minha Turma --}}
