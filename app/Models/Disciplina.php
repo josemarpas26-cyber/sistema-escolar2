@@ -39,6 +39,12 @@ class Disciplina extends Model
         return $this->hasMany(Nota::class);
     }
 
+
+    public function metasDisciplina()
+    {
+        return $this->hasMany(MetaDisciplina::class);
+    }
+
     public function atribuicoes()
     {
         return $this->hasMany(ProfessorTurmaDisciplina::class);
