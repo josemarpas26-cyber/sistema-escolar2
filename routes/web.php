@@ -5,7 +5,9 @@ use App\Http\Controllers\CursoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\MetaDisciplinaController;
 use App\Http\Controllers\NotaController;
+use App\Http\Controllers\RankingController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\TurmaController;
 use App\Http\Controllers\UserController;
@@ -22,6 +24,8 @@ Route::view('/forbidden', 'errors.forbidden')->name('forbidden');
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+    Route::get('/ranking', [RankingController::class, 'index'])
+        ->name('ranking.index');
 
     Route::get('users/lixeira', [UserController::class, 'lixeira'])
         ->name('users.lixeira');
@@ -106,6 +110,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('relatorios/pauta-geral/{turma}', [RelatorioController::class, 'pautaGeral'])
         ->name('relatorios.pauta-geral');
+
+
+    Route::post('metas-disciplina', [MetaDisciplinaController::class, 'store'])
+        ->name('metas-disciplina.store');
+    Route::patch('metas-disciplina/{meta}/desativar', [MetaDisciplinaController::class, 'desativar'])
+        ->name('metas-disciplina.desativar');
 
     Route::get('logs', [LogController::class, 'index'])
         ->name('logs.index');
