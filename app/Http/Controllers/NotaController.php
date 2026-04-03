@@ -7,6 +7,7 @@ use App\Models\Disciplina;
 use App\Models\Nota;
 use App\Models\NotaLog;
 use App\Models\Turma;
+use App\Services\EstatisticasAcademicasService;
 use App\Services\NotaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,10 @@ class NotaController extends Controller
         '3' => ['mac3', 'pp3', 'pg'],
     ];
 
-    public function __construct(private readonly NotaService $notaService) {}
+    public function __construct(
+        private readonly NotaService $notaService,
+        private readonly EstatisticasAcademicasService $estatisticasAcademicas
+    ) {}
 
     // -------------------------------------------------------------------------
     // Index / visualização
@@ -58,6 +62,7 @@ class NotaController extends Controller
         $notas = null;
         $turma = null;
         $disciplina = null;
+        $estatisticasPauta = null;
 
         if ($turmaId && $disciplinaId) {
             $temAtribuicao = $atribuicoes
@@ -92,9 +97,11 @@ class NotaController extends Controller
                 })
                 ->filter()
                 ->values();
+
+            $estatisticasPauta = $this->estatisticasAcademicas->resumoPauta($notas);
         }
 
-        return view('notas.professor', compact('atribuicoes', 'notas', 'turma', 'disciplina'));
+        return view('notas.professor', compact('atribuicoes', 'notas', 'turma', 'disciplina', 'estatisticasPauta'));
     }
 
     public function secretariaIndex(Request $request)
@@ -117,6 +124,7 @@ class NotaController extends Controller
         $notasAgrupadas = null;
         $turmaSelecionada = null;
         $disciplinaSelecionada = null;
+        $estatisticasPauta = null;
 
         if ($turmaId) {
             $turmaSelecionada = Turma::findOrFail($turmaId);
@@ -139,6 +147,10 @@ class NotaController extends Controller
 
             $notas = $query->get();
 
+            if ($disciplinaSelecionada) {
+                $estatisticasPauta = $this->estatisticasAcademicas->resumoPauta($notas);
+            }
+
             if (! $disciplinaSelecionada) {
                 $notasAgrupadas = $notas
                     ->groupBy('aluno_id')
@@ -155,7 +167,8 @@ class NotaController extends Controller
             'notas',
             'notasAgrupadas',
             'turmaSelecionada',
-            'disciplinaSelecionada'
+            'disciplinaSelecionada',
+            'estatisticasPauta'
         ));
     }
 

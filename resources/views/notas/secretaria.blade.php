@@ -209,6 +209,8 @@
         </div>
         @endif
 
+        @include('notas.partials.resumo-pauta', ['estatisticasPauta' => $estatisticasPauta ?? null])
+
         {{-- ██ TABELA ██ --}}
         <div class="nr-card">
             <div class="nr-card-head">

@@ -121,6 +121,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('logs.usuario');
     Route::get('logs/exportar', [LogController::class, 'exportar'])
         ->name('logs.exportar');
+
+    Route::get('estatisticas', [\App\Http\Controllers\EstatisticasController::class, 'index'])
+        ->name('estatisticas.index');
 });
 
 require __DIR__ . '/auth.php';
