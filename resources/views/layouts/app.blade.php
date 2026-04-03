@@ -137,6 +137,13 @@
                             <i class="fas fa-file-alt w-5"></i>
                             <span class="ml-3 font-medium">Relatórios</span>
                         </a>
+
+                        <a href="{{ route('estatisticas.index') }}"
+                        class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100
+                                {{ request()->routeIs('estatisticas.*') ? 'bg-primary-50 text-primary-700' : '' }}">
+                            <i class="fas fa-chart-bar w-5"></i>
+                            <span class="ml-3 font-medium">Estatísticas</span>
+                        </a>
                     </div>
 
                     @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())

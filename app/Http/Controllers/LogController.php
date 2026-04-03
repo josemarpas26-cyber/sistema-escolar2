@@ -39,7 +39,8 @@ class LogController extends Controller
     {
         $this->checkPermission('logs.view');
 
-        $logs = NotaLog::where('aluno_id', $aluno->id)
+        $logs = NotaLog::where('acao_global', false)
+            ->where('aluno_id', $aluno->id)
             ->with(['usuario', 'disciplina', 'turma'])
             ->latest('data_alteracao')
             ->paginate(30);
@@ -54,7 +55,8 @@ class LogController extends Controller
     {
         $this->checkPermission('logs.view');
 
-        $logs = NotaLog::where('nota_id', $notaId)
+        $logs = NotaLog::where('acao_global', false)
+            ->where('nota_id', $notaId)
             ->with(['usuario', 'aluno', 'disciplina'])
             ->latest('data_alteracao')
             ->get();
@@ -113,7 +115,7 @@ class LogController extends Controller
         if ($request->query('contexto') === 'dashboard') {
             return Excel::download(
                 new LogsDashboardExport($this->dadosDashboard()),
-                'dashboard-logs-' . now()->format('Y-m-d-His') . '.xlsx'
+                'dashboard-logs-'.now()->format('Y-m-d-His').'.xlsx'
             );
         }
 
@@ -123,7 +125,7 @@ class LogController extends Controller
 
         return Excel::download(
             new LogsListExport($logs, $this->resumoFiltros($request)),
-            'logs-' . now()->format('Y-m-d-His') . '.xlsx'
+            'logs-'.now()->format('Y-m-d-His').'.xlsx'
         );
     }
 
@@ -199,7 +201,8 @@ class LogController extends Controller
         }
 
         if ($request->filled('aluno_id')) {
-            $query->where('aluno_id', $request->aluno_id);
+            $query->where('acao_global', false)
+                ->where('aluno_id', $request->aluno_id);
         }
 
         if ($request->filled('turma_id')) {
@@ -211,30 +214,31 @@ class LogController extends Controller
         }
 
         if ($request->filled('aluno')) {
-            $query->whereHas('aluno', function ($alunoQuery) use ($request) {
-                $alunoQuery->where('name', 'like', '%' . $request->aluno . '%');
-            });
+            $query->where('acao_global', false)
+                ->whereHas('aluno', function ($alunoQuery) use ($request) {
+                    $alunoQuery->where('name', 'like', '%'.$request->aluno.'%');
+                });
         }
 
         if ($request->filled('turma')) {
             $query->whereHas('turma', function ($turmaQuery) use ($request) {
                 $turmaQuery
-                    ->where('nome', 'like', '%' . $request->turma . '%')
-                    ->orWhere('classe', 'like', '%' . $request->turma . '%');
+                    ->where('nome', 'like', '%'.$request->turma.'%')
+                    ->orWhere('classe', 'like', '%'.$request->turma.'%');
             });
         }
 
         if ($request->filled('curso')) {
             $query->whereHas('turma.curso', function ($cursoQuery) use ($request) {
-                $cursoQuery->where('nome', 'like', '%' . $request->curso . '%');
+                $cursoQuery->where('nome', 'like', '%'.$request->curso.'%');
             });
         }
 
         if ($request->filled('disciplina')) {
             $query->whereHas('disciplina', function ($disciplinaQuery) use ($request) {
                 $disciplinaQuery
-                    ->where('nome', 'like', '%' . $request->disciplina . '%')
-                    ->orWhere('codigo', 'like', '%' . $request->disciplina . '%');
+                    ->where('nome', 'like', '%'.$request->disciplina.'%')
+                    ->orWhere('codigo', 'like', '%'.$request->disciplina.'%');
             });
         }
 
@@ -269,7 +273,7 @@ class LogController extends Controller
             'Data inicial' => $request->input('data_inicio'),
             'Data final' => $request->input('data_fim'),
         ])
-            ->filter(fn($value) => filled($value))
+            ->filter(fn ($value) => filled($value))
             ->all();
     }
 }

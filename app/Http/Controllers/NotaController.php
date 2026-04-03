@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\AnoLetivo;
 use App\Models\Disciplina;
 use App\Models\Nota;
+use App\Models\NotaLog;
 use App\Models\Turma;
+use App\Services\EstatisticasAcademicasService;
 use App\Services\NotaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,9 +22,10 @@ class NotaController extends Controller
         '3' => ['mac3', 'pp3', 'pg'],
     ];
 
-    public function __construct(private readonly NotaService $notaService)
-    {
-    }
+    public function __construct(
+        private readonly NotaService $notaService,
+        private readonly EstatisticasAcademicasService $estatisticasAcademicas
+    ) {}
 
     // -------------------------------------------------------------------------
     // Index / visualização
@@ -33,10 +36,10 @@ class NotaController extends Controller
         $user = auth()->user();
 
         return match (true) {
-            $user->isProfessor()                        => $this->professorIndex($request),
-            $user->isSecretaria() || $user->isAdmin()   => $this->secretariaIndex($request),
-            $user->isAluno()                            => $this->alunoIndex(),
-            default                                     => abort(403),
+            $user->isProfessor() => $this->professorIndex($request),
+            $user->isSecretaria() || $user->isAdmin() => $this->secretariaIndex($request),
+            $user->isAluno() => $this->alunoIndex(),
+            default => abort(403),
         };
     }
 
@@ -45,7 +48,7 @@ class NotaController extends Controller
         $professor = auth()->user();
         $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
+        if (! $anoLetivo) {
             return $this->redirectSemAnoLetivoAtivo();
         }
 
@@ -54,11 +57,12 @@ class NotaController extends Controller
             ->with(['turma', 'disciplina'])
             ->get();
 
-        $turmaId      = $request->turma_id;
+        $turmaId = $request->turma_id;
         $disciplinaId = $request->disciplina_id;
-        $notas        = null;
-        $turma        = null;
-        $disciplina   = null;
+        $notas = null;
+        $turma = null;
+        $disciplina = null;
+        $estatisticasPauta = null;
 
         if ($turmaId && $disciplinaId) {
             $temAtribuicao = $atribuicoes
@@ -66,13 +70,13 @@ class NotaController extends Controller
                 ->where('disciplina_id', $disciplinaId)
                 ->isNotEmpty();
 
-            if (!$temAtribuicao) {
+            if (! $temAtribuicao) {
                 return back()->with('error', 'Voce nao leciona esta disciplina nesta turma.');
             }
 
-            $turma      = Turma::findOrFail($turmaId);
+            $turma = Turma::findOrFail($turmaId);
             $disciplina = Disciplina::findOrFail($disciplinaId);
-            $alunos     = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+            $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
 
             $notasPorAluno = Nota::where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
@@ -93,9 +97,11 @@ class NotaController extends Controller
                 })
                 ->filter()
                 ->values();
+
+            $estatisticasPauta = $this->estatisticasAcademicas->resumoPauta($notas);
         }
 
-        return view('notas.professor', compact('atribuicoes', 'notas', 'turma', 'disciplina'));
+        return view('notas.professor', compact('atribuicoes', 'notas', 'turma', 'disciplina', 'estatisticasPauta'));
     }
 
     public function secretariaIndex(Request $request)
@@ -104,24 +110,25 @@ class NotaController extends Controller
 
         $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
+        if (! $anoLetivo) {
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turmas      = Turma::anoAtivo()->with('curso')->get();
+        $turmas = Turma::anoAtivo()->with('curso')->get();
         $disciplinas = collect();
 
-        $turmaId      = $request->turma_id;
+        $turmaId = $request->turma_id;
         $disciplinaId = $request->disciplina_id;
 
-        $notas               = null;
-        $notasAgrupadas      = null;
-        $turmaSelecionada    = null;
+        $notas = null;
+        $notasAgrupadas = null;
+        $turmaSelecionada = null;
         $disciplinaSelecionada = null;
+        $estatisticasPauta = null;
 
         if ($turmaId) {
             $turmaSelecionada = Turma::findOrFail($turmaId);
-            $disciplinas      = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
+            $disciplinas = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
 
             $query = Nota::where('turma_id', $turmaSelecionada->id)
                 ->where('ano_letivo_id', $anoLetivo->id)
@@ -140,7 +147,11 @@ class NotaController extends Controller
 
             $notas = $query->get();
 
-            if (!$disciplinaSelecionada) {
+            if ($disciplinaSelecionada) {
+                $estatisticasPauta = $this->estatisticasAcademicas->resumoPauta($notas);
+            }
+
+            if (! $disciplinaSelecionada) {
                 $notasAgrupadas = $notas
                     ->groupBy('aluno_id')
                     ->map(fn ($grupo) => [
@@ -156,7 +167,8 @@ class NotaController extends Controller
             'notas',
             'notasAgrupadas',
             'turmaSelecionada',
-            'disciplinaSelecionada'
+            'disciplinaSelecionada',
+            'estatisticasPauta'
         ));
     }
 
@@ -164,10 +176,10 @@ class NotaController extends Controller
     {
         $this->checkPermission('notas.view_own');
 
-        $aluno     = auth()->user();
+        $aluno = auth()->user();
         $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
+        if (! $anoLetivo) {
             return $this->redirectSemAnoLetivoAtivo();
         }
 
@@ -176,13 +188,13 @@ class NotaController extends Controller
             ->with(['disciplina', 'turma'])
             ->get();
 
-        $turmaAtual   = $notas->first()?->turma;
-        $notasComCfd  = $notas->whereNotNull('cfd');
-        $mediaGeral   = $notasComCfd->isNotEmpty()
+        $turmaAtual = $notas->first()?->turma;
+        $notasComCfd = $notas->whereNotNull('cfd');
+        $mediaGeral = $notasComCfd->isNotEmpty()
             ? round($notasComCfd->avg('cfd'), 2)
             : 0;
 
-        $aprovacoes  = $notasComCfd->filter(fn ($nota) => $nota->cfd >= 10)->count();
+        $aprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd >= 10)->count();
         $reprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd < 10)->count();
 
         return view('notas.aluno', compact(
@@ -194,13 +206,7 @@ class NotaController extends Controller
         ));
     }
 
-
-
-
-
-
-
-        private function buildFeedbackLancamento(
+    private function buildFeedbackLancamento(
         string $trimestre,
         int $salvas,
         int $bloqueadas,
@@ -221,16 +227,16 @@ class NotaController extends Controller
             $partes[] = "{$bloqueadas} nota(s) ignorada(s) por estarem bloqueadas";
         }
 
-        if (!empty($naoEncontradas)) {
+        if (! empty($naoEncontradas)) {
             $ids = implode(', ', $naoEncontradas);
-            $partes[] = count($naoEncontradas) . " nota(s) não encontrada(s) (IDs: {$ids})";
+            $partes[] = count($naoEncontradas)." nota(s) não encontrada(s) (IDs: {$ids})";
         }
 
         if (empty($partes)) {
             return ['warning', "Nenhuma nota do {$trimestre}º trimestre foi processada."];
         }
 
-        $mensagem = "{$trimestre}º trimestre: " . implode('. ', $partes) . '.';
+        $mensagem = "{$trimestre}º trimestre: ".implode('. ', $partes).'.';
 
         // success só se houve pelo menos 1 salva e nenhum problema
         if ($salvas > 0 && $bloqueadas === 0 && empty($naoEncontradas)) {
@@ -244,8 +250,6 @@ class NotaController extends Controller
         return [$tipo, $mensagem];
     }
 
-
-
     // -------------------------------------------------------------------------
     // Lançamento de notas — método unificado
     // -------------------------------------------------------------------------
@@ -258,7 +262,7 @@ class NotaController extends Controller
      */
     public function lancarTrimestre(Request $request, string $trimestre)
     {
-        if (!array_key_exists($trimestre, self::CAMPOS_TRIMESTRE)) {
+        if (! array_key_exists($trimestre, self::CAMPOS_TRIMESTRE)) {
             abort(404, 'Trimestre inválido.');
         }
 
@@ -269,7 +273,7 @@ class NotaController extends Controller
             : $this->checkPermission('notas.editar');
 
         $campos = self::CAMPOS_TRIMESTRE[$trimestre];
-        $rules  = ['notas' => 'required|array', 'notas.*.id' => 'required|exists:notas,id'];
+        $rules = ['notas' => 'required|array', 'notas.*.id' => 'required|exists:notas,id'];
 
         foreach ($campos as $campo) {
             $rules["notas.*.{$campo}"] = 'nullable|numeric|min:0|max:20';
@@ -277,15 +281,15 @@ class NotaController extends Controller
 
         $validated = $request->validate($rules);
 
-        $ids      = collect($validated['notas'])->pluck('id');
+        $ids = collect($validated['notas'])->pluck('id');
         $notasMap = Nota::whereIn('id', $ids)
             ->with(['turma.curso', 'disciplina'])
             ->get()
             ->keyBy('id');
 
-        $salvas         = 0;
-        $bloqueadas     = 0;
-        $semAlteracao   = 0;
+        $salvas = 0;
+        $bloqueadas = 0;
+        $semAlteracao = 0;
         $naoEncontradas = [];
 
         DB::transaction(function () use (
@@ -295,8 +299,9 @@ class NotaController extends Controller
             foreach ($validated['notas'] as $notaData) {
                 $nota = $notasMap->get($notaData['id']);
 
-                if (!$nota) {
+                if (! $nota) {
                     $naoEncontradas[] = $notaData['id'];
+
                     continue;
                 }
 
@@ -306,6 +311,7 @@ class NotaController extends Controller
 
                 if ($this->notaBloqueadaParaEdicao($nota, $trimestre)) {
                     $bloqueadas++;
+
                     continue;
                 }
 
@@ -318,8 +324,9 @@ class NotaController extends Controller
                 }
 
                 // Só recalcula e salva se algum campo do trimestre realmente mudou
-                if (!$nota->isDirty($campos)) {
+                if (! $nota->isDirty($campos)) {
                     $semAlteracao++;
+
                     continue;
                 }
 
@@ -337,8 +344,6 @@ class NotaController extends Controller
 
         return back()->with($tipo, $mensagem);
     }
-
-
 
     // -------------------------------------------------------------------------
     // Edição individual
@@ -387,14 +392,14 @@ class NotaController extends Controller
         // 🔍 Detectar quais campos estão sendo alterados
         $camposAlterados = array_keys(array_filter(
             $validated,
-            fn ($value) => !is_null($value)
+            fn ($value) => ! is_null($value)
         ));
 
         // 🧠 Mapear campos → trimestre
         foreach (self::CAMPOS_TRIMESTRE as $trimestre => $campos) {
             $intersect = array_intersect($camposAlterados, $campos);
 
-            if (!empty($intersect)) {
+            if (! empty($intersect)) {
                 // 🔒 Validar bloqueio específico do trimestre
                 $this->validarBloqueioFinalizacao($nota, $trimestre);
             }
@@ -407,7 +412,7 @@ class NotaController extends Controller
 
         return redirect()
             ->route('notas.index', [
-                'turma_id'      => $nota->turma_id,
+                'turma_id' => $nota->turma_id,
                 'disciplina_id' => $nota->disciplina_id,
             ])
             ->with('success', 'Nota atualizada com sucesso.');
@@ -426,17 +431,17 @@ class NotaController extends Controller
             : $this->checkPermission('notas.editar');
 
         $validated = $request->validate([
-            'turma_id'      => 'required|exists:turmas,id',
+            'turma_id' => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
         ]);
 
         $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
+        if (! $anoLetivo) {
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turma      = Turma::findOrFail($validated['turma_id']);
+        $turma = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
 
         if ($user->isProfessor()) {
@@ -446,7 +451,7 @@ class NotaController extends Controller
                 ->where('ano_letivo_id', $anoLetivo->id)
                 ->exists();
 
-            if (!$temAtribuicao) {
+            if (! $temAtribuicao) {
                 abort(403, 'Voce nao tem permissao para inicializar esta pauta.');
             }
         }
@@ -459,7 +464,7 @@ class NotaController extends Controller
 
         return redirect()
             ->route('notas.index', [
-                'turma_id'      => $turma->id,
+                'turma_id' => $turma->id,
                 'disciplina_id' => $disciplina->id,
             ])
             ->with('success', "Pauta inicializada. {$criados} registros criados.");
@@ -470,11 +475,11 @@ class NotaController extends Controller
         $this->checkPermission('notas.editar');
 
         $validated = $request->validate([
-            'turma_id'      => 'required|exists:turmas,id',
+            'turma_id' => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
         ]);
 
-        $turma      = Turma::findOrFail($validated['turma_id']);
+        $turma = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
 
         $resultado = $this->notaService->importarCAsParaTurma(
@@ -491,90 +496,91 @@ class NotaController extends Controller
         $this->checkPermission('notas.editar');
 
         $validated = $request->validate([
-            'turma_id'      => 'required|exists:turmas,id',
+            'turma_id' => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
-            'motivo'        => 'nullable|string|max:500',
-            'trimestre'     => 'nullable|in:1,2,3',
-            'aluno_id'      => 'nullable|exists:users,id',
+            'motivo' => 'nullable|string|max:500',
+            'trimestre' => 'nullable|in:1,2,3',
+            'aluno_id' => 'nullable|exists:users,id',
         ]);
 
         $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
+        if (! $anoLetivo) {
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turma      = Turma::findOrFail($validated['turma_id']);
+        $turma = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
 
         if ($turma->ano_letivo_id !== $anoLetivo->id) {
             return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
         }
 
-        $alunoId   = $validated['aluno_id'] ?? null;
+        $alunoId = $validated['aluno_id'] ?? null;
         $trimestre = $validated['trimestre'] ?? null;
-        $notas     = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
+        $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
 
         if ($notas->isEmpty()) {
             return back()->with('error', 'Nenhuma nota encontrada para finalizar neste ano letivo.');
         }
 
-                // DEPOIS
-        [$finalizadas, $jaFinalizadas] = DB::transaction(function () use ($notas, $trimestre) {
-            $finalizadas   = 0;
+        // DEPOIS
+        $registrarLogPorNota = $alunoId !== null;
+
+        [$finalizadas, $jaFinalizadas] = DB::transaction(function () use ($notas, $trimestre, $registrarLogPorNota) {
+            $finalizadas = 0;
             $jaFinalizadas = 0;
+            $notaReferencia = null;
 
             \App\Observers\NotaObserver::$suprimirLogs = true;
 
-            foreach ($notas as $nota) {
-                if ($trimestre) {
-                    $campo = "bloqueado_t{$trimestre}";
+            try {
+                foreach ($notas as $nota) {
+                    if ($trimestre) {
+                        $campo = "bloqueado_t{$trimestre}";
 
-                    if ($nota->{$campo}) {
-                        $jaFinalizadas++;
-                        continue;
+                        if ($nota->{$campo}) {
+                            $jaFinalizadas++;
+
+                            continue;
+                        }
+
+                        $nota->update([$campo => true]);
+                    } else {
+                        if ($nota->status === 'finalizado'
+                            && $nota->bloqueado_t1
+                            && $nota->bloqueado_t2
+                            && $nota->bloqueado_t3
+                        ) {
+                            $jaFinalizadas++;
+
+                            continue;
+                        }
+
+                        $nota->update([
+                            'status' => 'finalizado',
+                            'bloqueado_t1' => true,
+                            'bloqueado_t2' => true,
+                            'bloqueado_t3' => true,
+                        ]);
                     }
 
-                    $nota->update([$campo => true]);
-                } else {
-                    if ($nota->status === 'finalizado'
-                        && $nota->bloqueado_t1
-                        && $nota->bloqueado_t2
-                        && $nota->bloqueado_t3
-                    ) {
-                        $jaFinalizadas++;
-                        continue;
+                    // Um único log por nota — evento de finalização
+                    $notaReferencia ??= $nota;
+
+                    if ($registrarLogPorNota) {
+                        $this->registrarLogOperacaoPauta($nota, 'finalizacao', $trimestre);
                     }
 
-                    $nota->update([
-                        'status'       => 'finalizado',
-                        'bloqueado_t1' => true,
-                        'bloqueado_t2' => true,
-                        'bloqueado_t3' => true,
-                    ]);
+                    $finalizadas++;
                 }
-
-                // Um único log por nota — evento de finalização
-                \App\Models\NotaLog::create([
-                    'nota_id'        => $nota->id,
-                    'usuario_id'     => \Illuminate\Support\Facades\Auth::id(),
-                    'aluno_id'       => $nota->aluno_id,
-                    'turma_id'       => $nota->turma_id,
-                    'disciplina_id'  => $nota->disciplina_id,
-                    'acao'           => 'finalizacao',
-                    'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'pauta_completa',
-                    'valor_anterior' => 'em_lancamento',
-                    'valor_novo'     => 'finalizado',
-                    'trimestre'      => $trimestre,
-                    'motivo'         => request()?->input('motivo'),
-                    'ip_address'     => request()?->ip(),
-                    'data_alteracao' => now(),
-                ]);
-
-                $finalizadas++;
+            } finally {
+                \App\Observers\NotaObserver::$suprimirLogs = false;
             }
 
-            \App\Observers\NotaObserver::$suprimirLogs = false;
+            if (! $registrarLogPorNota && $notaReferencia) {
+                $this->registrarLogOperacaoPauta($notaReferencia, 'finalizacao', $trimestre, true);
+            }
 
             return [$finalizadas, $jaFinalizadas];
         });
@@ -591,103 +597,103 @@ class NotaController extends Controller
         $this->checkPermission('notas.reabrir');
 
         $validated = $request->validate([
-            'turma_id'      => 'required|exists:turmas,id',
+            'turma_id' => 'required|exists:turmas,id',
             'disciplina_id' => 'required|exists:disciplinas,id',
-            'motivo'        => 'nullable|string|max:500',
-            'trimestre'     => 'nullable|in:1,2,3',
-            'aluno_id'      => 'nullable|exists:users,id',
+            'motivo' => 'nullable|string|max:500',
+            'trimestre' => 'nullable|in:1,2,3',
+            'aluno_id' => 'nullable|exists:users,id',
         ]);
 
         $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
+        if (! $anoLetivo) {
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turma      = Turma::findOrFail($validated['turma_id']);
+        $turma = Turma::findOrFail($validated['turma_id']);
         $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
 
         if ($turma->ano_letivo_id !== $anoLetivo->id) {
             return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
         }
 
-        $alunoId   = $validated['aluno_id'] ?? null;
+        $alunoId = $validated['aluno_id'] ?? null;
         $trimestre = $validated['trimestre'] ?? null;
-        $notas     = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
+        $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
 
         if ($notas->isEmpty()) {
             return back()->with('error', 'Nenhuma nota encontrada para reabrir neste ano letivo.');
         }
 
-        // DEPOIS
-        [$reabertas, $jaAbertas] = DB::transaction(function () use ($notas, $trimestre) {
+        $registrarLogPorNota = $alunoId !== null;
+
+        [$reabertas, $jaAbertas] = DB::transaction(function () use ($notas, $trimestre, $registrarLogPorNota) {
             $reabertas = 0;
             $jaAbertas = 0;
+            $notaReferencia = null;
 
             \App\Observers\NotaObserver::$suprimirLogs = true;
 
-            foreach ($notas as $nota) {
-                if ($trimestre) {
-                    $campo                = "bloqueado_t{$trimestre}";
-                    $precisaDesbloquear   = (bool) $nota->{$campo};
-                    $precisaReabrirStatus = $nota->status === 'finalizado';
+            try {
+                foreach ($notas as $nota) {
+                    if ($trimestre) {
+                        $campo = "bloqueado_t{$trimestre}";
+                        $precisaDesbloquear = (bool) $nota->{$campo};
+                        $precisaReabrirStatus = $nota->status === 'finalizado';
 
-                    if (!$precisaDesbloquear && !$precisaReabrirStatus) {
-                        $jaAbertas++;
-                        continue;
+                        if (! $precisaDesbloquear && ! $precisaReabrirStatus) {
+                            $jaAbertas++;
+
+                            continue;
+                        }
+
+                        $dadosAtualizacao = [];
+
+                        if ($precisaDesbloquear) {
+                            $dadosAtualizacao[$campo] = false;
+                        }
+
+                        if ($precisaReabrirStatus) {
+                            $dadosAtualizacao['status'] = 'em_lancamento';
+                        }
+
+                        $nota->update($dadosAtualizacao);
+                    } else {
+                        $jaEstaAberto = $nota->status !== 'finalizado'
+                            && ! $nota->bloqueado_t1
+                            && ! $nota->bloqueado_t2
+                            && ! $nota->bloqueado_t3;
+
+                        if ($jaEstaAberto) {
+                            $jaAbertas++;
+
+                            continue;
+                        }
+
+                        $nota->update([
+                            'status' => 'em_lancamento',
+                            'bloqueado_t1' => false,
+                            'bloqueado_t2' => false,
+                            'bloqueado_t3' => false,
+                        ]);
                     }
 
-                    $dadosAtualizacao = [];
+                    // Um único log por nota — evento de reabertura
+                    $notaReferencia ??= $nota;
 
-                    if ($precisaDesbloquear) {
-                        $dadosAtualizacao[$campo] = false;
+                    if ($registrarLogPorNota) {
+                        $this->registrarLogOperacaoPauta($nota, 'reabertura', $trimestre);
                     }
 
-                    if ($precisaReabrirStatus) {
-                        $dadosAtualizacao['status'] = 'em_lancamento';
-                    }
-
-                    $nota->update($dadosAtualizacao);
-                } else {
-                    $jaEstaAberto = $nota->status !== 'finalizado'
-                        && !$nota->bloqueado_t1
-                        && !$nota->bloqueado_t2
-                        && !$nota->bloqueado_t3;
-
-                    if ($jaEstaAberto) {
-                        $jaAbertas++;
-                        continue;
-                    }
-
-                    $nota->update([
-                        'status'       => 'em_lancamento',
-                        'bloqueado_t1' => false,
-                        'bloqueado_t2' => false,
-                        'bloqueado_t3' => false,
-                    ]);
+                    $reabertas++;
                 }
-
-                // Um único log por nota — evento de reabertura
-                \App\Models\NotaLog::create([
-                    'nota_id'        => $nota->id,
-                    'usuario_id'     => \Illuminate\Support\Facades\Auth::id(),
-                    'aluno_id'       => $nota->aluno_id,
-                    'turma_id'       => $nota->turma_id,
-                    'disciplina_id'  => $nota->disciplina_id,
-                    'acao'           => 'reabertura',
-                    'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'pauta_completa',
-                    'valor_anterior' => 'finalizado',
-                    'valor_novo'     => 'em_lancamento',
-                    'trimestre'      => $trimestre,
-                    'motivo'         => request()?->input('motivo'),
-                    'ip_address'     => request()?->ip(),
-                    'data_alteracao' => now(),
-                ]);
-
-                $reabertas++;
+            } finally {
+                \App\Observers\NotaObserver::$suprimirLogs = false;
             }
 
-            \App\Observers\NotaObserver::$suprimirLogs = false;
+            if (! $registrarLogPorNota && $notaReferencia) {
+                $this->registrarLogOperacaoPauta($notaReferencia, 'reabertura', $trimestre, true);
+            }
 
             return [$reabertas, $jaAbertas];
         });
@@ -711,7 +717,7 @@ class NotaController extends Controller
             ->where('ano_letivo_id', $nota->ano_letivo_id)
             ->exists();
 
-        if (!$temAtribuicao) {
+        if (! $temAtribuicao) {
             abort(403, 'Voce nao tem permissao para editar esta nota.');
         }
     }
@@ -731,7 +737,7 @@ class NotaController extends Controller
 
     private function validarBloqueioFinalizacao(Nota $nota, ?string $trimestre = null): void
     {
-        if (!$this->notaBloqueadaParaEdicao($nota, $trimestre)) {
+        if (! $this->notaBloqueadaParaEdicao($nota, $trimestre)) {
             return;
         }
 
@@ -740,6 +746,30 @@ class NotaController extends Controller
         }
 
         abort(403, 'Esta nota ja foi finalizada e esta bloqueada para edicao.');
+    }
+
+    private function registrarLogOperacaoPauta(
+        Nota $nota,
+        string $acao,
+        ?string $trimestre = null,
+        bool $acaoGlobal = false
+    ): void {
+        NotaLog::create([
+            'nota_id' => $nota->id,
+            'usuario_id' => auth()->id(),
+            'aluno_id' => $nota->aluno_id,
+            'turma_id' => $nota->turma_id,
+            'disciplina_id' => $nota->disciplina_id,
+            'acao_global' => $acaoGlobal,
+            'acao' => $acao,
+            'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'pauta_completa',
+            'valor_anterior' => $acao === 'finalizacao' ? 'em_lancamento' : 'finalizado',
+            'valor_novo' => $acao === 'finalizacao' ? 'finalizado' : 'em_lancamento',
+            'trimestre' => $trimestre,
+            'motivo' => request()?->input('motivo'),
+            'ip_address' => request()?->ip(),
+            'data_alteracao' => now(),
+        ]);
     }
 
     private function redirectSemAnoLetivoAtivo(): RedirectResponse
@@ -765,5 +795,4 @@ class NotaController extends Controller
             ->when($alunoId, fn ($query, $id) => $query->where('aluno_id', $id))
             ->get();
     }
-
 }

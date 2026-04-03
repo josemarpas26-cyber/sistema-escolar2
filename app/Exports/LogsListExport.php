@@ -17,14 +17,13 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
     public function __construct(
         private readonly Collection $logs,
         private readonly array $filtros = []
-    ) {
-    }
+    ) {}
 
     public function array(): array
     {
         $linhas = [
             ['EXPORTAÇÃO DE LOGS'],
-            ['Gerado em ' . now()->format('d/m/Y H:i')],
+            ['Gerado em '.now()->format('d/m/Y H:i')],
             ['Filtros aplicados', $this->resumoFiltros()],
             [],
             [
@@ -48,13 +47,13 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
                 optional($log->data_alteracao)->format('d/m/Y H:i:s') ?? '-',
                 optional($log->usuario)->name ?? 'Sistema',
                 $log->descricao_acao,
-                optional($log->aluno)->name ?? '-',
+                $log->alvo_exibicao,
                 optional($log->turma)->nome_completo ?? '-',
                 optional($log->disciplina)->nome ?? '-',
                 $log->descricao_campo,
                 $this->valorExportavel($log->valor_anterior),
                 $this->valorExportavel($log->valor_novo),
-                $log->trimestre ? $log->trimestre . 'º' : '-',
+                $log->trimestre ? $log->trimestre.'º' : '-',
                 $log->ip_address ?? '-',
             ];
         }
@@ -146,7 +145,7 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
         }
 
         return collect($this->filtros)
-            ->map(fn(string $value, string $label) => "{$label}: {$value}")
+            ->map(fn (string $value, string $label) => "{$label}: {$value}")
             ->implode(' | ');
     }
 

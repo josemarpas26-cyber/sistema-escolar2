@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, SoftDeletes, MustVerifyEmailTrait;
+    use HasFactory, MustVerifyEmailTrait, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -96,12 +97,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function scopeAlunos($query)
     {
-        return $query->whereHas('role', fn($q) => $q->where('name', 'aluno'));
+        return $query->whereHas('role', fn ($q) => $q->where('name', 'aluno'));
     }
 
     public function scopeProfessores($query)
     {
-        return $query->whereHas('role', fn($q) => $q->where('name', 'professor'));
+        return $query->whereHas('role', fn ($q) => $q->where('name', 'professor'));
     }
 
     public function scopeAtivos($query)
@@ -148,14 +149,65 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role?->hasPermission($permissionName) ?? false;
     }
 
+    public function getFotoPerfilPdfSrcAttribute(): string
+    {
+        $fotoRelativa = $this->foto_perfil ?? $this->foto ?? null;
+
+        if ($fotoLocal = $this->resolverFotoPerfilLocalPath($fotoRelativa)) {
+            return $fotoLocal;
+        }
+
+        return public_path('images/'.$this->fotoPerfilPadraoArquivo());
+    }
+
+    private function resolverFotoPerfilLocalPath(?string $fotoRelativa): ?string
+    {
+        if (blank($fotoRelativa)) {
+            return null;
+        }
+
+        $fotoRelativa = ltrim($fotoRelativa, '/');
+        $candidatos = [];
+
+        if (Storage::disk('public')->exists($fotoRelativa)) {
+            $candidatos[] = Storage::disk('public')->path($fotoRelativa);
+        }
+
+        if (str_starts_with($fotoRelativa, 'storage/')) {
+            $semPrefixoStorage = ltrim(substr($fotoRelativa, strlen('storage/')), '/');
+
+            if (Storage::disk('public')->exists($semPrefixoStorage)) {
+                $candidatos[] = Storage::disk('public')->path($semPrefixoStorage);
+            }
+        } else {
+            $candidatos[] = public_path('storage/'.$fotoRelativa);
+        }
+
+        $candidatos[] = public_path($fotoRelativa);
+
+        foreach (array_unique($candidatos) as $caminho) {
+            if (file_exists($caminho)) {
+                return $caminho;
+            }
+        }
+
+        return null;
+    }
+
+    private function fotoPerfilPadraoArquivo(): string
+    {
+        return $this->genero === 'F' ? 'default-female.png' : 'default-male.png';
+    }
+
     public function getFotoPerfilUrlAttribute(): string
     {
         if ($this->foto_perfil) {
-            return asset('storage/' . $this->foto_perfil);
+            return asset('storage/'.$this->foto_perfil);
         }
-        
+
         // Imagem padrão baseada no gênero
         $default = $this->genero === 'F' ? 'default-female.png' : 'default-male.png';
-        return asset('images/' . $default);
+
+        return asset('images/'.$default);
     }
 }

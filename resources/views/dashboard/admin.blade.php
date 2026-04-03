@@ -273,7 +273,7 @@
                         <span class="text-primary-600">{{ $log->descricao_campo }}</span>
                     </p>
                     <p class="text-xs text-gray-500 mt-1">
-                        {{ $log->aluno->name }} - {{ $log->disciplina->nome }}
+                        {{ $log->alvo_exibicao }} - {{ optional($log->disciplina)->nome ?? '—' }}
                     </p>
                     <p class="text-xs text-gray-400 mt-1">
                         {{ $log->data_alteracao->diffForHumans() }}

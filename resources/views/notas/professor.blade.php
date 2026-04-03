@@ -143,6 +143,7 @@
             @endif
         </div>
     </div>
+    @include('notas.partials.resumo-pauta', ['estatisticasPauta' => $estatisticasPauta ?? null])
 <!-- Tabs de Trimestres -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6" x-data="{ tab: '1' }">
     <div class="border-b border-gray-200">

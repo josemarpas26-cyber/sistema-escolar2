@@ -99,7 +99,7 @@
                         <p class="text-sm font-medium text-gray-900">{{ optional($log->usuario)->name ?? 'Sistema' }}</p>
                         <p class="text-xs text-gray-600">
                             {{ $log->descricao_acao }} {{ $log->descricao_campo }}
-                            de <span class="font-medium">{{ optional($log->aluno)->name ?? '-' }}</span>
+                            de <span class="font-medium">{{ $log->alvo_exibicao }}</span>
                             em {{ optional($log->disciplina)->nome ?? '-' }}
                         </p>
                         @if($log->motivo)
