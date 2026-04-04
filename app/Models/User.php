@@ -149,17 +149,30 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role?->hasPermission($permissionName) ?? false;
     }
 
+    /**
+     * Accessor para foto de perfil em base64 (para PDFs e pré-visualizações).
+     * 
+     * Retorna data URI pronto para usar em <img src="...">.
+     */
     public function getFotoPerfilPdfSrcAttribute(): string
     {
-        $fotoRelativa = $this->foto_perfil ?? $this->foto ?? null;
+        $fotoPath = $this->resolverFotoPerfilLocalPath($this->foto_perfil ?? $this->foto ?? null);
 
-        if ($fotoLocal = $this->resolverFotoPerfilLocalPath($fotoRelativa)) {
-            return $fotoLocal;
+        if ($fotoPath && file_exists($fotoPath)) {
+            $fotoData = base64_encode(file_get_contents($fotoPath));
+            $fotoMime = mime_content_type($fotoPath);
+            return "data:{$fotoMime};base64,{$fotoData}";
         }
 
-        return public_path('images/'.$this->fotoPerfilPadraoArquivo());
+        // Fallback: imagem padrão (também em base64)
+        return $this->fotoPerfilPadraoBase64();
     }
 
+    /**
+     * Resolve o caminho absoluto da foto de perfil a partir do caminho relativo.
+     * 
+     * @return string|null Caminho absoluto ou null se não encontrado
+     */
     private function resolverFotoPerfilLocalPath(?string $fotoRelativa): ?string
     {
         if (blank($fotoRelativa)) {
@@ -167,24 +180,29 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         $fotoRelativa = ltrim($fotoRelativa, '/');
-        $candidatos = [];
+        $candidatos   = [];
 
+        // 1. Storage público (storage/app/public)
         if (Storage::disk('public')->exists($fotoRelativa)) {
             $candidatos[] = Storage::disk('public')->path($fotoRelativa);
         }
 
+        // 2. Se vem com prefixo "storage/", remove e tenta de novo
         if (str_starts_with($fotoRelativa, 'storage/')) {
-            $semPrefixoStorage = ltrim(substr($fotoRelativa, strlen('storage/')), '/');
+            $semPrefixo = ltrim(substr($fotoRelativa, strlen('storage/')), '/');
 
-            if (Storage::disk('public')->exists($semPrefixoStorage)) {
-                $candidatos[] = Storage::disk('public')->path($semPrefixoStorage);
+            if (Storage::disk('public')->exists($semPrefixo)) {
+                $candidatos[] = Storage::disk('public')->path($semPrefixo);
             }
         } else {
-            $candidatos[] = public_path('storage/'.$fotoRelativa);
+            // 3. Tenta via public/storage/...
+            $candidatos[] = public_path('storage/' . $fotoRelativa);
         }
 
+        // 4. Fallback direto no public/
         $candidatos[] = public_path($fotoRelativa);
 
+        // Retorna o primeiro caminho que existe
         foreach (array_unique($candidatos) as $caminho) {
             if (file_exists($caminho)) {
                 return $caminho;
@@ -192,6 +210,46 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return null;
+    }
+
+    /**
+     * Retorna a imagem padrão (masculina/feminina) em base64.
+     * 
+     * @return string Data URI
+     */
+    private function fotoPerfilPadraoBase64(): string
+    {
+        $arquivo = $this->genero === 'F' ? 'default-female.png' : 'default-male.png';
+        $caminho = public_path('images/' . $arquivo);
+
+        if (file_exists($caminho)) {
+            $data = base64_encode(file_get_contents($caminho));
+            $mime = mime_content_type($caminho);
+            return "data:{$mime};base64,{$data}";
+        }
+
+        // Se nem a imagem padrão existir, retorna um avatar SVG genérico
+        return $this->avatarSvgFallback();
+    }
+
+    /**
+     * Avatar SVG genérico (funciona sempre, sem ficheiros externos).
+     * 
+     * @return string Data URI de SVG
+     */
+    private function avatarSvgFallback(): string
+    {
+        $cor = $this->genero === 'F' ? '#EC4899' : '#3B82F6';
+
+        $svg = <<<SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect fill="#E5E7EB" width="100" height="100"/>
+            <circle fill="{$cor}" cx="50" cy="35" r="20"/>
+            <ellipse fill="{$cor}" cx="50" cy="85" rx="35" ry="25"/>
+        </svg>
+        SVG;
+
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 
     private function fotoPerfilPadraoArquivo(): string

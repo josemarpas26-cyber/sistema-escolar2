@@ -178,15 +178,18 @@
 </head>
 <body>
 
-    {{-- Definir o label do trimestre para usar no título e na legenda --}}
-    @php
-        $trimestreLabel = match($trimestre) {
-            '1' => '1º Trimestre',
-            '2' => '2º Trimestre',
-            '3' => '3º Trimestre',
-            default => 'Final (CFD)',
-        };
-    @endphp
+@php
+    // ─── Label do trimestre ───
+    $trimestreLabel = match($trimestre) {
+        '1' => '1º Trimestre',
+        '2' => '2º Trimestre',
+        '3' => '3º Trimestre',
+        default => 'Final (CFD)',
+    };
+
+    // ─── Foto de perfil em base64 ───
+    $fotoBase64 = $aluno->foto_perfil_pdf_src;
+@endphp
 
     <!-- Header -->
     <div class="header">
@@ -200,7 +203,7 @@
     <!-- Informações do Aluno -->
     <div class="info-section">
         <div class="foto-perfil-wrap">
-            <img src="{{ $aluno->foto_perfil_pdf_src }}" alt="Foto" class="foto-perfil">
+            <img src="{{ $fotoBase64 }}" alt="Foto" class="foto-perfil">
         </div>
         
         <div class="info-row">
@@ -238,13 +241,11 @@
                     <th>PP1</th>
                     <th>PT1</th>
                     <th>MT1</th>
-
                 @elseif($trimestre === '2')
                     <th>MAC2</th>
                     <th>PP2</th>
                     <th>PT2</th>
                     <th>MT2</th>
-
                 @elseif($trimestre === '3')
                     <th>MAC3</th>
                     <th>PP3</th>
@@ -252,8 +253,7 @@
                     <th>CF</th>
                     <th>PG</th>
                     <th>CA</th>
-
-                @else {{-- Final --}}
+                @else
                     <th>MT1</th>
                     <th>MT2</th>
                     <th>MT3</th>
@@ -266,58 +266,54 @@
         </thead>
         <tbody>
             @foreach($notas as $nota)
-            @php
+                @php
+                    $valorPeriodo = match($trimestre) {
+                        '1' => $nota->mt1,
+                        '2' => $nota->mt2,
+                        '3' => $nota->mt3,
+                        default => $nota->cfd,
+                    };
+                    $temNota = $valorPeriodo !== null;
+                    $aprovadoPeriodo = $temNota && $valorPeriodo >= 10;
+                @endphp
+                <tr>
+                    <td class="disciplina">{{ $nota->disciplina->nome }}</td>
 
-                $valorPeriodo = match($trimestre) {
-                    '1' => $nota->mt1,
-                    '2' => $nota->mt2,
-                    '3' => $nota->mt3,
-                    default => $nota->cfd,
-                };
-                $temNota = $valorPeriodo !== null;
-                $aprovadoPeriodo = $temNota && $valorPeriodo >= 10;
-            @endphp
-            <tr>
-                <td class="disciplina">{{ $nota->disciplina->nome }}</td>
-
-                @if($trimestre === '1')
-                    <td>{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '-' }}</td>
-                    <td>{{ $nota->pp1  !== null ? number_format($nota->pp1,  2) : '-' }}</td>
-                    <td>{{ $nota->pt1  !== null ? number_format($nota->pt1,  2) : '-' }}</td>
-                    <td><strong>{{ $nota->mt1 !== null ? number_format($nota->mt1, 2) : '-' }}</strong></td>
-
-                @elseif($trimestre === '2')
-                    <td>{{ $nota->mac2 !== null ? number_format($nota->mac2, 2) : '-' }}</td>
-                    <td>{{ $nota->pp2  !== null ? number_format($nota->pp2,  2) : '-' }}</td>
-                    <td>{{ $nota->pt2  !== null ? number_format($nota->pt2,  2) : '-' }}</td>
-                    <td><strong>{{ $nota->mt2 !== null ? number_format($nota->mt2, 2) : '-' }}</strong></td>
-
-                @elseif($trimestre === '3')
-                    <td>{{ $nota->mac3 !== null ? number_format($nota->mac3, 2) : '-' }}</td>
-                    <td>{{ $nota->pp3  !== null ? number_format($nota->pp3,  2) : '-' }}</td>
-                    <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  2) : '-' }}</td>
-                    <td>{{ $nota->cf   !== null ? number_format($nota->cf,   2) : '-' }}</td>
-                    <td>{{ $nota->pg   !== null ? number_format($nota->pg,   2) : '-' }}</td>
-                    <td><strong>{{ $nota->ca !== null ? number_format($nota->ca, 2) : '-' }}</strong></td>
-
-                @else {{-- Final --}}
-                    <td>{{ $nota->mt1  !== null ? number_format($nota->mt1,  2) : '-' }}</td>
-                    <td>{{ $nota->mt2  !== null ? number_format($nota->mt2,  2) : '-' }}</td>
-                    <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  2) : '-' }}</td>
-                    <td>{{ $nota->pg   !== null ? number_format($nota->pg,   2) : '-' }}</td>
-                    <td><strong>{{ $nota->cfd !== null ? number_format($nota->cfd, 2) : '-' }}</strong></td>
-                @endif
-
-                <td class="{{ $temNota ? ($aprovadoPeriodo ? 'aprovado' : 'reprovado') : '' }}">
-                    @if(!$temNota)
-                        Pendente
-                    @elseif($aprovadoPeriodo)
-                        ✓ Aprovado
+                    @if($trimestre === '1')
+                        <td>{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '-' }}</td>
+                        <td>{{ $nota->pp1  !== null ? number_format($nota->pp1,  2) : '-' }}</td>
+                        <td>{{ $nota->pt1  !== null ? number_format($nota->pt1,  2) : '-' }}</td>
+                        <td><strong>{{ $nota->mt1 !== null ? number_format($nota->mt1, 2) : '-' }}</strong></td>
+                    @elseif($trimestre === '2')
+                        <td>{{ $nota->mac2 !== null ? number_format($nota->mac2, 2) : '-' }}</td>
+                        <td>{{ $nota->pp2  !== null ? number_format($nota->pp2,  2) : '-' }}</td>
+                        <td>{{ $nota->pt2  !== null ? number_format($nota->pt2,  2) : '-' }}</td>
+                        <td><strong>{{ $nota->mt2 !== null ? number_format($nota->mt2, 2) : '-' }}</strong></td>
+                    @elseif($trimestre === '3')
+                        <td>{{ $nota->mac3 !== null ? number_format($nota->mac3, 2) : '-' }}</td>
+                        <td>{{ $nota->pp3  !== null ? number_format($nota->pp3,  2) : '-' }}</td>
+                        <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  2) : '-' }}</td>
+                        <td>{{ $nota->cf   !== null ? number_format($nota->cf,   2) : '-' }}</td>
+                        <td>{{ $nota->pg   !== null ? number_format($nota->pg,   2) : '-' }}</td>
+                        <td><strong>{{ $nota->ca !== null ? number_format($nota->ca, 2) : '-' }}</strong></td>
                     @else
-                        ✗ Reprovado
+                        <td>{{ $nota->mt1  !== null ? number_format($nota->mt1,  2) : '-' }}</td>
+                        <td>{{ $nota->mt2  !== null ? number_format($nota->mt2,  2) : '-' }}</td>
+                        <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  2) : '-' }}</td>
+                        <td>{{ $nota->pg   !== null ? number_format($nota->pg,   2) : '-' }}</td>
+                        <td><strong>{{ $nota->cfd !== null ? number_format($nota->cfd, 2) : '-' }}</strong></td>
                     @endif
-                </td>
-            </tr>
+
+                    <td class="{{ $temNota ? ($aprovadoPeriodo ? 'aprovado' : 'reprovado') : '' }}">
+                        @if(!$temNota)
+                            Pendente
+                        @elseif($aprovadoPeriodo)
+                            ✓ Aprovado
+                        @else
+                            ✗ Reprovado
+                        @endif
+                    </td>
+                </tr>
             @endforeach
         </tbody>
     </table>
