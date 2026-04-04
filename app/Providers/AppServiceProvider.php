@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 use App\Policies\NotaPolicy;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
         if (env('APP_ENV') === 'production') {
             URL::forceScheme('https');
         }
+        
+        Paginator::defaultView('vendor.pagination.tailwind');
+
         // Registrar o Observer para monitorar alterações em notas
         Nota::observe(NotaObserver::class);
             
