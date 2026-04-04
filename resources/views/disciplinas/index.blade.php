@@ -91,7 +91,7 @@
 
     <!-- Paginação -->
     <div class="mt-4">
-        {{ $disciplinas->links() }}
+        {{ $disciplinas->links('vendor.pagination.tailwind') }}
     </div>
 
     @else

@@ -35,7 +35,7 @@
             </tbody>
         </table>
     </div>
-    {{ $turmas->links() }}
+     {{ $turmas->links('vendor.pagination.tailwind') }}
     @else
     <div class="text-center py-12">
         <i class="fas fa-chalkboard text-5xl text-gray-300 mb-4"></i>
