@@ -50,6 +50,7 @@
       color: #94a3b8; font-size: 8px; text-align: center;
       gap: 4px; flex-shrink: 0;
       overflow: hidden;
+      background: #f8fafc;
     }
     .photo-box svg { width: 28px; height: 28px; opacity: .4; }
     .photo-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
@@ -158,8 +159,61 @@
         </span>
       </div>
     </div>
+<!-- <<<<<<< HEAD
+    @php
+      $fotoUrl  = null;
+      $fotoRaw  = $aluno->foto ?? $aluno->avatar ?? $aluno->profile_photo_path ?? null;
+
+      if ($fotoRaw) {
+        $fotoRaw = ltrim($fotoRaw, '/');
+        $fotoRaw = str_replace('storage/', '', $fotoRaw);
+        $fotoRaw = str_replace('public/', '', $fotoRaw);
+
+        $tentativas = [
+          public_path('storage/' . $fotoRaw),
+          storage_path('app/public/' . $fotoRaw),
+          public_path($fotoRaw),
+          public_path('uploads/' . $fotoRaw),
+          public_path('images/' . $fotoRaw),
+        ];
+
+         foreach ($tentativas as $caminho) {
+          if (file_exists($caminho) && is_file($caminho)) {
+            $mime = mime_content_type($caminho);
+            $base64 = base64_encode(file_get_contents($caminho));
+            $fotoUrl = "data:{$mime};base64,{$base64}";
+            break;
+          }
+         }
+      }
+    @endphp
+
+     <div class="photo-box">
+      @if($fotoUrl)
+        <img
+          src="{{ $fotoUrl }}"
+          alt="Foto de {{ $aluno->name }}"
+          style="width:100%; height:100%; object-fit:cover; object-position:center top; border-radius:6px;"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        >
+        <div style="display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:#94a3b8; font-size:8px; text-align:center; gap:4px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;opacity:.4;">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Foto do Aluno</span>
+         </div>
+      @else
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;opacity:.4;">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+       <span style="font-size:8px; color:#94a3b8;">Foto do Aluno</span>
+      @endif
+======= -->
     <div class="photo-box">
       <img src="{{ $aluno->foto_perfil_pdf_src }}" alt="Foto do Aluno">
+
     </div>
   </div>
 

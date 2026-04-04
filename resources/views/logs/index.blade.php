@@ -123,7 +123,7 @@
     </div>
 
     <div class="mt-4">
-        {{ $logs->withQueryString()->links() }}
+        {{ $logs->withQueryString()->links('vendor.pagination.tailwind') }}
     </div>
 
     @else

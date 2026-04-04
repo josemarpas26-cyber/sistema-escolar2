@@ -49,7 +49,7 @@
             </tbody>
         </table>
     </div>
-    {{ $cursos->links() }}
+    {{ $cursos->links('vendor.pagination.tailwind') }}
     @else
     <div class="text-center py-12">
         <i class="fas fa-book text-5xl text-gray-300 mb-4"></i>

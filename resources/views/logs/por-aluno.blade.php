@@ -34,7 +34,7 @@
             </table>
         </div>
 
-        {{ $logs->links() }}
+         {{ $logs->links('vendor.pagination.tailwind') }}
     @else
         <p class="py-8 text-center text-gray-500">Nenhum log encontrado</p>
     @endif
