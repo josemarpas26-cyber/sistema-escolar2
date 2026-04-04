@@ -480,17 +480,25 @@
         $itemId = "est-item-{$secaoIdx}-{$itemIdx}";
 
         // Determinar título e subtítulo do item
+        // DEPOIS — correto para todos os tipos
         if ($secao['tipo'] === 'professor') {
-            $itemTitulo  = $item['disciplina']->nome . ' — ' . $item['disciplina']->codigo;
-            $itemSub     = $item['turma']->nome_completo;
-            $itemTrims   = $item['trimestres'];
-            $itemResumo  = $item['resumo'];
+            $itemTitulo = $item['disciplina']->nome . ' — ' . $item['disciplina']->codigo;
+            $itemSub    = $item['turma']->nome_completo;
+            $itemTrims  = $item['trimestres'];
+            $itemResumo = $item['resumo'];
+        } elseif ($secao['tipo'] === 'coord_curso') {
+            $itemTitulo = $item['curso']->nome ?? '—';
+            $itemSub    = collect($item['turmas'])->count() . ' turma(s)';
+            $itemTrims  = null;
+            $itemResumo = $item['resumo'];
         } else {
-            $itemTitulo  = $item['turma']->nome_completo ?? ($item['curso']->nome ?? '—');
-            $itemSub     = isset($item['turma']) ? $item['turma']->curso->nome : (count($item['turmas']) . ' turma(s)');
-            $itemTrims   = null;
-            $itemResumo  = $item['resumo'];
-        }
+            // coord_turma e admin
+            $itemTitulo = $item['turma']->nome_completo ?? '—';
+            $itemSub    = $item['turma']->curso->nome   ?? '—';
+            $itemTrims  = null;
+            $itemResumo = $item['resumo'];
+
+                }
     @endphp
 
     <div class="est-item {{ $itemIdx === 0 ? 'est-item-open' : '' }}" id="{{ $itemId }}">

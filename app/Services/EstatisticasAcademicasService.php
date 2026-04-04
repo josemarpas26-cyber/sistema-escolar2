@@ -147,10 +147,9 @@ class EstatisticasAcademicasService
         $cursos = Curso::query()
             ->where('coordenador_id', $professor->id)
             ->with([
-                'disciplinas',
                 'turmas' => fn ($query) => $query
                     ->where('ano_letivo_id', $anoLetivo->id)
-                    ->with('curso'),
+                    ->with(['curso', 'disciplinas']),  // ← disciplinas via turma, não via curso
             ])
             ->get()
             ->sortBy('nome')
@@ -161,32 +160,57 @@ class EstatisticasAcademicasService
         }
 
         $itens = $cursos->map(function (Curso $curso) use ($anoLetivo) {
-            $estatisticas = $this->calcularEstatisticasPorDisciplina(
-                $this->buscarNotasPorEscopo(
-                    $curso->disciplinas->pluck('id')->all(),
-                    $curso->turmas->pluck('id')->all(),
-                    $anoLetivo->id
-                )
-            );
+            $turmas = $curso->turmas;
+
+            if ($turmas->isEmpty()) {
+                return [
+                    'curso'        => $curso,
+                    'turmas'       => collect(),
+                    'estatisticas' => collect(),
+                    'resumo'       => $this->resumoVazio(),
+                ];
+            }
+
+            // Disciplinas vindas das turmas (não do curso diretamente)
+            $disciplinaIds = $turmas
+                ->flatMap(fn ($turma) => $turma->disciplinas->pluck('id'))
+                ->unique()
+                ->values()
+                ->all();
+
+            $turmaIds = $turmas->pluck('id')->all();
+
+            $notas = $this->buscarNotasPorEscopo($disciplinaIds, $turmaIds, $anoLetivo->id);
+
+            $estatisticas = $this->calcularEstatisticasPorDisciplina($notas);
 
             return [
-                'curso' => $curso,
-                'turmas' => $curso->turmas,
+                'curso'        => $curso,
+                'turmas'       => $turmas,
                 'estatisticas' => $estatisticas,
-                'resumo' => $this->resumirTrimestres(
+                'resumo'       => $this->resumirTrimestres(
                     $estatisticas->flatMap(fn ($disc) => $disc['trimestres'])->values()
                 ),
             ];
         })->values();
 
+        // Remover cursos sem turmas E sem estatísticas
+        $itens = $itens->filter(
+            fn ($item) => $item['turmas']->isNotEmpty() || $item['estatisticas']->isNotEmpty()
+        )->values();
+
+        if ($itens->isEmpty()) {
+            return null;
+        }
+
         return [
-            'tipo' => 'coord_curso',
-            'titulo' => 'Cursos sob minha coordenacao',
+            'tipo'      => 'coord_curso',
+            'titulo'    => 'Cursos sob minha coordenacao',
             'descricao' => 'As notas sao agregadas por disciplina em todas as turmas activas do curso no ano letivo.',
-            'resumo' => $this->resumirTrimestres(
+            'resumo'    => $this->resumirTrimestres(
                 $itens->flatMap(fn ($item) => $item['estatisticas']->flatMap(fn ($disc) => $disc['trimestres']))->values()
             ),
-            'itens' => $itens,
+            'itens'     => $itens->all(),
         ];
     }
 

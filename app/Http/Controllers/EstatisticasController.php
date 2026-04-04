@@ -173,7 +173,13 @@ class EstatisticasController extends Controller
                     break;
 
                 case 'coord_curso':
-                    $itens = $itens->map(function ($i) use ($turmaId, $disciplinaId, $trimestre) {
+                    // Filtro de turma: remove cursos que não tenham a turma selecionada
+                    if ($turmaId) {
+                        $itens = $itens->filter(
+                            fn ($i) => collect($i['turmas'])->contains(fn ($t) => $t->id === $turmaId)
+                        );
+                    }
+                    $itens = $itens->map(function ($i) use ($disciplinaId, $trimestre) {
                         $estatisticas = collect($i['estatisticas']);
                         if ($disciplinaId) {
                             $estatisticas = $estatisticas->filter(
@@ -189,9 +195,6 @@ class EstatisticasController extends Controller
                             });
                         }
                         $i['estatisticas'] = $estatisticas->values();
-                        if ($turmaId) {
-                            $i['turmas'] = $i['turmas']->filter(fn ($t) => $t->id === $turmaId);
-                        }
                         return $i;
                     });
                     break;
