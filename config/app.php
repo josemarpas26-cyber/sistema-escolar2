@@ -117,7 +117,7 @@ return [
     | Supported drivers: "file", "cache"
     |
     */
-
+    'caminho_logo' => public_path('images/logo1.png'),
     'maintenance' => [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),

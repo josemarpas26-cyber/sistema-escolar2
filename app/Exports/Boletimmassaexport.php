@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Exports;
 
 use App\Models\Nota;
@@ -15,388 +14,447 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Font;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
-/**
- * Exporta boletins em massa, 2 por linha, no formato exacto do template.
- *
- * Cada bloco de 26 linhas contém um par de boletins lado a lado:
- *   - Esquerda: colunas A–D (aluno ímpar)
- *   - Direita:  colunas G–J (aluno par)
- *
- * Uso:
- *   $turma    = Turma::findOrFail($turmaId)->load(['curso', 'alunos']);
- *   $notas    = Nota::where('turma_id', $turma->id)->with('disciplina')->get()->groupBy('aluno_id');
- *   $trimestre = '2'; // '1', '2', '3' ou 'final'
- *   return Excel::download(new BoletimMassaExport($turma, $notas, $trimestre), 'boletins.xlsx');
- */
 class BoletimMassaExport implements FromCollection, WithEvents, WithTitle
 {
-    // ── Layout ───────────────────────────────────────────────────────────────
-    private const BLOCK_HEIGHT  = 26;   // linhas por par de boletins
-    private const FIRST_ROW     = 3;    // primeira linha de dados
-    private const COL_LEFT      = 'A';  // coluna de início do boletim esquerdo
-    private const COL_RIGHT     = 'G';  // coluna de início do boletim direito
+// ── Layout ───────────────────────────────────────────────────────────────
+private const BLOCK_HEIGHT = 26;
+private const FIRST_ROW = 3;
+private const COL_LEFT = 'A';
+private const COL_RIGHT = 'G';
 
-    // Offsets dentro de cada bloco (0-based)
-    private const OFF_ESCOLA    = 0;
-    private const OFF_AREA      = 1;
-    private const OFF_CURSO     = 2;
-    private const OFF_TITULO    = 3;
-    private const OFF_PERIODO   = 4;
-    private const OFF_NOME      = 5;
-    private const OFF_CLASSE    = 6;
-    private const OFF_HEADER    = 7;
-    private const OFF_DISC_INI  = 8;    // primeira linha de disciplina
-    private const OFF_DIRETOR_L = 20;
-    private const OFF_DIRETOR_N = 21;
+// Offsets dentro de cada bloco (0-based)
+private const OFF_LOGO      = -1; // 🔹 Logo fica 1 linha acima do conteúdo
+private const OFF_ESCOLA    = 0;
+private const OFF_AREA      = 1;
+private const OFF_CURSO     = 2;
+private const OFF_TITULO    = 3;
+private const OFF_PERIODO   = 4;
+private const OFF_NOME      = 5;
+private const OFF_CLASSE    = 6;
+private const OFF_HEADER    = 7;
+private const OFF_DISC_INI  = 8;
+private const OFF_DIRETOR_L = 20;
+private const OFF_DIRETOR_N = 21;
 
-    // Cores (ARGB)
-    private const COR_VERDE     = 'FF00B050';
-    private const COR_VERMELHO  = 'FFFF0000';
-    private const COR_AZUL_ESC  = 'FF002060';
-    private const COR_PRETO     = 'FF000000';
+// Cores (ARGB)
+private const COR_VERDE     = 'FF00B050';
+private const COR_VERMELHO  = 'FFFF0000';
+private const COR_AZUL_ESC  = 'FF002060';
+private const COR_PRETO     = 'FF000000';
+private const COR_BORDA     = 'FFD9D9D9';
 
-    // ── Dados ─────────────────────────────────────────────────────────────────
-    private Turma      $turma;
-    private Collection $notasPorAluno;  // keyBy('aluno_id')
-    private string     $trimestre;
-    private Collection $alunos;
-    private ?string    $nomeEscola;
-    private ?string    $areaFormacao;
+// 🔹 Configurações do Logo
+private const LOGO_HEIGHT   = 40;    // Altura do logo em pixels
+private const LOGO_MAX_WIDTH= 100;   // Largura máxima do logo
+private const LOGO_OFFSET_X = 48;    // Centralização horizontal (ajuste fino)
+private const LOGO_OFFSET_Y = 3;     // Ajuste vertical do logo
 
-    public function __construct(
-        Turma      $turma,
-        Collection $notasPorAluno,
-        string     $trimestre     = '2',
-        ?string    $nomeEscola    = null,
-        ?string    $areaFormacao  = null,
-    ) {
-        $this->turma         = $turma;
-        $this->notasPorAluno = $notasPorAluno;
-        $this->trimestre     = $trimestre;
-        $this->nomeEscola    = $nomeEscola   ?? config('app.nome_escola',   'INST. POLITÉCN. INDUSTRIAL Nº 8050 LDA - "NOVA VIDA" - KILAMBA KIAXI');
-        $this->areaFormacao  = $areaFormacao ?? config('app.area_formacao', 'ÁREA DE FORMAÇÃO DE INFORMÁTICA');
+// ── Dados ─────────────────────────────────────────────────────────────────
+private Turma      $turma;
+private Collection $notasPorAluno;
+private string     $trimestre;
+private Collection $alunos;
+private ?string    $nomeEscola;
+private ?string    $areaFormacao;
+private ?string    $caminhoLogo; // 🔹 Caminho configurável do logo
 
-        // Alunos matriculados ordenados por nome
-        $this->alunos = $turma->alunos()
-            ->wherePivot('status', 'matriculado')
-            ->orderBy('name')
-            ->get();
-    }
+public function __construct(
+    Turma      $turma,
+    Collection $notasPorAluno,
+    string     $trimestre     = '2',
+    ?string    $nomeEscola    = null,
+    ?string    $areaFormacao  = null,
+    ?string    $caminhoLogo   = null, // 🔹 Novo parâmetro
+) {
+    $this->turma         = $turma;
+    $this->notasPorAluno = $notasPorAluno;
+    $this->trimestre     = $trimestre;
+    $this->nomeEscola    = $nomeEscola   ?? config('app.nome_escola',   'INST. POLITÉCN. INDUSTRIAL Nº 8050 LDA - "NOVA VIDA" - KILAMBA KIAXI');
+    $this->areaFormacao  = $areaFormacao ?? config('app.area_formacao', 'ÁREA DE FORMAÇÃO DE INFORMÁTICA');
+    $this->caminhoLogo = $caminhoLogo 
+    ?? config('app.caminho_logo') 
+    ?? public_path('images/logo1.png'); // 🔹 Logo configurável
 
-    public function collection(): Collection
-    {
-        // WithEvents gere tudo; a collection apenas existe para cumprir a interface
-        return collect();
-    }
+    $this->alunos = $turma->alunos()
+        ->wherePivot('status', 'matriculado')
+        ->orderBy('name')
+        ->get();
+}
 
-    public function title(): string
-    {
-        return 'BOLETINS';
-    }
+public function collection(): Collection
+{
+    return collect();
+}
 
-    public function registerEvents(): array
-    {
-        return [
-            AfterSheet::class => function (AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
-                $this->configurarColunas($sheet);
-                $this->escreverTodosOsBoletins($sheet);
-                $this->ocultarLinhasDeGrade($sheet);
-            },
-        ];
-    }
+public function title(): string
+{
+    return 'BOLETINS';
+}
 
-    // ── Configuração geral da folha ───────────────────────────────────────────
+public function registerEvents(): array
+{
+    return [
+        AfterSheet::class => function (AfterSheet $event) {
+            $sheet = $event->sheet->getDelegate();
+            // 🔹 Removido inserirLogo global - agora cada boletim tem seu próprio logo
+            $this->configurarColunas($sheet);
+            $this->escreverTodosOsBoletins($sheet);
+            $this->ocultarLinhasDeGrade($sheet);
+        },
+    ];
+}
 
-    private function configurarColunas(Worksheet $sheet): void
-    {
-        $sheet->getColumnDimension('A')->setWidth(27.57);
-        $sheet->getColumnDimension('B')->setWidth(10.14);
-        $sheet->getColumnDimension('C')->setWidth(9.43);
-        $sheet->getColumnDimension('D')->setWidth(9.14);
-        $sheet->getColumnDimension('E')->setWidth(2.0);
-        $sheet->getColumnDimension('F')->setWidth(1.71);
-        $sheet->getColumnDimension('G')->setWidth(27.29);
-        $sheet->getColumnDimension('H')->setWidth(10.14);
-        $sheet->getColumnDimension('I')->setWidth(9.43);
-        $sheet->getColumnDimension('J')->setWidth(9.57);
-        $sheet->getColumnDimension('K')->setWidth(2.86);
-    }
+// ── Configuração geral da folha ───────────────────────────────────────────
 
-    private function ocultarLinhasDeGrade(Worksheet $sheet): void
-    {
-        $sheet->setShowGridlines(false);
-    }
+private function configurarColunas(Worksheet $sheet): void
+{
+    $sheet->getColumnDimension('A')->setWidth(27.57);
+    $sheet->getColumnDimension('B')->setWidth(10.14);
+    $sheet->getColumnDimension('C')->setWidth(9.43);
+    $sheet->getColumnDimension('D')->setWidth(9.14);
+    $sheet->getColumnDimension('E')->setWidth(2.0);
+    $sheet->getColumnDimension('F')->setWidth(1.71);
+    $sheet->getColumnDimension('G')->setWidth(27.29);
+    $sheet->getColumnDimension('H')->setWidth(10.14);
+    $sheet->getColumnDimension('I')->setWidth(9.43);
+    $sheet->getColumnDimension('J')->setWidth(9.57);
+    $sheet->getColumnDimension('K')->setWidth(2.86);
+}
 
-    // ── Geração de todos os boletins ─────────────────────────────────────────
+private function ocultarLinhasDeGrade(Worksheet $sheet): void
+{
+    $sheet->setShowGridlines(false);
+}
 
-    private function escreverTodosOsBoletins(Worksheet $sheet): void
-    {
-        $alunos = $this->alunos->values();
-        $total  = $alunos->count();
-        $pares  = (int) ceil($total / 2);
+// ── Geração de todos os boletins ─────────────────────────────────────────
 
-        for ($par = 0; $par < $pares; $par++) {
-            $linhaInicio = self::FIRST_ROW + ($par * self::BLOCK_HEIGHT);
+private function escreverTodosOsBoletins(Worksheet $sheet): void
+{
+    $alunos = $this->alunos->values();
+    $total  = $alunos->count();
+    $pares  = (int) ceil($total / 2);
 
-            $alunoEsq = $alunos->get($par * 2);
-            $alunoDrt = $alunos->get($par * 2 + 1); // null se número ímpar de alunos
+    for ($par = 0; $par < $pares; $par++) {
+        $linhaInicio = self::FIRST_ROW + ($par * self::BLOCK_HEIGHT);
 
-            // Configurar alturas das linhas deste bloco
-            $this->configurarAlturas($sheet, $linhaInicio);
+        $alunoEsq = $alunos->get($par * 2);
+        $alunoDrt = $alunos->get($par * 2 + 1);
 
-            // Escrever boletim esquerdo
-            if ($alunoEsq) {
-                $this->escreverBoletim(
-                    $sheet,
-                    $linhaInicio,
-                    self::COL_LEFT,
-                    $alunoEsq,
-                    $par * 2 + 1,  // número de ordem
-                );
-            }
+        $this->configurarAlturas($sheet, $linhaInicio);
 
-            // Escrever boletim direito
-            if ($alunoDrt) {
-                $this->escreverBoletim(
-                    $sheet,
-                    $linhaInicio,
-                    self::COL_RIGHT,
-                    $alunoDrt,
-                    $par * 2 + 2,
-                );
-            }
-
-            // Linha divisória entre pares (leve separação visual)
-            // (não existe no template original, mas deixamos o espaço das linhas 22-25)
+        if ($alunoEsq) {
+            $this->escreverBoletim($sheet, $linhaInicio, self::COL_LEFT, $alunoEsq, $par * 2 + 1);
+        }
+        if ($alunoDrt) {
+            $this->escreverBoletim($sheet, $linhaInicio, self::COL_RIGHT, $alunoDrt, $par * 2 + 2);
         }
     }
+}
 
-    private function configurarAlturas(Worksheet $sheet, int $linhaInicio): void
-    {
-        for ($i = 0; $i < self::BLOCK_HEIGHT; $i++) {
-            $linha = $linhaInicio + $i;
+private function configurarAlturas(Worksheet $sheet, int $linhaInicio): void
+{
+    // ✅ Linha do nome da escola alta o suficiente para o logo
+    $sheet->getRowDimension($linhaInicio + self::OFF_ESCOLA)->setRowHeight(45);
+
+    for ($i = 0; $i < self::BLOCK_HEIGHT; $i++) {
+        $linha = $linhaInicio + $i;
+        // Não sobrescrever a linha do logo
+        if ($i !== self::OFF_ESCOLA) {
             $sheet->getRowDimension($linha)->setRowHeight(15.75);
         }
-        // A linha do último item (TIC) tem altura ligeiramente maior no original
-        $sheet->getRowDimension($linhaInicio + self::OFF_DISC_INI + 11)->setRowHeight(16.5);
+    }
+    $sheet->getRowDimension($linhaInicio + self::OFF_DISC_INI + 11)->setRowHeight(16.5);
+}
+
+// ── Boletim individual ────────────────────────────────────────────────────
+
+private function escreverBoletim(
+    Worksheet $sheet,
+    int       $linhaInicio,
+    string    $colInicio,
+    object    $aluno,
+    int       $numeroOrdem,
+): void {
+    $cols   = $this->colunas($colInicio);
+    $notas  = $this->notasPorAluno->get($aluno->id, collect());
+    $classe = $this->turma->classe;
+    $curso  = $this->turma->curso?->nome ?? 'CURSO';
+    
+    // 🔹 Inserir logo centralizado no topo deste boletim
+    $this->inserirLogoBoletim($sheet, $linhaInicio, $colInicio, $cols);
+    
+    // 🔹 Obter configuração dinâmica das colunas de notas
+    $configNotas = $this->getConfiguracaoNotas();
+
+    // ── Cabeçalho ────────────────────────────────────────────────────────
+    $this->linha($sheet, $linhaInicio + self::OFF_ESCOLA, $cols['inicio'], $cols['fim'],
+        $this->nomeEscola, ['bold' => true, 'size' => 8, 'align' => 'center']);
+
+    $this->linha($sheet, $linhaInicio + self::OFF_AREA, $cols['inicio'], $cols['fim'],
+        strtoupper($this->areaFormacao), ['size' => 8, 'align' => 'center']);
+
+    $this->linha($sheet, $linhaInicio + self::OFF_CURSO, $cols['inicio'], $cols['fim'],
+        'CURSO DE '.strtoupper($curso), ['bold' => true, 'size' => 8, 'align' => 'center']);
+
+    $this->linha($sheet, $linhaInicio + self::OFF_TITULO, $cols['inicio'], $cols['fim'],
+        'BOLETIM DE NOTAS ', ['bold' => true, 'size' => 8, 'align' => 'center', 'cor' => self::COR_VERDE]);
+
+    $periodoLabel = $this->labelPeriodo();
+    $this->linha($sheet, $linhaInicio + self::OFF_PERIODO, $cols['inicio'], $cols['fim'],
+        "ANO LECTIVO: {$this->turma->anoLetivo?->nome}               {$periodoLabel}",
+        ['size' => 8, 'align' => 'center']);
+
+    $this->celula($sheet, $cols['inicio'] . ($linhaInicio + self::OFF_NOME),
+        strtoupper($aluno->name), ['bold' => true, 'size' => 9, 'cor' => self::COR_VERMELHO]);
+
+    $salaNumero = $this->turma->sala ?? '—';
+    $this->celula($sheet, $cols['inicio'] . ($linhaInicio + self::OFF_CLASSE),
+        "     {$classe}.ª CLASSE      Nº {$numeroOrdem}       TURMA: {$this->turma->nome}       SALA Nº {$salaNumero} ",
+        ['size' => 7, 'cor' => self::COR_AZUL_ESC]);
+
+    // ── Cabeçalho de disciplinas (COM BORDAS) ───────────────────────────
+    $rowHeader = $linhaInicio + self::OFF_HEADER;
+    
+    $this->celulaComBorda($sheet, $cols['inicio'] . $rowHeader, 'DISCIPLINA ',
+        ['bold' => true, 'size' => 9, 'cor' => self::COR_VERDE, 'align' => 'center'], true);
+    
+    foreach ($configNotas as $idx => $config) {
+        $colNota = $cols['notas'][$idx] ?? null;
+        if ($colNota) {
+            $this->celulaComBorda($sheet, $colNota . $rowHeader, $config['label'],
+                ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center'], true);
+        }
     }
 
-    // ── Boletim individual ────────────────────────────────────────────────────
+    // ── Disciplinas (COM BORDAS) ─────────────────────────────────────────
+    $disciplinasOrdenadas = $notas->sortBy(fn ($n) => $n->disciplina?->nome)->values();
+    $maxDiscs = 12;
 
-    private function escreverBoletim(
-        Worksheet $sheet,
-        int       $linhaInicio,
-        string    $colInicio,
-        object    $aluno,
-        int       $numeroOrdem,
-    ): void {
-        $cols   = $this->colunas($colInicio);
-        $notas  = $this->notasPorAluno->get($aluno->id, collect());
-        $classe = $this->turma->classe;
-        $curso  = $this->turma->curso?->nome ?? 'CURSO';
+    foreach ($disciplinasOrdenadas->take($maxDiscs) as $idx => $nota) {
+        $rowDisc = $linhaInicio + self::OFF_DISC_INI + $idx;
+        $disc    = $nota->disciplina?->nome ?? '—';
+        $valores = $this->valoresPeriodo($nota);
 
-        // ── Cabeçalho ────────────────────────────────────────────────────────
-        $this->linha($sheet, $linhaInicio + self::OFF_ESCOLA, $cols['inicio'], $cols['fim'],
-            $this->nomeEscola,
-            ['bold' => true, 'size' => 8, 'align' => 'center']
-        );
-
-        $this->linha($sheet, $linhaInicio + self::OFF_AREA, $cols['inicio'], $cols['fim'],
-            strtoupper($this->areaFormacao),
-            ['size' => 8, 'align' => 'center']
-        );
-
-        $this->linha($sheet, $linhaInicio + self::OFF_CURSO, $cols['inicio'], $cols['fim'],
-            'CURSO DE '.strtoupper($curso),
-            ['bold' => true, 'size' => 8, 'align' => 'center']
-        );
-
-        $this->linha($sheet, $linhaInicio + self::OFF_TITULO, $cols['inicio'], $cols['fim'],
-            'BOLETIM DE NOTAS ',
-            ['bold' => true, 'size' => 8, 'align' => 'center', 'cor' => self::COR_VERDE]
-        );
-
-        $periodoLabel = $this->labelPeriodo();
-        $this->linha($sheet, $linhaInicio + self::OFF_PERIODO, $cols['inicio'], $cols['fim'],
-            "ANO LECTIVO: {$this->turma->anoLetivo?->nome}               {$periodoLabel}",
-            ['size' => 8, 'align' => 'center']
-        );
-
-        // Nome do aluno (vermelho, bold)
-        $this->celula($sheet, $cols['inicio'] . ($linhaInicio + self::OFF_NOME),
-            strtoupper($aluno->name),
-            ['bold' => true, 'size' => 9, 'cor' => self::COR_VERMELHO]
-        );
-
-        // Classe / Nº / Turma / Sala
-        $salaNumero = $this->turma->sala ?? '—';
-        $this->celula($sheet, $cols['inicio'] . ($linhaInicio + self::OFF_CLASSE),
-            "     {$classe}.ª CLASSE      Nº {$numeroOrdem}       TURMA: {$this->turma->nome}       SALA Nº {$salaNumero} ",
-            ['size' => 7, 'cor' => self::COR_AZUL_ESC]
-        );
-
-        // ── Cabeçalho de disciplinas ─────────────────────────────────────────
-        $rowHeader = $linhaInicio + self::OFF_HEADER;
-        $this->celula($sheet, $cols['inicio'] . $rowHeader, 'DISCIPLINA ',
-            ['bold' => true, 'size' => 9, 'cor' => self::COR_VERDE, 'align' => 'center']);
-        $this->celula($sheet, $cols['mt1'] . $rowHeader, $this->labelMT1(),
-            ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center']);
-        $this->celula($sheet, $cols['mt2'] . $rowHeader, $this->labelMT2(),
-            ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center']);
-        $this->celula($sheet, $cols['mft'] . $rowHeader, $this->labelMFT(),
-            ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center']);
-
-        // ── Disciplinas ───────────────────────────────────────────────────────
-        $disciplinasOrdenadas = $notas->sortBy(fn ($n) => $n->disciplina?->nome)->values();
-        $maxDiscs = 12; // máximo de disciplinas por boletim (como no template)
-
-        foreach ($disciplinasOrdenadas->take($maxDiscs) as $idx => $nota) {
-            $rowDisc = $linhaInicio + self::OFF_DISC_INI + $idx;
-            $disc    = $nota->disciplina?->nome ?? '—';
-
-            [$v1, $v2, $v3] = $this->valoresPeriodo($nota);
-
-            $this->celula($sheet, $cols['inicio'] . $rowDisc, $disc,
-                ['size' => 8]);
-            $this->celula($sheet, $cols['mt1'] . $rowDisc, $v1,
-                ['size' => 8, 'align' => 'center']);
-            $this->celula($sheet, $cols['mt2'] . $rowDisc, $v2,
-                ['size' => 8, 'align' => 'center']);
-            $this->celula($sheet, $cols['mft'] . $rowDisc, $v3,
-                ['size' => 8, 'align' => 'center']);
+        $this->celulaComBorda($sheet, $cols['inicio'] . $rowDisc, $disc, ['size' => 8], true);
+        
+        foreach ($configNotas as $idxNota => $config) {
+            $colNota = $cols['notas'][$idxNota] ?? null;
+            $valor = $valores[$config['key']] ?? '';
+            if ($colNota) {
+                $this->celulaComBorda($sheet, $colNota . $rowDisc, $valor,
+                    ['size' => 8, 'align' => 'center'], true);
+            }
         }
+    }
 
-        // ── Director de turma ─────────────────────────────────────────────────
-        $rowDirL = $linhaInicio + self::OFF_DIRETOR_L;
-        $rowDirN = $linhaInicio + self::OFF_DIRETOR_N;
+    // ── Director de turma ─────────────────────────────────────────────────
+    $rowDirL = $linhaInicio + self::OFF_DIRETOR_L;
+    $rowDirN = $linhaInicio + self::OFF_DIRETOR_N;
 
-        $this->celula($sheet, $cols['inicio'] . $rowDirL, 'O DIRECTOR DE TURMA: ',
-            ['size' => 8]);
+    $this->celula($sheet, $cols['inicio'] . $rowDirL, 'O DIRECTOR DE TURMA: ', ['size' => 8]);
+    $diretor = $this->turma->coordenadorTurma?->name ?? '';
+    $this->celula($sheet, $cols['inicio'] . $rowDirN, $diretor, ['size' => 11]);
 
-        $diretor = $this->turma->coordenadorTurma?->name ?? '';
-        $this->celula($sheet, $cols['inicio'] . $rowDirN, $diretor,
-            ['size' => 11]);
+    // ── Bordas externas do boletim ────────────────────────────────────────
+    $rangeBoletim = $cols['inicio'] . ($linhaInicio + self::OFF_ESCOLA)
+        . ':' . $cols['fim'] . ($linhaInicio + self::OFF_DIRETOR_N);
 
-        // ── Bordas externas do boletim ────────────────────────────────────────
-        $rangeBoletim = $cols['inicio'] . ($linhaInicio + self::OFF_ESCOLA)
-            . ':' . $cols['fim'] . ($linhaInicio + self::OFF_DIRETOR_N);
+    $sheet->getStyle($rangeBoletim)->applyFromArray([
+        'borders' => [
+            'outline' => [
+                'borderStyle' => Border::BORDER_THIN,
+                'color'       => ['argb' => self::COR_BORDA],
+            ],
+        ],
+    ]);
+    
+    $this->aplicarBordasTabela($sheet, $cols, $linhaInicio, count($configNotas));
+}
 
-        $sheet->getStyle($rangeBoletim)->applyFromArray([
+// ── 🔹 Novo: Inserção de Logo por Boletim ─────────────────────────────────
+
+/**
+ * Insere o logo centralizado no topo de um boletim específico.
+ */
+private function inserirLogoBoletim(Worksheet $sheet, int $linhaInicio, string $colInicio, array $cols): void
+{
+    if (!file_exists($this->caminhoLogo)) {
+        return;
+    }
+
+    $drawing = new Drawing();
+    $drawing->setName('Logo Escola');
+    $drawing->setDescription('Logo do Boletim');
+    $drawing->setPath($this->caminhoLogo);
+
+    // ✅ Definir proporção ANTES de definir dimensões
+    $drawing->setResizeProportional(true);
+    $drawing->setHeight(self::LOGO_HEIGHT); // largura ajusta automaticamente
+
+    // ✅ Âncora na linha do nome da escola (offset 0), não em -1
+    $linhaAncora = max(1, $linhaInicio + self::OFF_ESCOLA);
+    $drawing->setCoordinates($cols['inicio'] . $linhaAncora);
+
+    $drawing->setOffsetX(self::LOGO_OFFSET_X);
+    $drawing->setOffsetY(self::LOGO_OFFSET_Y);
+
+    $drawing->setWorksheet($sheet);
+}
+
+// ── Helpers de escrita ────────────────────────────────────────────────────
+
+private function celula(Worksheet $sheet, string $ref, mixed $valor, array $opts = []): void
+{
+    $cell = $sheet->getCell($ref);
+    $cell->setValue($valor !== null ? (string) $valor : '');
+
+    $font = $cell->getStyle()->getFont();
+    $font->setSize($opts['size'] ?? 8);
+
+    if ($opts['bold'] ?? false) {
+        $font->setBold(true);
+    }
+    if (isset($opts['cor'])) {
+        $font->getColor()->setARGB($opts['cor']);
+    }
+    if (isset($opts['align'])) {
+        $cell->getStyle()->getAlignment()
+            ->setHorizontal($opts['align'] === 'center'
+                ? Alignment::HORIZONTAL_CENTER
+                : Alignment::HORIZONTAL_LEFT);
+    }
+}
+
+private function celulaComBorda(Worksheet $sheet, string $ref, mixed $valor, array $opts = [], bool $comBorda = false): void
+{
+    $this->celula($sheet, $ref, $valor, $opts);
+    
+    if ($comBorda) {
+        $sheet->getStyle($ref)->applyFromArray([
             'borders' => [
-                'outline' => [
+                'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['argb' => 'FFD9D9D9'],
+                    'color'       => ['argb' => self::COR_BORDA],
                 ],
             ],
         ]);
     }
+}
 
-    // ── Helpers de escrita ────────────────────────────────────────────────────
+private function linha(Worksheet $sheet, int $row, string $colIni, string $colFim, string $valor, array $opts = []): void
+{
+    $range = "{$colIni}{$row}:{$colFim}{$row}";
+    $sheet->mergeCells($range);
+    $this->celula($sheet, "{$colIni}{$row}", $valor, $opts);
+}
 
-    /**
-     * Escreve numa célula simples (sem merge).
-     */
-    private function celula(Worksheet $sheet, string $ref, mixed $valor, array $opts = []): void
-    {
-        $cell = $sheet->getCell($ref);
-        $cell->setValue($valor !== null ? (string) $valor : '');
+private function colunas(string $colInicio): array
+{
+    if ($colInicio === 'A') {
+        return [
+            'inicio' => 'A', 
+            'notas'  => ['B', 'C', 'D'],
+            'fim'    => 'D'
+        ];
+    }
+    return [
+        'inicio' => 'G', 
+        'notas'  => ['H', 'I', 'J'], 
+        'fim'    => 'J'
+    ];
+}
 
-        $font = $cell->getStyle()->getFont();
-        $font->setSize($opts['size'] ?? 8);
+// ── Lógica dinâmica de notas ───────────────────────────────────────────
 
-        if ($opts['bold'] ?? false) {
-            $font->setBold(true);
+private function getConfiguracaoNotas(): array
+{
+    return match ($this->trimestre) {
+        '1' => [['key' => 0, 'label' => 'MT1']],
+        '2' => [
+            ['key' => 0, 'label' => 'MT1'],
+            ['key' => 1, 'label' => 'MT2'],
+            ['key' => 2, 'label' => 'MFT2'],
+        ],
+        '3' => [
+            ['key' => 0, 'label' => 'MT1'],
+            ['key' => 1, 'label' => 'MT2'],
+            ['key' => 2, 'label' => 'MT3'],
+        ],
+        default => [['key' => 2, 'label' => 'CFD']],
+    };
+}
+
+private function valoresPeriodo(Nota $nota): array
+{
+    $fmt = fn ($v) => $v !== null ? number_format((float) $v, 2, ',', '') : '';
+    return [
+        0 => $fmt($nota->mt1),
+        1 => $fmt($nota->mt2),
+        2 => match ($this->trimestre) {
+            '2' => $fmt($nota->mft2),
+            '3' => $fmt($nota->mt3),
+            default => $fmt($nota->cfd),
+        },
+    ];
+}
+
+private function labelPeriodo(): string
+{
+    return match ($this->trimestre) {
+        '1'     => 'Iº TRIMESTRE',
+        '2'     => 'IIº TRIMESTRE',
+        '3'     => 'IIIº TRIMESTRE',
+        default => 'CLASSIFICAÇÃO FINAL',
+    };
+}
+
+private function aplicarBordasTabela(Worksheet $sheet, array $cols, int $linhaInicio, int $qtdColunasNotas): void
+{
+    $linhaInicioDisc = $linhaInicio + self::OFF_HEADER;
+    $linhaFimDisc    = $linhaInicio + self::OFF_DISC_INI + 11;
+    
+    $colunasTabela = [$cols['inicio'], ...array_slice($cols['notas'], 0, $qtdColunasNotas)];
+    $colInicioTabela = $colunasTabela[0];
+    $colFimTabela = end($colunasTabela);
+    
+    $rangeTabela = "{$colInicioTabela}{$linhaInicioDisc}:{$colFimTabela}{$linhaFimDisc}";
+    
+    $sheet->getStyle($rangeTabela)->applyFromArray([
+        'borders' => [
+            'allBorders' => [
+                'borderStyle' => Border::BORDER_THIN,
+                'color'       => ['argb' => self::COR_BORDA],
+            ],
+        ],
+    ]);
+    
+    $this->ocultarBordasColunasInativas($sheet, $cols, $linhaInicioDisc, $linhaFimDisc, $qtdColunasNotas);
+}
+
+private function ocultarBordasColunasInativas(
+    Worksheet $sheet, 
+    array $cols, 
+    int $linhaInicio, 
+    int $linhaFim, 
+    int $qtdColunasAtivas
+): void {
+    for ($i = $qtdColunasAtivas; $i < 3; $i++) {
+        $col = $cols['notas'][$i] ?? null;
+        if ($col) {
+            for ($linha = $linhaInicio; $linha <= $linhaFim; $linha++) {
+                $ref = "{$col}{$linha}";
+                $sheet->getStyle($ref)->applyFromArray([
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_NONE],
+                    ],
+                ]);
+                if ($linha === $linhaInicio) {
+                    $sheet->getColumnDimension($col)->setVisible(false);
+                }
+            }
         }
-        if (isset($opts['cor'])) {
-            $font->getColor()->setARGB($opts['cor']);
-        }
-        if (isset($opts['align'])) {
-            $cell->getStyle()->getAlignment()
-                ->setHorizontal($opts['align'] === 'center'
-                    ? Alignment::HORIZONTAL_CENTER
-                    : Alignment::HORIZONTAL_LEFT);
-        }
     }
-
-    /**
-     * Escreve num intervalo mesclado (A:D ou G:J).
-     */
-    private function linha(Worksheet $sheet, int $row, string $colIni, string $colFim, string $valor, array $opts = []): void
-    {
-        $range = "{$colIni}{$row}:{$colFim}{$row}";
-        $sheet->mergeCells($range);
-        $this->celula($sheet, "{$colIni}{$row}", $valor, $opts);
-    }
-
-    /**
-     * Retorna as colunas para um boletim baseado na coluna de início.
-     */
-    private function colunas(string $colInicio): array
-    {
-        if ($colInicio === 'A') {
-            return ['inicio' => 'A', 'mt1' => 'B', 'mt2' => 'C', 'mft' => 'D', 'fim' => 'D'];
-        }
-        return ['inicio' => 'G', 'mt1' => 'H', 'mt2' => 'I', 'mft' => 'J', 'fim' => 'J'];
-    }
-
-    // ── Lógica de notas ───────────────────────────────────────────────────────
-
-    /**
-     * Retorna [coluna1, coluna2, coluna3] consoante o trimestre seleccionado.
-     * Para '1': MT1, —, —
-     * Para '2': MT1, MT2, MFT2
-     * Para '3': MT1, MT2, MT3
-     * Para 'final': —, —, CFD
-     */
-    private function valoresPeriodo(Nota $nota): array
-    {
-        $fmt = fn ($v) => $v !== null ? number_format((float) $v, 2, ',', '') : '';
-
-        return match ($this->trimestre) {
-            '1'     => [$fmt($nota->mt1), '',              ''             ],
-            '2'     => [$fmt($nota->mt1), $fmt($nota->mt2), $fmt($nota->mft2)],
-            '3'     => [$fmt($nota->mt1), $fmt($nota->mt2), $fmt($nota->mt3) ],
-            default => ['',              '',              $fmt($nota->cfd) ],
-        };
-    }
-
-    private function labelPeriodo(): string
-    {
-        return match ($this->trimestre) {
-            '1'     => 'Iº TRIMESTRE',
-            '2'     => 'IIº TRIMESTRE',
-            '3'     => 'IIIº TRIMESTRE',
-            default => 'CLASSIFICAÇÃO FINAL',
-        };
-    }
-
-    private function labelMT1(): string
-    {
-        return match ($this->trimestre) {
-            '1'     => 'MT1',
-            '2', '3' => 'MT1',
-            default => '—',
-        };
-    }
-
-    private function labelMT2(): string
-    {
-        return match ($this->trimestre) {
-            '2'     => 'MT2',
-            '3'     => 'MT2',
-            default => '',
-        };
-    }
-
-    private function labelMFT(): string
-    {
-        return match ($this->trimestre) {
-            '1'     => 'MT1',
-            '2'     => 'MFT2',
-            '3'     => 'MT3',
-            default => 'CFD',
-        };
-    }
+}
 }
