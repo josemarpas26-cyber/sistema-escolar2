@@ -297,7 +297,29 @@ private function inserirLogoBoletim(Worksheet $sheet, int $linhaInicio, string $
     $linhaAncora = max(1, $linhaInicio + self::OFF_ESCOLA);
     $drawing->setCoordinates($cols['inicio'] . $linhaAncora);
 
-    $drawing->setOffsetX(self::LOGO_OFFSET_X);
+    // Largura aproximada das colunas (em pixels)
+$larguras = [
+    'A' => 27.57, 'B' => 10.14, 'C' => 9.43, 'D' => 9.14,
+    'G' => 27.29, 'H' => 10.14, 'I' => 9.43, 'J' => 9.57,
+];
+
+// Converter largura Excel → pixels (aprox. 1 unidade ≈ 7px)
+$toPx = fn($v) => $v * 7;
+
+// Somar largura do bloco atual
+$colunas = $colInicio === 'A'
+    ? ['A','B','C','D']
+    : ['G','H','I','J'];
+
+$larguraTotal = array_sum(array_map(fn($c) => $toPx($larguras[$c]), $colunas));
+
+// Largura estimada do logo
+$larguraLogo = self::LOGO_HEIGHT * 2; // ajuste conforme proporção da imagem
+
+// Centralizar
+$offsetX = ($larguraTotal - $larguraLogo) / 2;
+
+$drawing->setOffsetX((int) max(0, $offsetX));
     $drawing->setOffsetY(self::LOGO_OFFSET_Y);
 
     $drawing->setWorksheet($sheet);
