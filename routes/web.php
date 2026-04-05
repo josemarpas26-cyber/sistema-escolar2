@@ -124,6 +124,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('estatisticas', [\App\Http\Controllers\EstatisticasController::class, 'index'])
         ->name('estatisticas.index');
+
+    Route::get('/relatorios/boletins-massa', [RelatorioController::class, 'boletimMassa'])
+     ->name('relatorios.boletins-massa');
 });
 
 require __DIR__ . '/auth.php';

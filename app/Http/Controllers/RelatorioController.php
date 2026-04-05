@@ -14,6 +14,7 @@ use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\BoletimMassaExport;
 
 class RelatorioController extends Controller
 {
@@ -673,4 +674,67 @@ class RelatorioController extends Controller
     {
         return app(\App\Services\PautaGeralTemplateExporter::class)->download($dados);
     }
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ADICIONAR ao RelatorioController.php
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1) No topo do ficheiro, adicionar o import:
+//    use App\Exports\BoletimMassaExport;
+
+// 2) Adicionar este método à classe RelatorioController:
+
+    /**
+     * Gera boletins em massa para todos os alunos de uma turma.
+     * Formato: 2 boletins por linha, idêntico ao template Excel.
+     *
+     * GET/POST  /relatorios/boletins-massa
+     * Parâmetros: turma_id, trimestre (1|2|3|final), ano_letivo_id (opcional)
+     */
+    public function boletimMassa(Request $request)
+    {
+        $this->checkPermission('relatorios.boletins');
+
+        $validated = $request->validate([
+            'turma_id'      => 'required|exists:turmas,id',
+            'trimestre'     => 'nullable|in:1,2,3,final',
+            'ano_letivo_id' => 'nullable|exists:anos_letivos,id',
+        ]);
+
+        $turma = Turma::with([
+            'curso',
+            'anoLetivo',
+            'coordenador',   // relação belongsTo para o director de turma
+            'alunos' => fn ($q) => $q->wherePivot('status', 'matriculado')->orderBy('name'),
+        ])->findOrFail($validated['turma_id']);
+
+        // Usar o ano lectivo da turma ou o pedido; fallback para o activo
+        $anoLetivoId = $validated['ano_letivo_id']
+            ?? $turma->ano_letivo_id
+            ?? AnoLetivo::ativo()->value('id');
+
+        if (! $anoLetivoId) {
+            return back()->with('error', 'Nenhum ano lectivo encontrado.');
+        }
+
+        $notas = Nota::where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivoId)
+            ->with(['disciplina:id,nome,codigo'])
+            ->get()
+            ->groupBy('aluno_id');
+
+        $trimestre = $validated['trimestre'] ?? '2';
+
+        $filename = 'boletins-'
+            . str($turma->nome)->slug()
+            . '-t' . $trimestre
+            . '.xlsx';
+
+        return Excel::download(
+            new BoletimMassaExport($turma, $notas, $trimestre),
+            $filename
+        );
+    }
+
 }

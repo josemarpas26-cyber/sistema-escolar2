@@ -51,6 +51,50 @@
         </form>
     </x-card>
 
+
+{{-- ================= BOLETINS EM MASSA ================= --}}
+<x-card title="Boletins em Massa (turma completa)" icon="fas fa-file-excel">
+    <form method="GET" action="{{ route('relatorios.boletins-massa') }}"
+          class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        @csrf
+
+        <select name="turma_id" class="form-input" required>
+            <option value="">Turma</option>
+            @foreach($turmas as $turma)
+                <option value="{{ $turma->id }}">
+                    {{ $turma->nome_completo }} — {{ $turma->anoLetivo->nome }}
+                </option>
+            @endforeach
+        </select>
+
+        <select name="ano_letivo_id" class="form-input">
+            @foreach($anosLetivos as $ano)
+                <option value="{{ $ano->id }}" @selected($anoLetivo?->id === $ano->id)>
+                    {{ $ano->nome }}
+                </option>
+            @endforeach
+        </select>
+
+        <select name="trimestre" class="form-input">
+            <option value="final">Final (CFD)</option>
+            <option value="1">1º Trimestre</option>
+            <option value="2" selected>2º Trimestre</option>
+            <option value="3">3º Trimestre</option>
+        </select>
+
+        <div class="flex items-end">
+            <button type="submit" class="btn btn-success w-full">
+                <i class="fas fa-file-excel mr-2"></i>
+                Baixar XLSX (todos os alunos)
+            </button>
+        </div>
+    </form>
+    <p class="text-xs text-gray-400 mt-2">
+        Gera um ficheiro Excel com 2 boletins por linha, no formato oficial da escola.
+    </p>
+</x-card>
+
+
     {{-- ================= PAUTA DISCIPLINA ================= --}}
     <x-card title="Pauta da Turma (disciplina/trimestre)" icon="fas fa-table">
         <form method="GET"
