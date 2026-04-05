@@ -1,39 +1,51 @@
 @props([
     'title' => null,
-    'icon' => null,
+    'icon'  => null,
+    'noPad' => false,
 ])
 
-
-
-<div class="group relative bg-white rounded-xl border border-gray-200
-            shadow-sm hover:shadow-xl transition-all duration-300
-            hover:-translate-y-1 overflow-hidden p-6">
-
-    <!-- Glow leve neutro -->
-    <div class="absolute inset-0 bg-gradient-to-r 
-                from-gray-100 to-transparent 
-                opacity-0 group-hover:opacity-100 
-                transition-opacity duration-300">
-    </div>
-
-    <div class="relative mb-5 flex items-center space-x-3">
-        <div class="w-10 h-10 flex items-center justify-center 
-                    rounded-lg bg-gray-100 text-gray-600 
-                    group-hover:scale-110 transition-transform duration-300">
+<div style="
+    background: var(--surface-card, #fff);
+    border: 1px solid var(--surface-border, #e2e8f0);
+    border-radius: var(--radius-lg, 14px);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.07));
+    overflow: hidden;
+">
+    @if($title)
+    <div style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--surface-border, #e2e8f0);
+        background: var(--gray-50, #f8fafc);
+    ">
+        @if($icon)
+        <span style="
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: var(--blue-50, #eff6ff);
+            color: var(--blue-600, #2563eb);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+        ">
             <i class="{{ $icon }}"></i>
-        </div>
-        <h3 class="font-semibold text-gray-800 text-lg">
-            {{ $title }}
-        </h3>
+        </span>
+        @endif
+        <h3 style="
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary, #0f172a);
+            margin: 0;
+        ">{{ $title }}</h3>
     </div>
+    @endif
 
-    <div class="relative">
+    <div style="{{ $noPad ? '' : 'padding: 20px;' }}">
         {{ $slot }}
-    </div>
-
-    <!-- Barra inferior animada -->
-    <div class="absolute bottom-0 left-0 h-1 w-0
-                bg-blue-600
-                group-hover:w-full transition-all duration-300">
     </div>
 </div>
