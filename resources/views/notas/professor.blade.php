@@ -1238,6 +1238,74 @@
   </div>
   @endif
 
+  @if($notas && $turma && $disciplina)
+  <div class="bg-white border border-slate-200 rounded-xl p-4 mb-4">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-800">Divisão aritmética por 2 (casos de ausência)</h3>
+        <p class="text-xs text-slate-500">
+          Use <strong>-1</strong> como sentinela de ausência no trimestre. Professores podem solicitar e apenas o coordenador do curso pode aprovar.
+        </p>
+      </div>
+      @if(auth()->user()->isCoordenadorCurso() && $turma->curso?->coordenador_id === auth()->id())
+      <span class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+        <i class="fas fa-bell"></i> {{ $solicitacoesPendentes->count() }} solicitação(ões) pendente(s)
+      </span>
+      @endif
+    </div>
+
+    <div class="mt-3 grid gap-2">
+      @foreach($notas as $notaResumo)
+        @php
+          $solicitacaoAtual = $statusSolicitacoesPorNota->get($notaResumo->id);
+          $statusAtual = $solicitacaoAtual?->status;
+        @endphp
+        <div class="border border-slate-100 rounded-lg p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div>
+            <div class="text-sm font-medium text-slate-700">{{ $notaResumo->aluno->name }}</div>
+            <div class="text-xs text-slate-500">
+              Estado: {{ $notaResumo->usar_divisao_aritmetica_por_2 ? 'Divisão por 2 liberada' : 'Divisão padrão' }}
+              @if($statusAtual)
+                · Solicitação {{ $statusAtual }}
+              @endif
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            @if(!$notaResumo->usar_divisao_aritmetica_por_2)
+              <form method="POST" action="{{ route('notas.solicitar-divisao-por-dois', $notaResumo) }}">
+                @csrf
+                <button type="submit"
+                        class="px-3 py-1.5 rounded-md text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100"
+                        @disabled($statusAtual === 'pendente')>
+                  <i class="fas fa-paper-plane"></i> Solicitar autorização
+                </button>
+              </form>
+            @endif
+
+            @if(auth()->user()->isCoordenadorCurso() && $turma->curso?->coordenador_id === auth()->id() && $statusAtual === 'pendente')
+              <form method="POST" action="{{ route('notas.solicitacoes-divisao.responder', $solicitacaoAtual) }}" class="inline-flex">
+                @csrf
+                <input type="hidden" name="acao" value="aprovar">
+                <button type="submit" class="px-3 py-1.5 rounded-md text-xs font-semibold text-green-700 bg-green-50 border border-green-200 hover:bg-green-100">
+                  <i class="fas fa-check"></i> Aprovar
+                </button>
+              </form>
+              <form method="POST" action="{{ route('notas.solicitacoes-divisao.responder', $solicitacaoAtual) }}" class="inline-flex">
+                @csrf
+                <input type="hidden" name="acao" value="rejeitar">
+                <button type="submit" class="px-3 py-1.5 rounded-md text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100">
+                  <i class="fas fa-times"></i> Rejeitar
+                </button>
+              </form>
+            @endif
+          </div>
+        </div>
+      @endforeach
+    </div>
+  </div>
+  @endif
+
   {{-- ═══════════════════════════════════════════════
        CORPO — 2 colunas quando há pauta
   ═══════════════════════════════════════════════ --}}
@@ -1379,7 +1447,7 @@
 
                     <td>
                       <div class="np-input-wrap">
-                        <input type="number" step="0.01" min="0" max="20"
+                        <input type="number" step="0.01" min="-1" max="20"
                                name="notas[{{ $idx }}][mac1]"
                                value="{{ $nota->mac1 }}"
                                class="np-nota-input {{ $nota->mac1 !== null ? ($nota->mac1 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
@@ -1391,7 +1459,7 @@
                     </td>
                     <td>
                       <div class="np-input-wrap">
-                        <input type="number" step="0.01" min="0" max="20"
+                        <input type="number" step="0.01" min="-1" max="20"
                                name="notas[{{ $idx }}][pp1]"
                                value="{{ $nota->pp1 }}"
                                class="np-nota-input {{ $nota->pp1 !== null ? ($nota->pp1 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
@@ -1403,7 +1471,7 @@
                     </td>
                     <td>
                       <div class="np-input-wrap">
-                        <input type="number" step="0.01" min="0" max="20"
+                        <input type="number" step="0.01" min="-1" max="20"
                                name="notas[{{ $idx }}][pt1]"
                                value="{{ $nota->pt1 }}"
                                class="np-nota-input {{ $nota->pt1 !== null ? ($nota->pt1 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
@@ -1537,7 +1605,7 @@
                       </span>
                     </td>
                     <td><div class="np-input-wrap">
-                      <input type="number" step="0.01" min="0" max="20"
+                      <input type="number" step="0.01" min="-1" max="20"
                              name="notas[{{ $idx }}][mac2]" value="{{ $nota->mac2 }}"
                              class="np-nota-input {{ $nota->mac2 !== null ? ($nota->mac2 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked2 ? 'disabled' : '' }}
@@ -1545,7 +1613,7 @@
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
                     <td><div class="np-input-wrap">
-                      <input type="number" step="0.01" min="0" max="20"
+                      <input type="number" step="0.01" min="-1" max="20"
                              name="notas[{{ $idx }}][pp2]" value="{{ $nota->pp2 }}"
                              class="np-nota-input {{ $nota->pp2 !== null ? ($nota->pp2 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked2 ? 'disabled' : '' }}
@@ -1553,7 +1621,7 @@
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
                     <td><div class="np-input-wrap">
-                      <input type="number" step="0.01" min="0" max="20"
+                      <input type="number" step="0.01" min="-1" max="20"
                              name="notas[{{ $idx }}][pt2]" value="{{ $nota->pt2 }}"
                              class="np-nota-input {{ $nota->pt2 !== null ? ($nota->pt2 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked2 ? 'disabled' : '' }}
@@ -1699,7 +1767,7 @@
                       </span>
                     </td>
                     <td><div class="np-input-wrap">
-                      <input type="number" step="0.01" min="0" max="20"
+                      <input type="number" step="0.01" min="-1" max="20"
                              name="notas[{{ $idx }}][mac3]" value="{{ $nota->mac3 }}"
                              class="np-nota-input {{ $nota->mac3 !== null ? ($nota->mac3 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked3 ? 'disabled' : '' }}
@@ -1707,7 +1775,7 @@
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
                     <td><div class="np-input-wrap">
-                      <input type="number" step="0.01" min="0" max="20"
+                      <input type="number" step="0.01" min="-1" max="20"
                              name="notas[{{ $idx }}][pp3]" value="{{ $nota->pp3 }}"
                              class="np-nota-input {{ $nota->pp3 !== null ? ($nota->pp3 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked3 ? 'disabled' : '' }}
@@ -1715,7 +1783,7 @@
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
                     <td><div class="np-input-wrap">
-                      <input type="number" step="0.01" min="0" max="20"
+                      <input type="number" step="0.01" min="-1" max="20"
                              name="notas[{{ $idx }}][pg]" value="{{ $nota->pg }}"
                              class="np-nota-input {{ $nota->pg !== null ? ($nota->pg >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked3 ? 'disabled' : '' }}

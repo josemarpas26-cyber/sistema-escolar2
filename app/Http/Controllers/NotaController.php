@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
 use App\Models\Disciplina;
+use App\Models\DivisaoAritmeticaSolicitacao;
 use App\Models\Nota;
 use App\Models\NotaLog;
 use App\Models\Turma;
@@ -63,6 +64,8 @@ class NotaController extends Controller
         $turma = null;
         $disciplina = null;
         $estatisticasPauta = null;
+        $solicitacoesPendentes = collect();
+        $statusSolicitacoesPorNota = collect();
 
         if ($turmaId && $disciplinaId) {
             $temAtribuicao = $atribuicoes
@@ -99,9 +102,36 @@ class NotaController extends Controller
                 ->values();
 
             $estatisticasPauta = $this->estatisticasAcademicas->resumoPauta($notas);
+
+            $statusSolicitacoesPorNota = DivisaoAritmeticaSolicitacao::query()
+                ->whereIn('nota_id', $notas->pluck('id'))
+                ->latest('id')
+                ->get()
+                ->groupBy('nota_id')
+                ->map(fn ($grupo) => $grupo->first());
+
+            if ($professor->isCoordenadorCurso() && $turma?->curso?->coordenador_id === $professor->id) {
+                $solicitacoesPendentes = DivisaoAritmeticaSolicitacao::query()
+                    ->where('coordenador_id', $professor->id)
+                    ->where('status', 'pendente')
+                    ->whereHas('nota', fn ($q) => $q
+                        ->where('turma_id', $turma->id)
+                        ->where('disciplina_id', $disciplina->id))
+                    ->with(['nota.aluno', 'professor'])
+                    ->latest()
+                    ->get();
+            }
         }
 
-        return view('notas.professor', compact('atribuicoes', 'notas', 'turma', 'disciplina', 'estatisticasPauta'));
+        return view('notas.professor', compact(
+            'atribuicoes',
+            'notas',
+            'turma',
+            'disciplina',
+            'estatisticasPauta',
+            'solicitacoesPendentes',
+            'statusSolicitacoesPorNota'
+        ));
     }
 
     public function secretariaIndex(Request $request)
@@ -276,7 +306,7 @@ class NotaController extends Controller
         $rules = ['notas' => 'required|array', 'notas.*.id' => 'required|exists:notas,id'];
 
         foreach ($campos as $campo) {
-            $rules["notas.*.{$campo}"] = 'nullable|numeric|min:0|max:20';
+            $rules["notas.*.{$campo}"] = 'nullable|numeric|min:-1|max:20';
         }
 
         $validated = $request->validate($rules);
@@ -380,11 +410,11 @@ class NotaController extends Controller
 
         $rules = array_fill_keys(
             $allCampos,
-            'nullable|numeric|min:0|max:20'
+            'nullable|numeric|min:-1|max:20'
         );
 
-        $rules['ca_10'] = 'nullable|numeric|min:0|max:20';
-        $rules['ca_11'] = 'nullable|numeric|min:0|max:20';
+        $rules['ca_10'] = 'nullable|numeric|min:-1|max:20';
+        $rules['ca_11'] = 'nullable|numeric|min:-1|max:20';
         $rules['observacoes'] = 'nullable|string';
 
         $validated = $request->validate($rules);
@@ -794,5 +824,71 @@ class NotaController extends Controller
             ->where('ano_letivo_id', $turma->ano_letivo_id)
             ->when($alunoId, fn ($query, $id) => $query->where('aluno_id', $id))
             ->get();
+    }
+
+    public function solicitarDivisaoPorDois(Request $request, Nota $nota)
+    {
+        $user = auth()->user();
+        $this->authorize('update', $nota);
+        $this->checkPermission('notas.lancar');
+
+        $coordenadorId = $nota->turma?->curso?->coordenador_id;
+        if (! $coordenadorId) {
+            return back()->with('error', 'A turma não possui coordenador de curso definido.');
+        }
+
+        $jaPendente = DivisaoAritmeticaSolicitacao::query()
+            ->where('nota_id', $nota->id)
+            ->where('status', 'pendente')
+            ->exists();
+
+        if ($jaPendente) {
+            return back()->with('info', 'Já existe uma solicitação pendente para este aluno.');
+        }
+
+        $data = $request->validate([
+            'mensagem' => 'nullable|string|max:500',
+        ]);
+
+        DivisaoAritmeticaSolicitacao::create([
+            'nota_id' => $nota->id,
+            'professor_id' => $user->id,
+            'coordenador_id' => $coordenadorId,
+            'mensagem' => $data['mensagem'] ?? null,
+            'status' => 'pendente',
+        ]);
+
+        return back()->with('success', 'Solicitação enviada ao coordenador do curso.');
+    }
+
+    public function responderSolicitacaoDivisao(Request $request, DivisaoAritmeticaSolicitacao $solicitacao)
+    {
+        $user = auth()->user();
+        if (! $user->isCoordenadorCurso() || $solicitacao->coordenador_id !== $user->id) {
+            abort(403, 'Apenas o coordenador de curso pode responder esta solicitação.');
+        }
+
+        $dados = $request->validate([
+            'acao' => 'required|in:aprovar,rejeitar',
+            'resposta' => 'nullable|string|max:500',
+        ]);
+
+        DB::transaction(function () use ($solicitacao, $dados, $user) {
+            $solicitacao->update([
+                'status' => $dados['acao'] === 'aprovar' ? 'aprovada' : 'rejeitada',
+                'respondida_em' => now(),
+                'respondida_por' => $user->id,
+                'resposta' => $dados['resposta'] ?? null,
+            ]);
+
+            if ($dados['acao'] === 'aprovar') {
+                $nota = $solicitacao->nota()->with(['turma', 'disciplina'])->firstOrFail();
+                $nota->usar_divisao_aritmetica_por_2 = true;
+                $this->notaService->recalcularNota($nota);
+                $nota->save();
+            }
+        });
+
+        return back()->with('success', 'Solicitação processada com sucesso.');
     }
 }

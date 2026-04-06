@@ -48,19 +48,19 @@
                 <div>
                     <label class="label">MAC1</label>
                     <input type="number" name="mac1" value="{{ old('mac1', $nota->mac1) }}" 
-                            step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('mac1')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="label">PP1</label>
                     <input type="number" name="pp1" value="{{ old('pp1', $nota->pp1) }}" 
-                            step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pp1')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="label">PT1</label>
                     <input type="number" name="pt1" value="{{ old('pt1', $nota->pt1) }}" 
-                            step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pt1')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -77,19 +77,19 @@
                 <div>
                     <label class="label">MAC2</label>
                     <input type="number" name="mac2" value="{{ old('mac2', $nota->mac2) }}" 
-                          step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                          step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('mac2')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="label">PP2</label>
                     <input type="number" name="pp2" value="{{ old('pp2', $nota->pp2) }}" 
-                            step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pp2')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="label">PT2</label>
                     <input type="number" name="pt2" value="{{ old('pt2', $nota->pt2) }}" 
-                           step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pt2')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -111,19 +111,19 @@
                 <div>
                     <label class="label">MAC3</label>
                     <input type="number" name="mac3" value="{{ old('mac3', $nota->mac3) }}" 
-                                 step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                                 step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('mac3')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="label">PP3</label>
                     <input type="number" name="pp3" value="{{ old('pp3', $nota->pp3) }}" 
-                           step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pp3')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="label">PG (Prova Global)</label>
                     <input type="number" name="pg" value="{{ old('pg', $nota->pg) }}" 
-                           step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pg')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -135,7 +135,7 @@
                 <div>
                     <label class="label">CA da 10ª</label>
                     <input type="number" name="ca_10" value="{{ old('ca_10', $nota->ca_10) }}" 
-                           step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     <p class="text-xs text-gray-500 mt-1">Classificação anterior da 10ª classe</p>
                 </div>
                 @endif
@@ -143,7 +143,7 @@
                 <div>
                     <label class="label">CA da 11ª</label>
                     <input type="number" name="ca_11" value="{{ old('ca_11', $nota->ca_11) }}" 
-                           step="0.01" min="0" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     <p class="text-xs text-gray-500 mt-1">Classificação anterior da 11ª classe</p>
                 </div>
                 @endif
