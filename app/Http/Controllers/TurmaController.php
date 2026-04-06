@@ -10,6 +10,7 @@ use App\Models\Disciplina;
 use App\Models\Nota;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use App\Models\HistoricoAcademico;
 
 class TurmaController extends Controller
@@ -106,7 +107,13 @@ class TurmaController extends Controller
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
-            'coordenador_turma_id' => 'nullable|exists:users,id',
+            'coordenador_turma_id' => [
+                'nullable',
+                'exists:users,id',
+                Rule::unique('turmas')->where(function ($query) use ($request) {
+                    return $query->where('ano_letivo_id', $request->input('ano_letivo_id'));
+                }),
+            ],
             'capacidade' => 'required|integer|min:1|max:100',
             'disciplinas' => 'nullable|array',
             'disciplinas.*' => 'exists:disciplinas,id',
@@ -204,7 +211,15 @@ class TurmaController extends Controller
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
-            'coordenador_turma_id' => 'nullable|exists:users,id',
+            'coordenador_turma_id' => [
+                'nullable',
+                'exists:users,id',
+                Rule::unique('turmas')
+                    ->ignore($turma->id)
+                    ->where(function ($query) use ($request) {
+                        return $query->where('ano_letivo_id', $request->input('ano_letivo_id'));
+                    }),
+            ],
             'capacidade' => 'required|integer|min:1|max:100',
             'ativo' => 'boolean',
             'disciplinas' => 'nullable|array',
@@ -269,6 +284,18 @@ class TurmaController extends Controller
             ->where('aluno_id', $validated['aluno_id'])
             ->value('status');
 
+        $jaMatriculadoNoutraTurma = DB::table('turma_aluno')
+            ->join('turmas', 'turmas.id', '=', 'turma_aluno.turma_id')
+            ->where('turma_aluno.aluno_id', $validated['aluno_id'])
+            ->where('turma_aluno.status', 'matriculado')
+            ->where('turma_aluno.turma_id', '!=', $turma->id)
+            ->where('turmas.ano_letivo_id', $turma->ano_letivo_id)
+            ->exists();
+
+        if ($jaMatriculadoNoutraTurma) {
+            return back()->with('error', 'O aluno já está matriculado noutra turma neste ano letivo.');
+        }
+
         // Já existe pivot para este aluno nesta turma
         if ($statusAtual !== null) {
             if ($statusAtual === 'matriculado') {
@@ -324,10 +351,19 @@ class TurmaController extends Controller
             return back()->with('error', 'Esta disciplina não está associada à turma!');
         }
 
-        // Verificar se já existe atribuição
+        // Não permitir mais de um professor na mesma disciplina da turma no mesmo ano letivo
+        if ($turma->atribuicoes()
+            ->where('disciplina_id', $validated['disciplina_id'])
+            ->where('ano_letivo_id', $turma->ano_letivo_id)
+            ->exists()) {
+            return back()->with('error', 'Esta disciplina já possui professor atribuído nesta turma.');
+        }
+
+        // Verificar duplicidade exata (professor + disciplina)
         if ($turma->atribuicoes()
             ->where('professor_id', $validated['professor_id'])
             ->where('disciplina_id', $validated['disciplina_id'])
+            ->where('ano_letivo_id', $turma->ano_letivo_id)
             ->exists()) {
             return back()->with('error', 'Professor já está atribuído a esta disciplina nesta turma!');
         }
@@ -400,6 +436,16 @@ class TurmaController extends Controller
 
         if ($turmaExistente) {
             return back()->with('error', 'Já existe uma turma com este nome na classe seguinte.');
+        }
+
+        if ($turma->coordenador_turma_id) {
+            $diretorJaAlocado = Turma::where('coordenador_turma_id', $turma->coordenador_turma_id)
+                ->where('ano_letivo_id', $proximoAno->id)
+                ->exists();
+
+            if ($diretorJaAlocado) {
+                return back()->with('error', 'O director de turma já está atribuído a outra turma no próximo ano letivo.');
+            }
         }
 
         // ----------------------------------------------------------------

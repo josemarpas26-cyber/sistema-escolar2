@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Curso;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CursoController extends Controller
 {
@@ -58,7 +59,13 @@ class CursoController extends Controller
             'nome' => 'required|string|max:255',
             'codigo' => 'required|string|max:10|unique:cursos,codigo',
             'descricao' => 'nullable|string',
-            'coordenador_id' => 'nullable|exists:users,id',
+            'coordenador_id' => [
+                'nullable',
+                'exists:users,id',
+                Rule::unique('cursos')->where(function ($query) use ($request) {
+                    return $query->where('ativo', $request->boolean('ativo', true));
+                }),
+            ],
             'ativo' => 'boolean',
         ]);
 
@@ -107,7 +114,15 @@ class CursoController extends Controller
             'nome' => 'required|string|max:255',
             'codigo' => 'required|string|max:10|unique:cursos,codigo,' . $curso->id,
             'descricao' => 'nullable|string',
-            'coordenador_id' => 'nullable|exists:users,id',
+            'coordenador_id' => [
+                'nullable',
+                'exists:users,id',
+                Rule::unique('cursos')
+                    ->ignore($curso->id)
+                    ->where(function ($query) use ($request) {
+                        return $query->where('ativo', $request->boolean('ativo', true));
+                    }),
+            ],
             'ativo' => 'boolean',
         ]);
 
