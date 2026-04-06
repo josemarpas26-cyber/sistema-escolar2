@@ -48,7 +48,7 @@
                                :required="isAluno"
                                placeholder="Ex: 2024001"
                                maxlength="20">
-                        <p class="text-xs text-gray-500 mt-1">Usado para login quando não há email</p>
+                        <p class="text-xs text-gray-500 mt-1">Usado para login quando não há e-mail</p>
                         @error('numero_processo')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -137,7 +137,7 @@
                         </div>
                         <p x-show="isAluno" class="text-xs text-blue-600 mt-1">
                             <i class="fas fa-info-circle mr-1"></i>
-                            Se não tiver email, o aluno fará login com o número de processo.
+                            Se não tiver e-mail, o aluno fará login com o número de processo.
                         </p>
                         @error('email')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -172,7 +172,7 @@
             <x-card title="Alterar Senha" icon="fas fa-lock">
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 rounded text-sm text-yellow-700">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
-                    Deixe em branco para manter a senha atual.
+                    Deixe em branco para manter a palavra-passe atual.
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -187,12 +187,12 @@
                         @enderror
                     </div>
                     <div>
-                        <label class="label">Confirmar Nova Senha</label>
+                        <label class="label">Confirmar Nova Palavra-passe</label>
                         <input type="password"
                                name="password_confirmation"
                                class="input"
                                minlength="8"
-                               placeholder="Confirme a nova senha">
+                               placeholder="Confirme a nova palavra-passe">
                     </div>
                 </div>
             </x-card>

@@ -1,16 +1,17 @@
 @props(['type' => 'gray'])
 
 @php
-$classes = [
-    'primary' => 'bg-primary-100 text-primary-800',
-    'success' => 'bg-green-100 text-green-800',
-    'warning' => 'bg-yellow-100 text-yellow-800',
-    'danger' => 'bg-red-100 text-red-800',
-    'gray' => 'bg-gray-100 text-gray-800',
-    'info' => 'bg-blue-100 text-blue-800',
+$styles = [
+    'primary' => 'background:#dbeafe;color:#1d4ed8;',
+    'success' => 'background:#dcfce7;color:#15803d;',
+    'warning' => 'background:#fef3c7;color:#92400e;',
+    'danger'  => 'background:#fee2e2;color:#b91c1c;',
+    'gray'    => 'background:#f1f5f9;color:#475569;',
+    'info'    => 'background:#cffafe;color:#0e7490;',
 ];
+$style = $styles[$type] ?? $styles['gray'];
 @endphp
 
-<span {{ $attributes->merge(['class' => 'badge ' . ($classes[$type] ?? $classes['gray'])]) }}>
+<span {{ $attributes->merge(['style' => "display:inline-flex;align-items:center;padding:2px 9px;border-radius:9999px;font-size:11.5px;font-weight:600;letter-spacing:.01em;$style"]) }}>
     {{ $slot }}
 </span>

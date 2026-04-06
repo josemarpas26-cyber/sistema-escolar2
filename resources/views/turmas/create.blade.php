@@ -179,7 +179,7 @@
                     </li>
                     <li class="flex items-start">
                         <i class="fas fa-check text-green-600 mt-1 mr-2"></i>
-                        <span>Você pode adicionar alunos depois de criar</span>
+                        <span>Pode adicionar alunos depois de criar</span>
                     </li>
                     <li class="flex items-start">
                         <i class="fas fa-check text-green-600 mt-1 mr-2"></i>

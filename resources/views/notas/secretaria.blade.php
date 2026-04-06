@@ -79,7 +79,7 @@
                         <label class="nr-label">&nbsp;</label>
                         <div style="display:flex;gap:8px;">
                             <button type="submit" class="nr-btn nr-btn-primary">
-                                <i class="fas fa-search"></i> Buscar
+                                <i class="fas fa-search"></i> Pesquisar
                             </button>
                             <a href="{{ route('notas.secretaria-index') }}" class="nr-btn nr-btn-ghost" title="Limpar">
                                 <i class="fas fa-times"></i>

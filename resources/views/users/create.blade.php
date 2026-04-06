@@ -49,7 +49,7 @@
                                placeholder="Ex: 2024001"
                                maxlength="20">
                         <p class="text-xs text-gray-500 mt-1">
-                            Usado para login quando não há email
+                            Usado para login quando não há e-mail
                         </p>
                         @error('numero_processo')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -142,7 +142,7 @@
                         </div>
                         <p x-show="isAluno" class="text-xs text-blue-600 mt-1">
                             <i class="fas fa-info-circle mr-1"></i>
-                            Se não tiver email, o aluno fará login com o número de processo.
+                            Se não tiver e-mail, o aluno fará login com o número de processo.
                         </p>
                         @error('email')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -195,7 +195,7 @@
                                            x-model="autoPass"
                                            @change="if (autoPass) { $refs.senha.value = ''; $refs.confirmar.value = ''; }"
                                            {{ old('auto_password', true) ? 'checked' : '' }}>
-                                    Gerar senha aleatória automaticamente
+                                    Gerar palavra-passe aleatória automaticamente
                                 </label>
                                 @error('password')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -209,7 +209,7 @@
                                        :disabled="autoPass"
                                        :required="!autoPass"
                                        minlength="8"
-                                       placeholder="Confirme a senha"
+                                       placeholder="Confirme a palavra-passe"
                                        class="input transition-colors"
                                        :class="autoPass
                                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
@@ -342,7 +342,7 @@
                 <div class="space-y-2 text-sm">
                     <div x-show="!isAluno" class="p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <p class="text-blue-800 font-medium">
-                            <i class="fas fa-envelope mr-1"></i> Por email + senha
+                            <i class="fas fa-envelope mr-1"></i> Por e-mail + palavra-passe
                         </p>
                         <p class="text-blue-600 text-xs mt-1">
                             Ou também pelo número de processo, se definido.
@@ -350,10 +350,10 @@
                     </div>
                     <div x-show="isAluno" class="p-3 bg-green-50 rounded-lg border border-green-200">
                         <p class="text-green-800 font-medium">
-                            <i class="fas fa-id-card mr-1"></i> Por nº processo + senha
+                            <i class="fas fa-id-card mr-1"></i> Por nº processo + palavra-passe
                         </p>
                         <p class="text-green-600 text-xs mt-1">
-                            Se tiver email, poderá também usar o email.
+                            Se tiver e-mail, poderá também usar o e-mail.
                         </p>
                     </div>
                 </div>

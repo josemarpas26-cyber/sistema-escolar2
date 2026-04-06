@@ -1,116 +1,57 @@
 @if ($paginator->hasPages())
-<div class="flex items-center justify-between px-1 py-3 mt-4">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
 
-  {{-- Info de resultados --}}
-  <p class="text-sm text-slate-500">
-    Mostrando
-    <span class="font-semibold text-slate-700">{{ $paginator->firstItem() }}</span>
-    –
-    <span class="font-semibold text-slate-700">{{ $paginator->lastItem() }}</span>
-    de
-    <span class="font-semibold text-slate-700">{{ $paginator->total() }}</span>
-    resultados
-  </p>
+    <span style="font-size:12.5px;color:var(--text-tertiary);">
+        A mostrar <strong style="color:var(--text-secondary)">{{ $paginator->firstItem() }}</strong>–<strong style="color:var(--text-secondary)">{{ $paginator->lastItem() }}</strong>
+        de <strong style="color:var(--text-secondary)">{{ $paginator->total() }}</strong>
+    </span>
 
-  {{-- Botões de navegação --}}
-  <div class="flex items-center gap-0.5">
+    <div style="display:flex;align-items:center;gap:2px;">
 
-    {{-- Primeira página (<<) --}}
-    @if ($paginator->onFirstPage())
-      <span class="inline-flex items-center justify-center w-8 h-8
-                   text-slate-300 cursor-not-allowed rounded-md text-sm">
-        «
-      </span>
-    @else
-      <a href="{{ $paginator->url(1) }}"
-         class="inline-flex items-center justify-center w-8 h-8
-                text-slate-400 hover:text-blue-600
-                rounded-md transition-colors duration-150 text-sm">
-        «
-      </a>
-    @endif
+        {{-- First --}}
+        @if ($paginator->onFirstPage())
+        <span style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--gray-300,#cbd5e1);cursor:not-allowed;">«</span>
+        @else
+        <a href="{{ $paginator->url(1) }}" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-tertiary);text-decoration:none;transition:all .15s;" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background=''">«</a>
+        @endif
 
-    {{-- Página anterior (<) --}}
-    @if ($paginator->onFirstPage())
-      <span class="inline-flex items-center justify-center w-8 h-8
-                   text-slate-300 cursor-not-allowed rounded-md text-sm">
-        ‹
-      </span>
-    @else
-      <a href="{{ $paginator->previousPageUrl() }}"
-          class="inline-flex items-center justify-center w-8 h-8
-                text-slate-400 hover:text-blue-600
-                rounded-md transition-colors duration-150 text-sm">
-        ‹
-      </a>
-    @endif
+        {{-- Prev --}}
+        @if ($paginator->onFirstPage())
+        <span style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--gray-300,#cbd5e1);cursor:not-allowed;">‹</span>
+        @else
+        <a href="{{ $paginator->previousPageUrl() }}" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-tertiary);text-decoration:none;transition:all .15s;" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background=''">‹</a>
+        @endif
 
-    {{-- Números de página --}}
-    @foreach ($elements as $element)
-    
-      {{-- Reticências --}}
-      @if (is_string($element))
-        <span class="inline-flex items-center justify-center w-8 h-8
-                     text-slate-400 text-sm">
-          {{ $element }}
-        </span>
-      @endif
-
-     {{-- Páginas numeradas --}}
-      @if (is_array($element))
-        @foreach ($element as $page => $url)
-          @if ($page == $paginator->currentPage())
-            {{-- Página actual --}}
-            <span class="inline-flex items-center justify-center w-8 h-8
-                         rounded-full bg-blue-600 text-white font-semibold
-                         text-sm cursor-default shadow-sm">
-              {{ $page }}
-            </span>
-          @else
-            {{-- Outras páginas --}}
-            <a href="{{ $url }}"
-                class="inline-flex items-center justify-center w-8 h-8
-                      rounded-full text-slate-500
-                      hover:bg-slate-100 hover:text-slate-700
-                      transition-colors duration-150 text-sm">
-              {{ $page }}
-            </a>
-          @endif
+        {{-- Pages --}}
+        @foreach ($elements as $element)
+            @if (is_string($element))
+            <span style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--text-tertiary);">{{ $element }}</span>
+            @endif
+            @if (is_array($element))
+                @foreach ($element as $page => $url)
+                    @if ($page == $paginator->currentPage())
+                    <span style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:#2563eb;color:#fff;cursor:default;">{{ $page }}</span>
+                    @else
+                    <a href="{{ $url }}" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--text-secondary);text-decoration:none;transition:all .15s;" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background=''">{{ $page }}</a>
+                    @endif
+                @endforeach
+            @endif
         @endforeach
-      @endif
 
-    @endforeach
+        {{-- Next --}}
+        @if ($paginator->hasMorePages())
+        <a href="{{ $paginator->nextPageUrl() }}" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-tertiary);text-decoration:none;transition:all .15s;" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background=''">›</a>
+        @else
+        <span style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--gray-300,#cbd5e1);cursor:not-allowed;">›</span>
+        @endif
 
-   {{-- Próxima página (>) --}}
-    @if ($paginator->hasMorePages())
-      <a href="{{ $paginator->nextPageUrl() }}"
-          class="inline-flex items-center justify-center w-8 h-8
-                text-slate-400 hover:text-blue-600
-                rounded-md transition-colors duration-150 text-sm">
-        ›
-      </a>
-    @else
-      <span class="inline-flex items-center justify-center w-8 h-8
-                   text-slate-300 cursor-not-allowed rounded-md text-sm">
-        ›
-      </span>
-    @endif
+        {{-- Last --}}
+        @if ($paginator->hasMorePages())
+        <a href="{{ $paginator->url($paginator->lastPage()) }}" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-tertiary);text-decoration:none;transition:all .15s;" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background=''">»</a>
+        @else
+        <span style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--gray-300,#cbd5e1);cursor:not-allowed;">»</span>
+        @endif
 
-    {{-- Última página (>>) --}}
-    @if ($paginator->hasMorePages())
-      <a href="{{ $paginator->url($paginator->lastPage()) }}"
-         class="inline-flex items-center justify-center w-8 h-8
-                text-slate-400 hover:text-blue-600
-                rounded-md transition-colors duration-150 text-sm">
-        »
-      </a>
-    @else
-      <span class="inline-flex items-center justify-center w-8 h-8
-                   text-slate-300 cursor-not-allowed rounded-md text-sm">
-        »
-      </span>
-    @endif
-
-  </div>
+    </div>
 </div>
 @endif

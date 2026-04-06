@@ -17,7 +17,7 @@
     <form method="POST" action="{{ route('turmas.promover', $turma) }}" class="inline">
         @csrf
         <button type="submit" class="btn btn-success" 
-                onclick="return confirm('Deseja promover esta turma para a {{ $turma->classe + 1 }}a classe?')">
+             onclick="return confirm('Deseja promover esta turma para a {{ $turma->classe + 1 }}.ª classe?')">
             <i class="fas fa-arrow-up mr-2"></i>
             Promover Turma
         </button>
@@ -361,12 +361,12 @@
             <span>{{ $turma->ativo ? 'Desativar' : 'Ativar' }}</span>
         </button>
     </form>
-            <form method="POST" action="{{ route('turmas.destroy', $turma) }}" onsubmit="return confirm('Tem certeza que deseja deletar esta turma?');">
+             <form method="POST" action="{{ route('turmas.destroy', $turma) }}" onsubmit="return confirm('Tem a certeza de que deseja eliminar esta turma?');">
             @csrf
                 @method('DELETE')
                     <button type="submit" class="btn btn-danger w-full">
                         <i class="fas fa-trash mr-2"></i>
-                        Deletar
+                        Eliminar
                     </button>
                 </form>
                 @endif

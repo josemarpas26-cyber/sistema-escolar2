@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page-title', 'Lixeira — Utilizadores Deletados')
+@section('page-title', 'Lixeira — Utilizadores Eliminados')
 
 @section('header-actions')
 <a href="{{ route('users.index') }}" class="btn btn-outline">
@@ -38,7 +38,7 @@
         <div class="text-sm text-amber-800">
             <p class="font-semibold mb-1">Sobre a restauração</p>
             <p>Ao restaurar um utilizador, as suas matrículas e dados académicos são preservados automaticamente
-               porque o sistema usa deleção suave (soft delete). O utilizador volta ao estado anterior à deleção.</p>
+            porque o sistema usa eliminação suave (soft delete). O utilizador volta ao estado anterior à eliminação.</p>
         </div>
     </div>
 
@@ -50,7 +50,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilizador</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Papel</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nº Processo</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deletado em</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Eliminado em</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
                 </tr>
             </thead>
@@ -111,7 +111,7 @@
             <i class="fas fa-trash-alt text-3xl text-gray-300"></i>
         </div>
         <h3 class="text-lg font-semibold text-gray-700 mb-2">Lixeira vazia</h3>
-        <p class="text-gray-500 text-sm">Nenhum utilizador foi deletado.</p>
+        <p class="text-gray-500 text-sm">Nenhum utilizador foi eliminado.</p>
     </div>
     @endif
 

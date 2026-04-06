@@ -71,7 +71,7 @@
                         @if($log->usuario)
                             <span class="font-medium">{{ $log->usuario->name }}</span>
                             @if($log->usuario->trashed())
-                                <x-badge type="danger" class="ml-1 text-xs">Deletado</x-badge>
+                                <x-badge type="danger" class="ml-1 text-xs">Eliminado</x-badge>
                             @endif
                         @else
                             <span class="text-gray-400">—</span>
@@ -94,7 +94,7 @@
                                 {{ $log->aluno->name }}
                             </span>
                             @if($log->aluno->trashed())
-                                <x-badge type="danger" class="ml-1 text-xs">Deletado</x-badge>
+                                <x-badge type="danger" class="ml-1 text-xs">Eliminado</x-badge>
                             @endif
                         @else
                             <span class="text-gray-400">—</span>
