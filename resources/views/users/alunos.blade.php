@@ -18,7 +18,7 @@
     <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
          @csrf
         <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Buscar por nome ou nº processo..." class="input">
+            placeholder="Pesquisar por nome ou n.º de processo..." class="input">
         <select name="turma" class="input">
             <option value="">Todas as turmas</option>
             @foreach($turmas as $turma)
@@ -126,12 +126,12 @@
                             <form method="POST"
                                   action="{{ route('users.destroy', $aluno) }}"
                                   class="inline"
-                                  onsubmit="return confirm('Deletar {{ addslashes($aluno->name) }}?\n\nO utilizador pode ser restaurado na Lixeira.')">
+                                  onsubmit="return confirm('Eliminar {{ addslashes($aluno->name) }}?\n\nO utilizador pode ser restaurado na Lixeira.')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"
                                         class="text-red-600 hover:text-red-900"
-                                        title="Deletar">
+                                        title="Eliminar">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>

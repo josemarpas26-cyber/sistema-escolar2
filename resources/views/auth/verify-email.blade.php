@@ -1,12 +1,12 @@
 <x-guest-layout>
     <div class="mb-4 text-sm text-gray-600">
-        A sua conta foi criada internamente, mas o email ainda precisa de ser verificado.
+        A sua conta foi criada internamente, mas o e-mail ainda precisa de ser verificado.
         Use o link enviado para a sua caixa de entrada antes de continuar.
     </div>
 
     @if (session('status') === 'verification-link-sent')
         <div class="mb-4 text-sm font-medium text-green-600">
-            Enviamos um novo link de verificacao para o email associado a esta conta.
+            Enviámos um novo link de verificação para o e-mail associado a esta conta.
         </div>
     @endif
 
@@ -15,7 +15,7 @@
             @csrf
 
             <x-primary-button>
-                Reenviar Link de Verificacao
+                 Reenviar Link de Verificação
             </x-primary-button>
         </form>
 

@@ -10,11 +10,11 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-2 text-left">Data/Hora</th>
-                        <th class="px-4 py-2 text-left">Usuario</th>
+                         <th class="px-4 py-2 text-left">Utilizador</th>
                         <th class="px-4 py-2 text-left">Acao</th>
                         <th class="px-4 py-2 text-left">Disciplina</th>
                         <th class="px-4 py-2 text-left">Campo</th>
-                        <th class="px-4 py-2 text-left">Alteracao</th>
+                        <th class="px-4 py-2 text-left">Alteração</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">

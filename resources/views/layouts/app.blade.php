@@ -887,7 +887,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ── Legacy helpers (backwards compat) ── */
 window.toggleSidebar = openSidebar;
 window.confirmDelete = function(formId, msg) {
-    if (confirm(msg || 'Tem certeza?')) {
+    if (confirm(msg || 'Tem a certeza?')) {
         document.getElementById(formId).submit();
     }
 };

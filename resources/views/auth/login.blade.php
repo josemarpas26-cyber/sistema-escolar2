@@ -12,7 +12,7 @@
 
     <!-- Email ou Nº Processo -->
     <div class="auth-field">
-        <label class="auth-label" for="login">Email ou Número de Processo</label>
+        <label class="auth-label" for="login">E-mail ou Número de Processo</label>
         <div class="auth-input-wrap">
             <i class="fas fa-user auth-input-icon"></i>
             <input
@@ -58,7 +58,7 @@
             <input type="checkbox" name="remember" class="auth-checkbox">
             <span class="auth-checkbox-label">Lembrar-me</span>
         </label>
-        <a href="{{ route('password.request') }}" class="auth-link">Esqueceu a senha?</a>
+        <a href="{{ route('password.request') }}" class="auth-link">Esqueceu-se da palavra-passe?</a>
     </div>
 
     <button type="submit" class="auth-submit">

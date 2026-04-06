@@ -36,7 +36,7 @@
                         <a href="{{ route('cursos.edit', $curso) }}" class="text-blue-600"><i class="fas fa-edit"></i></a>
 
                     {{-- Botão deletar --}}
-                    <form action="{{ route('cursos.destroy', $curso) }}" method="POST" class="inline-block" onsubmit="return confirm('Tem certeza que deseja deletar este curso?');">
+                     <form action="{{ route('cursos.destroy', $curso) }}" method="POST" class="inline-block" onsubmit="return confirm('Tem a certeza de que deseja eliminar este curso?');">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="text-red-600"><i class="fas fa-trash-alt"></i></button>

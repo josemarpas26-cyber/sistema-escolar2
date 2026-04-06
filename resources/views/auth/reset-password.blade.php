@@ -1,12 +1,12 @@
 @extends('layouts.guest')
 
-@section('title', 'Redefinir Senha')
+@section('title', 'Redefinir Palavra-passe')
 
 @section('content')
 
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 mb-2">Redefinir Senha</h2>
-    <p class="text-gray-600 text-sm">Digite sua nova senha abaixo</p>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Redefinir Palavra-passe</h2>
+    <p class="text-gray-600 text-sm">Introduza a sua nova palavra-passe abaixo</p>
 </div>
 
 <form method="POST" action="{{ route('password.update') }}" class="space-y-6">
@@ -88,7 +88,7 @@
         class="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
     >
         <i class="fas fa-key mr-2"></i>
-        Redefinir Senha
+        Redefinir Palavra-passe
     </button>
 
 </form>

@@ -9,8 +9,8 @@
         <i class="fas fa-arrow-left mr-2"></i>
         Voltar ao login
     </a>
-    <h2 class="text-2xl font-bold text-gray-900 mb-2">Esqueceu sua senha?</h2>
-    <p class="text-gray-600 text-sm">Sem problemas! Digite seu email e enviaremos um link para redefinir sua senha.</p>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Esqueceu-se da palavra-passe?</h2>
+    <p class="text-gray-600 text-sm">Sem problemas! Introduza o seu e-mail e enviaremos um link para redefinir a sua palavra-passe.</p>
 </div>
 
 <form method="POST" action="{{ route('password.email') }}" class="space-y-6">
@@ -31,7 +31,7 @@
                 name="email" 
                 value="{{ old('email') }}"
                 class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-500 @enderror"
-                placeholder="seu@email.com"
+                 placeholder="utilizador@exemplo.com"
                 required 
                 autofocus
             >

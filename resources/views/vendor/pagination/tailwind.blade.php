@@ -2,7 +2,7 @@
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
 
     <span style="font-size:12.5px;color:var(--text-tertiary);">
-        Mostrando <strong style="color:var(--text-secondary)">{{ $paginator->firstItem() }}</strong>–<strong style="color:var(--text-secondary)">{{ $paginator->lastItem() }}</strong>
+        A mostrar <strong style="color:var(--text-secondary)">{{ $paginator->firstItem() }}</strong>–<strong style="color:var(--text-secondary)">{{ $paginator->lastItem() }}</strong>
         de <strong style="color:var(--text-secondary)">{{ $paginator->total() }}</strong>
     </span>
 

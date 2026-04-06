@@ -240,10 +240,10 @@
                 </form>
 
                 @if($user->id !== auth()->id())
-                <button onclick="confirmDelete('delete-form', 'Deseja deletar {{ $user->name }}?')"
+                <button onclick="confirmDelete('delete-form', 'Deseja eliminar {{ $user->name }}?')"
                         class="btn btn-danger w-full">
                     <i class="fas fa-trash mr-2"></i>
-                    Deletar Utilizador
+                    Eliminar Utilizador
                 </button>
                 <form id="delete-form" method="POST" action="{{ route('users.destroy', $user) }}" class="hidden">
                     @csrf

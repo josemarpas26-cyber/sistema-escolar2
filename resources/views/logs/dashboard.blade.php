@@ -64,7 +64,7 @@
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">{{ optional($usuarioData->usuario)->name ?? 'Sistema' }}</p>
-                            <p class="text-xs text-gray-500">{{ optional(optional($usuarioData->usuario)->role)->display_name ?? 'Sem funcao' }}</p>
+                            <p class="text-xs text-gray-500">{{ optional(optional($usuarioData->usuario)->role)->display_name ?? 'Sem função' }}</p>
                         </div>
                     </div>
                     <div class="text-right">

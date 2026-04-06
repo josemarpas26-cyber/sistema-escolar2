@@ -129,7 +129,7 @@
                             </form>
 
                             @if($user->id !== auth()->id())
-                            <button onclick="confirmDelete('delete-{{ $user->id }}', 'Deletar {{ addslashes($user->name) }}?')"
+                            <button onclick="confirmDelete('delete-{{ $user->id }}', 'Eliminar {{ addslashes($user->name) }}?')"
                                     style="width:32px;height:32px;border-radius:8px;background:var(--gray-100);color:var(--text-secondary);border:none;display:inline-flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:all .15s;"
                                     onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626'"
                                     onmouseout="this.style.background='var(--gray-100)';this.style.color='var(--text-secondary)'"

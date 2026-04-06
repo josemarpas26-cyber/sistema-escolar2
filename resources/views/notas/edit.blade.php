@@ -192,7 +192,7 @@
                 <div class="flex items-start">
                     <i class="fas fa-info-circle text-blue-600 mt-0.5 mr-2"></i>
                     <p class="text-sm text-blue-800">
-                        As médias (MT1, MT2, MT3, MFT2, CF, CFD) são calculadas automaticamente ao salvar.
+                        As médias (MT1, MT2, MT3, MFT2, CF, CFD) são calculadas automaticamente ao guardar.
                     </p>
                 </div>
             </div>

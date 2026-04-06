@@ -52,15 +52,15 @@
                             </div>
 
                             <div>
-                                <label class="label">Numero de Processo</label>
+                                <label class="label">Número de Processo</label>
                                 <input type="text" value="{{ $user->numero_processo ?? '-' }}" class="input cursor-not-allowed bg-gray-50 text-gray-500" disabled>
-                                <p class="mt-1 text-xs text-gray-400">Editavel apenas pela administracao.</p>
+                                <p class="mt-1 text-xs text-gray-400">Editável apenas pela administração.</p>
                             </div>
 
                             <div>
                                 <label class="label">BI</label>
                                 <input type="text" value="{{ $user->bi ?? '-' }}" class="input cursor-not-allowed bg-gray-50 text-gray-500" disabled>
-                                <p class="mt-1 text-xs text-gray-400">Editavel apenas pela administracao.</p>
+                                <p class="mt-1 text-xs text-gray-400">Editável apenas pela administração.</p>
                             </div>
 
                             <div>
@@ -110,7 +110,7 @@
                 </form>
             @else
                 <div class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                    Os seus dados principais sao geridos internamente. Aqui pode consultar as informacoes e alterar apenas a senha.
+                    Os seus dados principais são geridos internamente. Aqui pode consultar as informações e alterar apenas a palavra-passe.
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -137,7 +137,7 @@
                     </div>
 
                     <div>
-                        <label class="label">Numero de Processo</label>
+                        <label class="label">Número de Processo</label>
                         <input type="text" value="{{ $user->numero_processo ?? '-' }}" class="input cursor-not-allowed bg-gray-50 text-gray-500" disabled>
                     </div>
 
@@ -209,7 +209,7 @@
             <div class="space-y-3 border-t pt-4 text-sm">
                 @if($user->numero_processo)
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Numero de Processo:</span>
+                        <span class="text-gray-500">Número de Processo:</span>
                         <span class="font-semibold">{{ $user->numero_processo }}</span>
                     </div>
                 @endif
@@ -244,11 +244,11 @@
                     <span class="text-gray-500">Login por:</span>
                     <span class="text-right text-xs font-semibold">
                         @if($user->email && $user->numero_processo)
-                            Email ou Numero de Processo
+                            E-mail ou Número de Processo
                         @elseif($user->email)
-                            Email
+                            E-mail
                         @elseif($user->numero_processo)
-                            Numero de Processo
+                            Número de Processo
                         @else
                             -
                         @endif
@@ -258,20 +258,20 @@
         </x-card>
 
         @if($user->email)
-            <x-card title="Verificacao de Email" icon="fas fa-envelope">
+            <x-card title="Verificação de E-mail" icon="fas fa-envelope">
                 @if($user->hasVerifiedEmail())
                     <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-                        O seu email ja esta verificado.
+                        O seu e-mail já está verificado.
                     </div>
                 @else
                     <div class="space-y-4">
                         <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                            O seu email ainda nao foi verificado. Algumas funcionalidades podem depender desta confirmacao.
+                            O seu e-mail ainda não foi verificado. Algumas funcionalidades podem depender desta confirmação.
                         </div>
 
                         @if(session('status') === 'verification-link-sent')
                             <div class="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                                Enviamos um novo link de verificacao para o seu email.
+                                Enviámos um novo link de verificação para o seu e-mail.
                             </div>
                         @endif
 
@@ -279,7 +279,7 @@
                             @csrf
                             <button type="submit" class="btn btn-outline w-full">
                                 <i class="fas fa-paper-plane mr-2"></i>
-                                Reenviar Link de Verificacao
+                                Reenviar Link de Verificação
                             </button>
                         </form>
                     </div>
@@ -311,7 +311,7 @@
                 <form
                     method="POST"
                     action="{{ route('profile.destroy') }}"
-                    onsubmit="return confirm('Tem a certeza? Esta acao nao pode ser desfeita!')"
+                    onsubmit="return confirm('Tem a certeza? Esta ação não pode ser desfeita!')"
                 >
                     @csrf
                     @method('DELETE')
@@ -319,7 +319,7 @@
                     <input
                         type="password"
                         name="password"
-                        placeholder="Confirme a sua senha"
+                        placeholder="Confirme a sua palavra-passe"
                         class="input mb-3"
                         required
                     >

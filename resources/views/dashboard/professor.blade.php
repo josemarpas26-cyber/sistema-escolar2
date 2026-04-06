@@ -87,7 +87,7 @@
     @else
     <div class="text-center py-8">
         <i class="fas fa-chalkboard text-4xl text-gray-300 mb-3"></i>
-        <p class="text-gray-500">Você não está atribuído a nenhuma turma ainda</p>
+        <p class="text-gray-500">O utilizador não está atribuído a nenhuma turma ainda</p>
     </div>
     @endif
 </x-card>

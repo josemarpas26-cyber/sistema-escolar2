@@ -1,6 +1,6 @@
 @props([
     'title' => 'Acesso Restrito',
-    'message' => 'Sem permissão para executar esta ação. Você não possui os privilégios necessários para visualizar este conteúdo.',
+     'message' => 'Sem permissão para executar esta ação. O utilizador não possui os privilégios necessários para visualizar este conteúdo.',
     'buttonLabel' => 'Voltar para o Dashboard',
     'redirectPath' => '/dashboard',
     'errorCode' => 403,

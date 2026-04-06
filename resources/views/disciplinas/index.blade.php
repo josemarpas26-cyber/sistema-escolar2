@@ -76,8 +76,8 @@
                                 @method('DELETE')
                                 <button type="submit" 
                                         class="text-red-600 hover:text-red-900" 
-                                        title="Deletar"
-                                        onclick="return confirm('Deseja deletar esta disciplina?')">
+                                        title="Eliminar"
+                                        onclick="return confirm('Deseja eliminar esta disciplina?')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>

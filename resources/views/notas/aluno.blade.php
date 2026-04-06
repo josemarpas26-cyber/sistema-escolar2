@@ -150,9 +150,9 @@
     <x-card>
         <div class="text-center py-12">
             <i class="fas fa-exclamation-triangle text-5xl text-yellow-400 mb-4"></i>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Você não está matriculado em nenhuma turma</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">O utilizador não está matriculado em nenhuma turma</h3>
             <p class="text-gray-600">
-                Entre em contato com a secretaria para regularizar sua matrícula
+                   Entre em contacto com a secretaria para regularizar a sua matrícula
             </p>
         </div>
     </x-card>
