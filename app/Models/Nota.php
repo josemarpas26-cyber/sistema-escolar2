@@ -9,6 +9,8 @@ class Nota extends Model
 {
     use HasFactory;
 
+    public const SENTINELA_AUSENCIA = -1.0;
+
     protected $fillable = [
         'aluno_id',
         'turma_id',
@@ -24,6 +26,7 @@ class Nota extends Model
         'status',
         'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
         'observacoes',
+        'usar_divisao_aritmetica_por_2',
     ];
 
     protected $casts = [
@@ -35,6 +38,7 @@ class Nota extends Model
         'cfd' => 'decimal:2',
         'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2',
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
+        'usar_divisao_aritmetica_por_2' => 'boolean',
     ];
 
     /* ------------------------------------------------------------------ */
@@ -64,6 +68,11 @@ class Nota extends Model
     public function logs()
     {
         return $this->hasMany(NotaLog::class);
+    }
+
+    public function solicitacoesDivisaoAritmetica()
+    {
+        return $this->hasMany(DivisaoAritmeticaSolicitacao::class);
     }
 
     /* ------------------------------------------------------------------ */
@@ -128,16 +137,28 @@ class Nota extends Model
 
     private function calcularMediasTrimestre1e2(): void
     {
-        $this->mt1 = $this->mac1 !== null && $this->pp1 !== null && $this->pt1 !== null
-            ? round(($this->mac1 + $this->pp1 + $this->pt1) / 3, 2)
-            : null;
+        $this->mt1 = $this->calcularMediaComSentinela([
+            $this->mac1,
+            $this->pp1,
+            $this->pt1,
+        ], 3);
 
-        $this->mt2 = $this->mac2 !== null && $this->pp2 !== null && $this->pt2 !== null
-            ? round(($this->mac2 + $this->pp2 + $this->pt2) / 3, 2)
-            : null;
+        $this->mt2 = $this->calcularMediaComSentinela([
+            $this->mac2,
+            $this->pp2,
+            $this->pt2,
+        ], 3);
 
-        $this->mft2 = $this->mt1 !== null && $this->mt2 !== null
-            ? round(($this->mt1 + $this->mt2) / 2, 2)
+        $mediasDisponiveis = collect([$this->mt1, $this->mt2])->filter(fn ($valor) => $valor !== null)->values();
+
+        if ($mediasDisponiveis->count() === 2) {
+            $this->mft2 = round($mediasDisponiveis->sum() / 2, 2);
+
+            return;
+        }
+
+        $this->mft2 = $this->usar_divisao_aritmetica_por_2 && $mediasDisponiveis->count() === 1
+            ? round((float) $mediasDisponiveis->first(), 2)
             : null;
     }
 
@@ -146,19 +167,56 @@ class Nota extends Model
      */
     private function calcularTrimestre3(int $classe): void
     {
-        $this->mt3 = $this->mac3 !== null && $this->pp3 !== null
-            ? round(($this->mac3 + $this->pp3) / 2, 2)
-            : null;
+        $this->mt3 = $this->calcularMediaComSentinela([
+            $this->mac3,
+            $this->pp3,
+        ], 2);
 
-        $this->cf = $this->mft2 !== null && $this->mt3 !== null
-            ? round(($this->mft2 + $this->mt3) / 2, 2)
-            : null;
+        $this->cf = $this->calcularClassificacaoFinalComRegraEspecial();
 
         $this->ca = $this->cf !== null && $this->pg !== null
             ? round((0.6 * $this->cf) + (0.4 * $this->pg), 2)
             : null;
 
         $this->atualizarCfd($classe);
+    }
+
+    private function calcularMediaComSentinela(array $campos, int $divisor): ?float
+    {
+        if (collect($campos)->contains(fn ($valor) => $valor === null)) {
+            return null;
+        }
+
+        if (collect($campos)->every(fn ($valor) => (float) $valor === self::SENTINELA_AUSENCIA)) {
+            return null;
+        }
+
+        return round(array_sum($campos) / $divisor, 2);
+    }
+
+    private function calcularClassificacaoFinalComRegraEspecial(): ?float
+    {
+        if (! $this->usar_divisao_aritmetica_por_2) {
+            return $this->mft2 !== null && $this->mt3 !== null
+                ? round(($this->mft2 + $this->mt3) / 2, 2)
+                : null;
+        }
+
+        $trimestres = collect([$this->mt1, $this->mt2, $this->mt3])
+            ->filter(fn ($valor) => $valor !== null)
+            ->values();
+
+        if ($trimestres->count() < 2) {
+            return null;
+        }
+
+        if ($trimestres->count() === 2) {
+            return round($trimestres->sum() / 2, 2);
+        }
+
+        return $this->mft2 !== null && $this->mt3 !== null
+            ? round(($this->mft2 + $this->mt3) / 2, 2)
+            : null;
     }
 
     /**
