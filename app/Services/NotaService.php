@@ -16,7 +16,7 @@ class NotaService
      * Relações que o model Nota exige para recalcular().
      * Centralizado aqui para não divergir entre chamadas.
      */
-    private const RELACOES_RECALCULO = ['aluno', 'turma.curso', 'disciplina', 'turma'];
+    private const RELACOES_RECALCULO = ['aluno.turmas', 'anoLetivo', 'turma.curso', 'disciplina', 'turma'];
 
     public function criarNotasParaTurma(Turma $turma, Disciplina $disciplina): int
     {
@@ -156,6 +156,10 @@ class NotaService
         $notas = $this->queryNotasDaPauta($turma, $disciplina, $alunoId)->get();
 
         return $this->resumoCompletude($notas, function (Nota $nota) use ($trimestre) {
+            if (! $nota->trimestreEstaDisponivel($trimestre)) {
+                return true;
+            }
+
             return match ($trimestre) {
                 1 => $nota->mac1 !== null && $nota->pp1 !== null && $nota->pt1 !== null && $nota->mt1 !== null,
                 2 => $nota->mac2 !== null && $nota->pp2 !== null && $nota->pt2 !== null && $nota->mt2 !== null,
@@ -178,8 +182,14 @@ class NotaService
         $notas = $this->queryNotasDaPauta($turma, $disciplina, $alunoId)->get();
 
         return $this->resumoCompletude($notas, function (Nota $nota) {
-            return $nota->mt1 !== null
-                && $nota->mt2 !== null
+            $primeiroTrimestreCompleto = ! $nota->trimestreEstaDisponivel(1)
+                || $nota->mt1 !== null;
+
+            $segundoTrimestreCompleto = ! $nota->trimestreEstaDisponivel(2)
+                || ($nota->mt2 !== null && $nota->mft2 !== null);
+
+            return $primeiroTrimestreCompleto
+                && $segundoTrimestreCompleto
                 && $nota->mt3 !== null
                 && $nota->cf !== null
                 && $nota->ca !== null

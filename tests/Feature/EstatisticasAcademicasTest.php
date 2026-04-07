@@ -71,12 +71,12 @@ class EstatisticasAcademicasTest extends TestCase
         $turmaB->disciplinas()->attach($disciplina->id);
 
         $turmaA->alunos()->attach($aluno1->id, [
-            'data_matricula' => now(),
+            'data_matricula' => '2025-09-02',
             'status' => 'matriculado',
         ]);
 
         $turmaB->alunos()->attach($aluno2->id, [
-            'data_matricula' => now(),
+            'data_matricula' => '2025-09-02',
             'status' => 'matriculado',
         ]);
 
@@ -139,7 +139,7 @@ class EstatisticasAcademicasTest extends TestCase
         ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
 
         $turma->alunos()->attach($aluno->id, [
-            'data_matricula' => now(),
+            'data_matricula' => '2025-09-02',
             'status' => 'matriculado',
         ]);
 

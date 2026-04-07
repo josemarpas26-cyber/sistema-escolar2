@@ -108,8 +108,8 @@ class ExportacoesXlsxTest extends TestCase
             'genero' => 'F',
         ]);
 
-        $turma->alunos()->attach($aluno1->id, ['data_matricula' => now(), 'status' => 'matriculado']);
-        $turma->alunos()->attach($aluno2->id, ['data_matricula' => now(), 'status' => 'matriculado']);
+        $turma->alunos()->attach($aluno1->id, ['data_matricula' => '2025-09-02', 'status' => 'matriculado']);
+        $turma->alunos()->attach($aluno2->id, ['data_matricula' => '2025-09-02', 'status' => 'matriculado']);
 
         foreach ([$aluno1, $aluno2] as $aluno) {
             Nota::create([

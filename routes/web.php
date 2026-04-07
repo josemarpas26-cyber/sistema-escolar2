@@ -81,10 +81,6 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.finalizar');
     Route::post('notas/reabrir', [NotaController::class, 'reabrir'])
         ->name('notas.reabrir');
-    Route::post('notas/{nota}/solicitar-divisao-por-dois', [NotaController::class, 'solicitarDivisaoPorDois'])
-        ->name('notas.solicitar-divisao-por-dois');
-    Route::post('notas/solicitacoes-divisao/{solicitacao}/responder', [NotaController::class, 'responderSolicitacaoDivisao'])
-        ->name('notas.solicitacoes-divisao.responder');
 
     Route::resource('anos-letivos', AnoLetivoController::class)
         ->parameters([

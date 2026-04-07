@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class Nota extends Model
 {
@@ -26,7 +27,6 @@ class Nota extends Model
         'status',
         'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
         'observacoes',
-        'usar_divisao_aritmetica_por_2',
     ];
 
     protected $casts = [
@@ -38,12 +38,7 @@ class Nota extends Model
         'cfd' => 'decimal:2',
         'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2',
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
-        'usar_divisao_aritmetica_por_2' => 'boolean',
     ];
-
-    /* ------------------------------------------------------------------ */
-    /*  Relacionamentos                                                    */
-    /* ------------------------------------------------------------------ */
 
     public function aluno()
     {
@@ -70,21 +65,6 @@ class Nota extends Model
         return $this->hasMany(NotaLog::class);
     }
 
-    public function solicitacoesDivisaoAritmetica()
-    {
-        return $this->hasMany(DivisaoAritmeticaSolicitacao::class);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /*  Recálculo público                                                  */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Recalcula todos os campos derivados da nota.
-     *
-     * Exige que 'turma' e 'disciplina' estejam eager-loaded e não-nulos.
-     * Exemplo: $nota->load(['turma', 'disciplina'])->recalcular();
-     */
     public function recalcular(): void
     {
         $this->assertRelacoesCarregadas();
@@ -95,48 +75,32 @@ class Nota extends Model
 
         match ($classe) {
             10, 11, 12 => $this->calcularTrimestre3($classe),
-            default    => $this->limparCamposFinais(),
+            default => $this->limparCamposFinais(),
         };
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  Guardas                                                            */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Garante que turma e disciplina estão eager-loaded e não são null.
-     *
-     * Chamada em qualquer ponto que precise dessas relações,
-     * evitando lazy-load silencioso e "property on null".
-     */
     private function assertRelacoesCarregadas(): void
     {
-        if (!$this->relationLoaded('turma') || !$this->relationLoaded('disciplina')) {
+        if (! $this->relationLoaded('turma') || ! $this->relationLoaded('disciplina')) {
             throw new \LogicException(
-                "Relações não carregadas em Nota #{$this->id}. "
+                "Relacoes nao carregadas em Nota #{$this->id}. "
                 . "Use load(['turma', 'disciplina']) ou with(['turma', 'disciplina']) antes de chamar recalcular()."
             );
         }
 
-        if (!$this->turma) {
-            throw new \RuntimeException(
-                "Nota #{$this->id} não possui turma associada."
-            );
+        if (! $this->turma) {
+            throw new \RuntimeException("Nota #{$this->id} nao possui turma associada.");
         }
 
-        if (!$this->disciplina) {
-            throw new \RuntimeException(
-                "Nota #{$this->id} não possui disciplina associada."
-            );
+        if (! $this->disciplina) {
+            throw new \RuntimeException("Nota #{$this->id} nao possui disciplina associada.");
         }
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  Cálculos internos                                                  */
-    /* ------------------------------------------------------------------ */
-
     private function calcularMediasTrimestre1e2(): void
     {
+        $this->limparTrimestresNaoAplicaveis();
+
         $this->mt1 = $this->calcularMediaComSentinela([
             $this->mac1,
             $this->pp1,
@@ -149,22 +113,25 @@ class Nota extends Model
             $this->pt2,
         ], 3);
 
-        $mediasDisponiveis = collect([$this->mt1, $this->mt2])->filter(fn ($valor) => $valor !== null)->values();
-
-        if ($mediasDisponiveis->count() === 2) {
-            $this->mft2 = round($mediasDisponiveis->sum() / 2, 2);
+        if (! $this->trimestreEstaDisponivel(2)) {
+            $this->mft2 = null;
 
             return;
         }
 
-        $this->mft2 = $this->usar_divisao_aritmetica_por_2 && $mediasDisponiveis->count() === 1
-            ? round((float) $mediasDisponiveis->first(), 2)
+        if (! $this->trimestreEstaDisponivel(1)) {
+            $this->mft2 = $this->mt2 !== null
+                ? round((float) $this->mt2, 2)
+                : null;
+
+            return;
+        }
+
+        $this->mft2 = $this->mt1 !== null && $this->mt2 !== null
+            ? round(($this->mt1 + $this->mt2) / 2, 2)
             : null;
     }
 
-    /**
-     * Trimestre 3 + campos finais — lógica idêntica para classes 10, 11, 12.
-     */
     private function calcularTrimestre3(int $classe): void
     {
         $this->mt3 = $this->calcularMediaComSentinela([
@@ -196,35 +163,89 @@ class Nota extends Model
 
     private function calcularClassificacaoFinalComRegraEspecial(): ?float
     {
-        if (! $this->usar_divisao_aritmetica_por_2) {
+        if ($this->trimestreEstaDisponivel(1)) {
             return $this->mft2 !== null && $this->mt3 !== null
                 ? round(($this->mft2 + $this->mt3) / 2, 2)
                 : null;
         }
 
-        $trimestres = collect([$this->mt1, $this->mt2, $this->mt3])
-            ->filter(fn ($valor) => $valor !== null)
-            ->values();
-
-        if ($trimestres->count() < 2) {
-            return null;
-        }
-
-        if ($trimestres->count() === 2) {
-            return round($trimestres->sum() / 2, 2);
-        }
-
-        return $this->mft2 !== null && $this->mt3 !== null
-            ? round(($this->mft2 + $this->mt3) / 2, 2)
+        return $this->mt2 !== null && $this->mt3 !== null
+            ? round(($this->mt2 + $this->mt3) / 2, 2)
             : null;
     }
 
-    /**
-     * Calcula o CFD usando a disciplina JÁ CARREGADA (nunca faz lazy-load).
-     *
-     * Recebe a disciplina explicitamente via $this->disciplina que foi
-     * validada por assertRelacoesCarregadas().
-     */
+    private function limparTrimestresNaoAplicaveis(): void
+    {
+        if (! $this->trimestreEstaDisponivel(1)) {
+            $this->mac1 = null;
+            $this->pp1 = null;
+            $this->pt1 = null;
+            $this->mt1 = null;
+        }
+
+        if (! $this->trimestreEstaDisponivel(2)) {
+            $this->mac2 = null;
+            $this->pp2 = null;
+            $this->pt2 = null;
+            $this->mt2 = null;
+            $this->mft2 = null;
+        }
+    }
+
+    public function trimestreEstaDisponivel(int $trimestre): bool
+    {
+        return $trimestre >= $this->trimestreInicialDisponivel();
+    }
+
+    public function trimestreInicialDisponivel(): int
+    {
+        $matricula = $this->dataMatriculaNaTurma();
+        $inicioAno = $this->anoLetivo?->data_inicio?->copy()?->startOfDay();
+        $fimAno = $this->anoLetivo?->data_fim?->copy()?->startOfDay();
+
+        if (! $matricula || ! $inicioAno || ! $fimAno || $fimAno->lte($inicioAno)) {
+            return 1;
+        }
+
+        $inicioT2 = $this->inicioDoTrimestre($inicioAno, $fimAno, 2);
+        $inicioT3 = $this->inicioDoTrimestre($inicioAno, $fimAno, 3);
+
+        return match (true) {
+            $matricula->gte($inicioT3) => 3,
+            $matricula->gte($inicioT2) => 2,
+            default => 1,
+        };
+    }
+
+    public function ingressouAposPrimeiroTrimestre(): bool
+    {
+        return $this->trimestreInicialDisponivel() > 1;
+    }
+
+    private function dataMatriculaNaTurma(): ?Carbon
+    {
+        $turmaAtual = $this->aluno?->turmas?->firstWhere('id', $this->turma_id);
+        $dataMatricula = $turmaAtual?->pivot?->data_matricula;
+
+        if ($dataMatricula instanceof Carbon) {
+            return $dataMatricula->copy()->startOfDay();
+        }
+
+        if (blank($dataMatricula)) {
+            return null;
+        }
+
+        return Carbon::parse($dataMatricula)->startOfDay();
+    }
+
+    private function inicioDoTrimestre(Carbon $inicioAno, Carbon $fimAno, int $trimestre): Carbon
+    {
+        $duracaoTotal = $inicioAno->diffInDays($fimAno) + 1;
+        $duracaoTrimestre = (int) ceil($duracaoTotal / 3);
+
+        return $inicioAno->copy()->addDays(($trimestre - 1) * $duracaoTrimestre);
+    }
+
     private function atualizarCfd(int $classeAtual): void
     {
         $this->cfd = null;
@@ -233,9 +254,7 @@ class Nota extends Model
             return;
         }
 
-        // $disciplina é garantidamente não-nula aqui (assertRelacoesCarregadas).
         $disciplina = $this->disciplina;
-
         $classificacoes = [];
 
         if ($disciplina->leciona_10 && $classeAtual >= 10) {
@@ -272,14 +291,10 @@ class Nota extends Model
     private function limparCamposFinais(): void
     {
         $this->mt3 = null;
-        $this->cf  = null;
-        $this->ca  = null;
+        $this->cf = null;
+        $this->ca = null;
         $this->cfd = null;
     }
-
-    /* ------------------------------------------------------------------ */
-    /*  Acessores / helpers públicos                                       */
-    /* ------------------------------------------------------------------ */
 
     public function isAprovado(): bool
     {

@@ -1360,7 +1360,8 @@
                 <tbody>
                   @foreach($notas as $idx => $nota)
                   @php
-                    $locked1 = !$podeReabrirNotas && ($nota->status === 'finalizado' || ($nota->bloqueado_t1 ?? false));
+                    $t1Disponivel = $nota->trimestreEstaDisponivel(1);
+                    $locked1 = !$t1Disponivel || (!$podeReabrirNotas && ($nota->status === 'finalizado' || ($nota->bloqueado_t1 ?? false)));
                     $initials = strtoupper(substr($nota->aluno->name ?? 'A', 0, 1));
                     $avatarColor = $avatarColors[crc32($nota->aluno->name ?? '') % count($avatarColors)];
                   @endphp
@@ -1993,7 +1994,7 @@
   @endif
 
   <br>
-@if($notas && $turma && $disciplina)
+@if(false && $notas && $turma && $disciplina)
   <div class="bg-white border border-slate-200 rounded-xl p-4 mb-4">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div>

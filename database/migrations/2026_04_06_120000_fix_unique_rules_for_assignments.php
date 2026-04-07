@@ -33,6 +33,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('professor_turma_disciplina', function (Blueprint $table) {
+            // remover foreign keys primeiro (ajusta os nomes!)
+            $table->dropForeign(['turma_id']);
+            $table->dropForeign(['disciplina_id']);
+            $table->dropForeign(['ano_letivo_id']);
+
+            // depois remover o índice
             $table->dropUnique('turma_disc_ano_unique');
         });
     }

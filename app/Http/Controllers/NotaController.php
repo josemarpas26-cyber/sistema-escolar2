@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
 use App\Models\Disciplina;
-use App\Models\DivisaoAritmeticaSolicitacao;
 use App\Models\Nota;
 use App\Models\NotaLog;
 use App\Models\Turma;
@@ -13,6 +12,7 @@ use App\Services\NotaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class NotaController extends Controller
 {
@@ -64,8 +64,6 @@ class NotaController extends Controller
         $turma = null;
         $disciplina = null;
         $estatisticasPauta = null;
-        $solicitacoesPendentes = collect();
-        $statusSolicitacoesPorNota = collect();
 
         if ($turmaId && $disciplinaId) {
             $temAtribuicao = $atribuicoes
@@ -84,7 +82,7 @@ class NotaController extends Controller
             $notasPorAluno = Nota::where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
                 ->where('ano_letivo_id', $anoLetivo->id)
-                ->with('aluno')
+                ->with(['aluno.turmas', 'anoLetivo'])
                 ->get()
                 ->keyBy('aluno_id');
 
@@ -102,25 +100,6 @@ class NotaController extends Controller
                 ->values();
 
             $estatisticasPauta = $this->estatisticasAcademicas->resumoPauta($notas);
-
-            $statusSolicitacoesPorNota = DivisaoAritmeticaSolicitacao::query()
-                ->whereIn('nota_id', $notas->pluck('id'))
-                ->latest('id')
-                ->get()
-                ->groupBy('nota_id')
-                ->map(fn ($grupo) => $grupo->first());
-
-            if ($professor->isCoordenadorCurso() && $turma?->curso?->coordenador_id === $professor->id) {
-                $solicitacoesPendentes = DivisaoAritmeticaSolicitacao::query()
-                    ->where('coordenador_id', $professor->id)
-                    ->where('status', 'pendente')
-                    ->whereHas('nota', fn ($q) => $q
-                        ->where('turma_id', $turma->id)
-                        ->where('disciplina_id', $disciplina->id))
-                    ->with(['nota.aluno', 'professor'])
-                    ->latest()
-                    ->get();
-            }
         }
 
         return view('notas.professor', compact(
@@ -128,9 +107,7 @@ class NotaController extends Controller
             'notas',
             'turma',
             'disciplina',
-            'estatisticasPauta',
-            'solicitacoesPendentes',
-            'statusSolicitacoesPorNota'
+            'estatisticasPauta'
         ));
     }
 
@@ -240,6 +217,7 @@ class NotaController extends Controller
         string $trimestre,
         int $salvas,
         int $bloqueadas,
+        int $naoAplicaveis,
         int $semAlteracao,
         array $naoEncontradas
     ): array {
@@ -257,6 +235,10 @@ class NotaController extends Controller
             $partes[] = "{$bloqueadas} nota(s) ignorada(s) por estarem bloqueadas";
         }
 
+        if ($naoAplicaveis > 0) {
+            $partes[] = "{$naoAplicaveis} nota(s) ignorada(s) por nao se aplicarem a este trimestre";
+        }
+
         if (! empty($naoEncontradas)) {
             $ids = implode(', ', $naoEncontradas);
             $partes[] = count($naoEncontradas)." nota(s) não encontrada(s) (IDs: {$ids})";
@@ -269,9 +251,9 @@ class NotaController extends Controller
         $mensagem = "{$trimestre}º trimestre: ".implode('. ', $partes).'.';
 
         // success só se houve pelo menos 1 salva e nenhum problema
-        if ($salvas > 0 && $bloqueadas === 0 && empty($naoEncontradas)) {
+        if ($salvas > 0 && $bloqueadas === 0 && $naoAplicaveis === 0 && empty($naoEncontradas)) {
             $tipo = 'success';
-        } elseif ($salvas === 0 && $semAlteracao > 0 && $bloqueadas === 0) {
+        } elseif ($salvas === 0 && $semAlteracao > 0 && $bloqueadas === 0 && $naoAplicaveis === 0) {
             $tipo = 'info';
         } else {
             $tipo = 'warning';
@@ -313,18 +295,19 @@ class NotaController extends Controller
 
         $ids = collect($validated['notas'])->pluck('id');
         $notasMap = Nota::whereIn('id', $ids)
-            ->with(['turma.curso', 'disciplina'])
+            ->with(['aluno.turmas', 'anoLetivo', 'turma.curso', 'disciplina'])
             ->get()
             ->keyBy('id');
 
         $salvas = 0;
         $bloqueadas = 0;
+        $naoAplicaveis = 0;
         $semAlteracao = 0;
         $naoEncontradas = [];
 
         DB::transaction(function () use (
             $validated, $notasMap, $campos, $trimestre, $user,
-            &$salvas, &$bloqueadas, &$semAlteracao, &$naoEncontradas
+            &$salvas, &$bloqueadas, &$naoAplicaveis, &$semAlteracao, &$naoEncontradas
         ) {
             foreach ($validated['notas'] as $notaData) {
                 $nota = $notasMap->get($notaData['id']);
@@ -337,6 +320,12 @@ class NotaController extends Controller
 
                 if ($user->isProfessor()) {
                     $this->authorize('update', $nota);
+                }
+
+                if (! $nota->trimestreEstaDisponivel((int) $trimestre)) {
+                    $naoAplicaveis++;
+
+                    continue;
                 }
 
                 if ($this->notaBloqueadaParaEdicao($nota, $trimestre)) {
@@ -369,7 +358,7 @@ class NotaController extends Controller
         });
 
         [$tipo, $mensagem] = $this->buildFeedbackLancamento(
-            $trimestre, $salvas, $bloqueadas, $semAlteracao, $naoEncontradas
+            $trimestre, $salvas, $bloqueadas, $naoAplicaveis, $semAlteracao, $naoEncontradas
         );
 
         return back()->with($tipo, $mensagem);
@@ -385,7 +374,7 @@ class NotaController extends Controller
 
         $this->validarBloqueioFinalizacao($nota);
 
-        $nota->load(['aluno', 'turma', 'disciplina']);
+        $nota->load(['aluno.turmas', 'anoLetivo', 'turma', 'disciplina']);
 
         return view('notas.edit', compact('nota'));
     }
@@ -420,6 +409,8 @@ class NotaController extends Controller
         $validated = $request->validate($rules);
 
         // 🔍 Detectar quais campos estão sendo alterados
+        $nota->loadMissing(['aluno.turmas', 'anoLetivo']);
+
         $camposAlterados = array_keys(array_filter(
             $validated,
             fn ($value) => ! is_null($value)
@@ -432,6 +423,12 @@ class NotaController extends Controller
             if (! empty($intersect)) {
                 // 🔒 Validar bloqueio específico do trimestre
                 $this->validarBloqueioFinalizacao($nota, $trimestre);
+
+                if (! $nota->trimestreEstaDisponivel((int) $trimestre)) {
+                    throw ValidationException::withMessages([
+                        reset($intersect) => $this->mensagemTrimestreNaoAplicavel($nota, (int) $trimestre),
+                    ]);
+                }
             }
         }
         $nota->fill($validated);
@@ -824,6 +821,17 @@ class NotaController extends Controller
             ->where('ano_letivo_id', $turma->ano_letivo_id)
             ->when($alunoId, fn ($query, $id) => $query->where('aluno_id', $id))
             ->get();
+    }
+
+    private function mensagemTrimestreNaoAplicavel(Nota $nota, int $trimestre): string
+    {
+        $trimestreInicial = $nota->trimestreInicialDisponivel();
+
+        if ($trimestre === 1 && $trimestreInicial === 2) {
+            return 'O 1o trimestre nao se aplica a este aluno porque a matricula ocorreu a partir do 2o trimestre.';
+        }
+
+        return "O {$trimestre}o trimestre nao se aplica a este aluno porque a matricula ocorreu apenas no {$trimestreInicial}o trimestre.";
     }
 
     public function solicitarDivisaoPorDois(Request $request, Nota $nota)
