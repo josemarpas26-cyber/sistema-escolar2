@@ -43,7 +43,7 @@
                 <option value="3">3º Trimestre</option>
             </select>
 
-            <div class="flex gap-2">
+            <div class="flex gap-3">
                 <button type="submit" class="btn btn-outline w-full">Ver</button>
                 <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
             </div>
@@ -136,7 +136,7 @@
                 <option value="3">3º Trimestre</option>
             </select>
 
-            <div class="flex gap-2">
+            <div class="flex gap-3">
                 <button type="submit" class="btn btn-outline w-full">Ver</button>
                 <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
             </div>
@@ -176,7 +176,7 @@
             <option value="3">3º Trimestre</option>
         </select>
 
-        <div class="flex gap-2">
+        <div class="flex gap-3">
             <button type="submit" class="btn btn-outline w-full">Ver</button>
             <button type="submit" name="formato" value="xlsx" class="btn btn-success w-full">XLSX</button>
             <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>

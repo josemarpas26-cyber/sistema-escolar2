@@ -57,7 +57,7 @@
     <x-card title="Utilizadores Mais Ativos" icon="fas fa-users">
         <div class="space-y-3">
             @forelse($topUsuarios as $usuarioData)
-                <div class="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
+                <div class="flex items-center justify-between rounded-lg bg-gray-50 p-4 transition-colors hover:bg-gray-100">
                     <div class="flex items-center space-x-3">
                         <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
                             <i class="fas fa-user text-primary-600"></i>

@@ -32,7 +32,7 @@
     </x-card>
 <br>
     <!-- Estatísticas -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="mb-6 grid grid-cols-1 gap-5 md:grid-cols-4">
         <x-stat-card 
             title="Disciplinas" 
             :value="$notas->count()"
@@ -65,14 +65,14 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Disciplina</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">MT1</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">MT2</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">MFT2</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">MT3</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">PG</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">CFD</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Disciplina</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT1</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT2</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MFT2</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT3</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">PG</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">CFD</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -131,9 +131,9 @@
     </x-card>
 
     <!-- Legenda -->
-    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-5">
         <h4 class="font-semibold text-blue-900 mb-2">Legenda:</h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
+        <div class="grid grid-cols-1 gap-4 text-sm text-blue-800 md:grid-cols-2">
             <div><strong>MT1, MT2, MT3:</strong> Médias dos Trimestres 1, 2 e 3</div>
             <div><strong>MFT2:</strong> Média dos Primeiro e Segundo Trimestres</div>
             <div><strong>PG:</strong> Prova Global</div>

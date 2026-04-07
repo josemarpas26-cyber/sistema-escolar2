@@ -263,9 +263,9 @@
                                 @endif
                             </span>
                         </div>
-                        <div class="p-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                        <div class="p-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                             @foreach($bloco['campos'] as $campo)
-                            <div class="rounded-xl p-3" style="background:var(--surface); border:1px solid var(--border);">
+                            <div class="rounded-xl p-4" style="background:var(--surface); border:1px solid var(--border);">
                                 <div class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">{{ $campo['label'] }}</div>
                                 <div class="mt-2 text-base font-extrabold" style="color:{{ $campo['valor'] === null ? 'var(--tx-4)' : 'var(--tx-1)' }};">
                                     @if(!$bloco['disponivel'] && $campo['label'] !== 'Estado')

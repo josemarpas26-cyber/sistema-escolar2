@@ -233,7 +233,7 @@
 
                 <x-card title="Encarregado de Educação" icon="fas fa-user-friends">
 
-                    <div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded text-sm text-blue-700">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded text-sm text-blue-700">
                         <i class="fas fa-info-circle mr-2"></i>
                         Dois alunos podem ter o mesmo encarregado — não há restrição de email duplicado.
                     </div>
@@ -340,7 +340,7 @@
             <!-- Resumo de acesso -->
             <x-card title="Como vai fazer login?" icon="fas fa-sign-in-alt">
                 <div class="space-y-2 text-sm">
-                    <div x-show="!isAluno" class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                     <div x-show="!isAluno" class="p-4 bg-blue-50 rounded-lg border border-blue-200">
                         <p class="text-blue-800 font-medium">
                             <i class="fas fa-envelope mr-1"></i> Por e-mail + palavra-passe
                         </p>
@@ -348,7 +348,7 @@
                             Ou também pelo número de processo, se definido.
                         </p>
                     </div>
-                    <div x-show="isAluno" class="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div x-show="isAluno" class="p-4 bg-green-50 rounded-lg border border-green-200">
                         <p class="text-green-800 font-medium">
                             <i class="fas fa-id-card mr-1"></i> Por nº processo + palavra-passe
                         </p>

@@ -4,7 +4,7 @@
     'noPad' => false,
 ])
 
-<div class="card">
+<div {{ $attributes->merge(['class' => 'card']) }}>
     @if($title)
     <div class="card-header">
         @if($icon)
@@ -20,7 +20,7 @@
         {{ $title }}
     </div>
     @endif
-    <div {{ $noPad ? '' : 'class="card-body"' }}>
+    <div @class(['card-body' => !$noPad])>
         {{ $slot }}
     </div>
 </div>
