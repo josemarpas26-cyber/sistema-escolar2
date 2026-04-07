@@ -6,8 +6,11 @@ use App\Models\User;
 use App\Models\Turma;
 use App\Models\Nota;
 use App\Models\AnoLetivo;
+use App\Models\HistoricoAcademico;
 use App\Models\NotaLog;
+use App\Models\ProfessorTurmaDisciplina;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class DashboardController extends Controller
 {
@@ -134,41 +137,203 @@ class DashboardController extends Controller
 
     private function alunoDashboard()
     {
-        $aluno     = auth()->user();
+        $aluno = auth()->user();
         $anoLetivo = AnoLetivo::ativo()->first();
 
-        if (!$anoLetivo) {
+        if (! $anoLetivo) {
             return view('dashboard.sem-ano-letivo');
         }
 
-        $notas = Nota::where('aluno_id',     $aluno->id)
+        $turmaAtual = $aluno->turmas()
             ->where('ano_letivo_id', $anoLetivo->id)
-            ->with(['disciplina', 'turma'])
-            ->get();
+            ->wherePivot('status', 'matriculado')
+            ->with([
+                'curso',
+                'anoLetivo',
+                'coordenador',
+                'disciplinas.coordenador',
+            ])
+            ->first();
+
+        $disciplinasTurma = $turmaAtual?->disciplinas
+            ? $turmaAtual->disciplinas->sortBy('nome')->values()
+            : collect();
+
+        $notas = ($turmaAtual && $disciplinasTurma->isNotEmpty())
+            ? Nota::query()
+                ->where('aluno_id', $aluno->id)
+                ->where('ano_letivo_id', $anoLetivo->id)
+                ->where('turma_id', $turmaAtual->id)
+                ->whereIn('disciplina_id', $disciplinasTurma->pluck('id'))
+                ->with(['disciplina.coordenador', 'turma.curso', 'anoLetivo', 'aluno.turmas'])
+                ->get()
+            : collect();
+
+        $notasPorDisciplina = $notas->keyBy('disciplina_id');
+        $atribuicoes = $this->buscarAtribuicoesDaTurma($turmaAtual, $anoLetivo->id);
+        $disciplinasDetalhadas = $disciplinasTurma->map(function ($disciplina) use ($notasPorDisciplina, $atribuicoes) {
+            $nota = $notasPorDisciplina->get($disciplina->id);
+            $atribuicao = $atribuicoes->get($disciplina->id);
+            $indicador = $this->resolverIndicadorDisciplina($nota);
+
+            return [
+                'disciplina' => $disciplina,
+                'nota' => $nota,
+                'professor' => $atribuicao?->professor,
+                'coordenador' => $disciplina->coordenador,
+                'indicador' => $indicador,
+            ];
+        })->values();
 
         $notasComCFD = $notas->whereNotNull('cfd');
-        $mediaGeral  = $notasComCFD->isNotEmpty()
+        $mediaGeral = $notasComCFD->isNotEmpty()
             ? round($notasComCFD->avg('cfd'), 2)
             : 0;
 
-        $aprovacoes  = $notasComCFD->filter(fn($n) => $n->isAprovado())->count();
-        $reprovacoes = $notasComCFD->filter(fn($n) => !$n->isAprovado())->count();
+        $aprovacoes = $notasComCFD->filter(fn ($nota) => $nota->isAprovado())->count();
+        $reprovacoes = $notasComCFD->filter(fn ($nota) => ! $nota->isAprovado())->count();
+        $indicadoresAtuais = $disciplinasDetalhadas
+            ->pluck('indicador')
+            ->filter(fn ($indicador) => $indicador['valor'] !== null);
+        $mediaAtual = $indicadoresAtuais->isNotEmpty()
+            ? round($indicadoresAtuais->avg('valor'), 2)
+            : null;
 
-        $turmaAtual = $aluno->turmas()
-            ->wherePivot('status', 'matriculado')
-            ->with(['curso', 'anoLetivo'])
-            ->first();
+        $desempenhoDisciplinas = $disciplinasDetalhadas
+            ->map(function (array $item) {
+                $valor = $item['indicador']['valor'];
+                $percentual = $valor !== null ? min(100, max(0, ($valor / 20) * 100)) : 0;
+
+                return [
+                    'disciplina' => $item['disciplina'],
+                    'professor' => $item['professor'],
+                    'coordenador' => $item['coordenador'],
+                    'indicador' => $item['indicador'],
+                    'percentual' => round($percentual, 1),
+                ];
+            })
+            ->sortBy([
+                fn (array $item) => $item['indicador']['valor'] === null ? 1 : 0,
+                fn (array $item) => strtolower($item['disciplina']->nome),
+            ])
+            ->values();
+
+        $evolucaoTemporal = collect([
+            $this->criarPontoEvolucao('1o Trimestre', 'mt1', $notas),
+            $this->criarPontoEvolucao('2o Trimestre', 'mt2', $notas),
+            $this->criarPontoEvolucao('3o Trimestre', 'mt3', $notas),
+            $this->criarPontoEvolucao('Resultado Final', 'cfd', $notas),
+        ]);
+
+        $historicoPorAno = HistoricoAcademico::porAluno($aluno->id)
+            ->where('ano_letivo_id', '!=', $anoLetivo->id)
+            ->with([
+                'anoLetivo',
+                'disciplina.coordenador',
+                'turma.curso',
+                'turma.coordenador',
+            ])
+            ->get()
+            ->groupBy(fn ($registo) => $registo->anoLetivo?->nome ?? 'Sem ano letivo')
+            ->map(function (Collection $registos, string $nomeAno) {
+                $ordenados = $registos->sortBy([
+                    fn ($registo) => (int) ($registo->classe ?? 0),
+                    fn ($registo) => strtolower($registo->disciplina->nome ?? ''),
+                ])->values();
+
+                $media = $ordenados->whereNotNull('classificacao_final')->avg('classificacao_final');
+
+                return [
+                    'ano' => $nomeAno,
+                    'registos' => $ordenados,
+                    'media' => $media !== null ? round($media, 2) : null,
+                    'aprovadas' => $ordenados->filter(fn ($registo) => strtolower((string) $registo->resultado) === 'aprovado')->count(),
+                    'reprovadas' => $ordenados->filter(fn ($registo) => strtolower((string) $registo->resultado) === 'reprovado')->count(),
+                ];
+            })
+            ->sortByDesc(fn (array $ano) => $ano['registos']->first()?->ano_letivo_id ?? 0)
+            ->values();
 
         $stats = [
-            'turma'             => $turmaAtual,
-            'notas'             => $notas,
-            'media_geral'       => $mediaGeral,
-            'aprovacoes'        => $aprovacoes,
-            'reprovacoes'       => $reprovacoes,
-            'total_disciplinas' => $notas->count(),
-            'ano_letivo'        => $anoLetivo,
+            'turma' => $turmaAtual,
+            'notas' => $notas,
+            'disciplinas_detalhadas' => $disciplinasDetalhadas,
+            'desempenho_disciplinas' => $desempenhoDisciplinas,
+            'evolucao_temporal' => $evolucaoTemporal,
+            'historico_por_ano' => $historicoPorAno,
+            'media_geral' => $mediaGeral,
+            'media_atual' => $mediaAtual,
+            'aprovacoes' => $aprovacoes,
+            'reprovacoes' => $reprovacoes,
+            'total_disciplinas' => $disciplinasTurma->count(),
+            'disciplinas_com_resultado' => $notasComCFD->count(),
+            'ano_letivo' => $anoLetivo,
         ];
 
         return view('dashboard.aluno', $stats);
+    }
+
+    private function buscarAtribuicoesDaTurma(?Turma $turma, int $anoLetivoId): Collection
+    {
+        if (! $turma) {
+            return collect();
+        }
+
+        return ProfessorTurmaDisciplina::query()
+            ->where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivoId)
+            ->with(['professor', 'disciplina'])
+            ->get()
+            ->keyBy('disciplina_id');
+    }
+
+    private function resolverIndicadorDisciplina(?Nota $nota): array
+    {
+        if (! $nota) {
+            return [
+                'label' => 'Sem lancamento',
+                'valor' => null,
+            ];
+        }
+
+        foreach ([
+            'cfd' => 'CFD',
+            'ca' => 'CA',
+            'cf' => 'CF',
+            'mt3' => 'MT3',
+            'mft2' => 'MFT2',
+            'mt2' => 'MT2',
+            'mt1' => 'MT1',
+        ] as $campo => $label) {
+            if ($nota->{$campo} !== null) {
+                return [
+                    'label' => $label,
+                    'valor' => (float) $nota->{$campo},
+                ];
+            }
+        }
+
+        return [
+            'label' => 'Em preenchimento',
+            'valor' => null,
+        ];
+    }
+
+    private function criarPontoEvolucao(string $label, string $campo, Collection $notas): array
+    {
+        $notasComValor = $notas->whereNotNull($campo)->values();
+        $media = $notasComValor->isNotEmpty() ? round($notasComValor->avg($campo), 2) : null;
+        $aprovadas = $notasComValor->filter(fn ($nota) => (float) $nota->{$campo} >= 10)->count();
+        $taxa = $notasComValor->isNotEmpty()
+            ? round(($aprovadas / $notasComValor->count()) * 100, 1)
+            : null;
+
+        return [
+            'label' => $label,
+            'campo' => $campo,
+            'media' => $media,
+            'total' => $notasComValor->count(),
+            'taxa_aprovacao' => $taxa,
+        ];
     }
 }
