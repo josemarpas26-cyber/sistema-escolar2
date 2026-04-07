@@ -477,6 +477,11 @@
             max-width: var(--content-max, 1440px);
             margin: 0 auto;
         }
+                @media (min-width: 1024px) {
+            .main-content {
+                padding: 32px var(--page-gutter, 32px) 40px;
+            }
+        }
         @media (min-width: 640px) { .main-content { padding-top: 28px; } }
 
         .alerts-wrap {

@@ -83,13 +83,19 @@
 </div>
 
 <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <x-card title="Alteracoes Recentes" icon="fas fa-clock">
-        <div class="space-y-2">
+    <x-card :no-pad="true">
+        <div class="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                <i class="fas fa-clock text-sm"></i>
+            </span>
+            <h3 class="text-sm font-bold uppercase tracking-[0.08em] text-slate-700">Alteracoes Recentes</h3>
+        </div>
+        <div>
             @forelse($logsRecentes as $log)
                 @php
                     $item = $metaAcao[$log->acao] ?? ['icon' => 'circle', 'chip' => 'bg-gray-100 text-gray-600'];
                 @endphp
-                <div class="flex items-start space-x-3 rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
+                <div class="flex items-start gap-3 border-b border-slate-100 px-6 py-4 transition-colors hover:bg-gray-50">
                     <div class="flex-shrink-0">
                         <div class="flex h-8 w-8 items-center justify-center rounded-full {{ $item['chip'] }}">
                             <i class="fas fa-{{ $item['icon'] }} text-xs"></i>
@@ -112,7 +118,7 @@
                     </div>
                 </div>
             @empty
-                <div class="py-6 text-center text-gray-500">
+                <div class="px-6 py-8 text-center text-gray-500">
                     <i class="fas fa-inbox mb-2 text-3xl"></i>
                     <p>Nenhum log recente</p>
                 </div>
@@ -121,13 +127,13 @@
     </x-card>
 
     <x-card title="Disciplinas Mais Editadas" icon="fas fa-book">
-        <div class="space-y-3">
+        <div class="space-y-0">
             @forelse($topDisciplinas as $discData)
                 @php
                     $max = max($topDisciplinas->first()->total ?? 0, 1);
                     $percent = min(100, ($discData->total / $max) * 100);
                 @endphp
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between py-3 @if(!$loop->last) border-b border-slate-100 @endif">
                     <div class="flex-1">
                         <p class="font-medium text-gray-900">{{ $discData->disciplina->nome }}</p>
                         <p class="text-xs text-gray-500">{{ $discData->disciplina->codigo }}</p>
@@ -170,7 +176,7 @@
 </x-card>
 
 <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-    <a href="{{ route('logs.index', ['acao' => 'criacao']) }}" class="rounded-lg border border-green-200 bg-green-50 p-4 transition-colors hover:bg-green-100">
+    <a href="{{ route('logs.index', ['acao' => 'criacao']) }}" class="rounded-lg border border-green-200 bg-green-50 p-5 transition-colors hover:bg-green-100">
         <div class="flex items-center justify-between">
             <div>
                 <div class="font-semibold text-green-800">Notas Criadas</div>
@@ -180,7 +186,7 @@
         </div>
     </a>
 
-    <a href="{{ route('logs.index', ['acao' => 'edicao']) }}" class="rounded-lg border border-blue-200 bg-blue-50 p-4 transition-colors hover:bg-blue-100">
+    <a href="{{ route('logs.index', ['acao' => 'edicao']) }}" class="rounded-lg border border-blue-200 bg-blue-50 p-5 transition-colors hover:bg-blue-100">
         <div class="flex items-center justify-between">
             <div>
                 <div class="font-semibold text-blue-800">Notas Editadas</div>
@@ -190,7 +196,7 @@
         </div>
     </a>
 
-    <a href="{{ route('logs.index', ['acao' => 'exclusao']) }}" class="rounded-lg border border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100">
+     <a href="{{ route('logs.index', ['acao' => 'exclusao']) }}" class="rounded-lg border border-red-200 bg-red-50 p-5 transition-colors hover:bg-red-100">
         <div class="flex items-center justify-between">
             <div>
                 <div class="font-semibold text-red-800">Notas Removidas</div>

@@ -75,7 +75,7 @@
         </div>
     </section>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+     <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
         <x-stat-card title="Media geral" :value="$disciplinas_com_resultado > 0 ? number_format($media_geral, 2) : '--'" icon="fas fa-chart-line" :color="$media_geral >= 10 ? 'green' : 'warning'" />
         <x-stat-card title="Media atual" :value="$media_atual !== null ? number_format($media_atual, 2) : '--'" icon="fas fa-wave-square" color="primary" />
         <x-stat-card title="Disciplinas" :value="$total_disciplinas" icon="fas fa-book" color="blue" />
@@ -120,10 +120,10 @@
         </x-card>
 
         <x-card title="Evolucao temporal" icon="fas fa-chart-area">
-            <div class="space-y-4">
+             <div class="space-y-5">
                 @foreach($evolucao_temporal as $ponto)
                 @php $percentual = $ponto['media'] !== null ? min(100, max(0, ($ponto['media'] / 20) * 100)) : 0; @endphp
-                <div class="space-y-2">
+                <div class="space-y-2.5 py-2.5">
                     <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                         <div>
                             <div class="font-bold" style="color:var(--tx-1);">{{ $ponto['label'] }}</div>
@@ -136,7 +136,7 @@
                             @endif
                         </div>
                     </div>
-                    <div class="ad-bar">
+                     <div class="ad-bar mt-1.5">
                         <span style="width: {{ $percentual }}%"></span>
                     </div>
                 </div>
@@ -153,9 +153,9 @@
             <p class="mt-2 text-sm" style="color:var(--tx-3);">Assim que a turma e as notas estiverem ligadas ao aluno, esta area sera preenchida automaticamente.</p>
         </div>
         @else
-        <div class="space-y-4">
+         <div class="space-y-0">
             @foreach($desempenho_disciplinas as $item)
-            <article class="rounded-2xl p-4" style="background:var(--surface-sunken); border:1px solid var(--border);">
+            <article class="py-4 @if(!$loop->last) border-b @endif" style="border-color:var(--border);">
                 <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                         <h3 class="text-lg font-bold" style="color:var(--tx-1);">{{ $item['disciplina']->nome }} - {{ $item['disciplina']->codigo }}</h3>
