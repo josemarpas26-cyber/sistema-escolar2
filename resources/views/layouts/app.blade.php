@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('siga-theme');
+                if (theme === 'dark') document.documentElement.classList.add('dark');
+                if (theme === 'light') document.documentElement.classList.remove('dark');
+            } catch (error) {}
+        })();
+    </script>
 
     <title>@yield('title', config('app.name', 'SIGA')) — @yield('page-title', 'Dashboard')</title>
 
@@ -199,6 +208,9 @@
             color: var(--tx-1);
             margin: 0;
             -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.5;
         }
         a { text-decoration: none; color: inherit; }
 
@@ -214,6 +226,7 @@
             position: fixed;
             inset: 0 auto 0 0;
             width: var(--sidebar-w);
+            max-width: min(86vw, var(--sidebar-w));
             background: var(--sb-bg);
             border-right: 1px solid var(--sb-border);
             display: flex;
@@ -403,7 +416,7 @@
             background: var(--surface);
             border-bottom: 1px solid var(--border);
             display: flex; align-items: center; gap: 16px;
-            padding: 0 24px;
+            padding: 0 var(--page-gutter, 24px);
         }
         .topbar-menu-btn {
             background: none; border: none;
@@ -415,11 +428,12 @@
         .topbar-menu-btn:hover { color: var(--tx-1); }
         @media (min-width: 1024px) { .topbar-menu-btn { display: none; } }
 
-        .topbar-title { flex: 1; }
+        .topbar-title { flex: 1; min-width: 0; }
         .topbar-page-title {
             font-size: 20px; font-weight: 700;
             color: var(--tx-1);
             letter-spacing: -.4px; line-height: 1.2;
+            word-break: break-word;
         }
         .topbar-breadcrumb {
             display: none; align-items: center; gap: 6px;
@@ -427,7 +441,7 @@
             margin-top: 1px;
         }
         @media (min-width: 640px) { .topbar-breadcrumb { display: flex; } }
-        .topbar-actions { display: flex; align-items: center; gap: 10px; }
+        .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
         .theme-toggle {
             width: 36px; height: 36px;
@@ -457,10 +471,39 @@
         @media (min-width: 1024px) { .main-wrap { margin-left: var(--sidebar-w); } }
 
         .main-content {
-            flex: 1; padding: 24px;
-            max-width: 1400px; width: 100%;
+            flex: 1;
+            padding: 24px var(--page-gutter, 24px) 32px;
+            width: 100%;
+            max-width: var(--content-max, 1440px);
+            margin: 0 auto;
         }
-        @media (min-width: 640px) { .main-content { padding: 24px 32px; } }
+        @media (min-width: 640px) { .main-content { padding-top: 28px; } }
+
+        .alerts-wrap {
+            width: 100%;
+            max-width: var(--content-max, 1440px);
+            margin: 0 auto;
+            padding: 20px var(--page-gutter, 24px) 0;
+        }
+
+        @media (max-width: 640px) {
+            .topbar {
+                gap: 12px;
+                padding-inline: 14px;
+            }
+            .topbar-page-title {
+                font-size: 18px;
+            }
+            .topbar-actions {
+                gap: 8px;
+            }
+            .main-content {
+                padding: 18px 14px 24px;
+            }
+            .alerts-wrap {
+                padding: 14px 14px 0;
+            }
+        }
 
         /* ═══════════════════════════════════════════════════════
            ALERTS
@@ -815,7 +858,7 @@
             </div>
         </header>
 
-        <div style="padding: 20px 24px 0;">
+        <div class="alerts-wrap">
 
             @if(session('success'))
             <div class="siga-alert success auto-dismiss" data-dismiss-after="5000">
