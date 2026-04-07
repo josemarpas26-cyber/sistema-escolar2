@@ -13,6 +13,7 @@ class Disciplina extends Model
         'nome',
         'codigo',
         'descricao',
+        'coordenador_id',
         'leciona_10',
         'leciona_11',
         'leciona_12',
@@ -37,6 +38,11 @@ class Disciplina extends Model
     public function notas()
     {
         return $this->hasMany(Nota::class);
+    }
+
+    public function coordenador()
+    {
+        return $this->belongsTo(User::class, 'coordenador_id');
     }
 
     public function atribuicoes()

@@ -125,7 +125,9 @@ class EstatisticasAcademicasTest extends TestCase
 
         $html = $response->getContent();
 
-        $this->assertSame(2, substr_count($html, 'Matematica - MAT'));
+        preg_match_all('/Matematica\s*[—-]\s*MAT/u', $html, $matches);
+
+        $this->assertSame(2, count($matches[0]));
     }
 
     public function test_resumo_da_pauta_aparece_na_tela_de_notas_do_professor(): void
@@ -170,9 +172,9 @@ class EstatisticasAcademicasTest extends TestCase
             ]));
 
         $response->assertOk();
-        $response->assertSeeText('Resumo da pauta');
-        $response->assertSeeText('Visao geral');
-        $response->assertSeeText('1o Trimestre');
+        $response->assertSeeText('Resumo da Pauta');
+        $response->assertSeeText('1º Trimestre');
+        $response->assertSeeText('Preenchimento');
     }
 
     private function createEstruturaAcademica(array $overrides = []): array

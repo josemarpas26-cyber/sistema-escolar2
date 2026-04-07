@@ -7,6 +7,7 @@ use App\Models\Disciplina;
 use App\Models\Turma;
 use App\Services\EstatisticasAcademicasService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class EstatisticasController extends Controller
 {
@@ -29,46 +30,42 @@ class EstatisticasController extends Controller
             abort(403, 'Perfil sem acesso a estatisticas.');
         }
 
-        // ── Filtros disponíveis para o utilizador ─────────────────────────
         $filtros = $this->construirFiltrosDisponiveis($user, $anoLetivo, $secoes);
 
-        // ── Aplicar filtros da request ────────────────────────────────────
-        $turmaFiltroId      = $request->integer('turma_id')      ?: null;
+        $turmaFiltroId = $request->integer('turma_id') ?: null;
         $disciplinaFiltroId = $request->integer('disciplina_id') ?: null;
-        $trimestre          = $request->input('trimestre', 'todos');
-        $secaoTipo          = $request->input('secao', null);
+        $trimestre = $request->input('trimestre', 'todos');
+        $secaoTipo = $request->input('secao', null);
 
-        // Filtrar as secoes pelo tipo selecionado
-        $secoesFiltradas = $secoes;
-        if ($secaoTipo) {
-            $secoesFiltradas = $secoes->filter(fn ($s) => $s['tipo'] === $secaoTipo)->values();
-        }
+        $secoesFiltradas = $secaoTipo
+            ? $secoes->filter(fn ($s) => $s['tipo'] === $secaoTipo)->values()
+            : $secoes;
 
-        // Aplicar filtro de turma e disciplina dentro das seções
         if ($turmaFiltroId || $disciplinaFiltroId || $trimestre !== 'todos') {
             $secoesFiltradas = $this->aplicarFiltrosNasSecoes(
-                $secoesFiltradas, $turmaFiltroId, $disciplinaFiltroId, $trimestre
+                $secoesFiltradas,
+                $turmaFiltroId,
+                $disciplinaFiltroId,
+                $trimestre
             );
         }
 
         return view('estatisticas.index', [
-            'anoLetivo'          => $anoLetivo,
-            'contextos'          => $secoes->pluck('tipo')->unique()->values(),
-            'secoes'             => $secoesFiltradas,
-            'secoesOriginais'    => $secoes,
-            'filtros'            => $filtros,
-            'filtroTurmaId'      => $turmaFiltroId,
+            'anoLetivo' => $anoLetivo,
+            'contextos' => $secoes->pluck('tipo')->unique()->values(),
+            'secoes' => $secoesFiltradas,
+            'secoesOriginais' => $secoes,
+            'filtros' => $filtros,
+            'filtroTurmaId' => $turmaFiltroId,
             'filtroDisciplinaId' => $disciplinaFiltroId,
-            'filtroTrimestre'    => $trimestre,
-            'filtroSecaoTipo'    => $secaoTipo,
+            'filtroTrimestre' => $trimestre,
+            'filtroSecaoTipo' => $secaoTipo,
         ]);
     }
 
-    // ── Helpers privados ──────────────────────────────────────────────────
-
     private function construirFiltrosDisponiveis($user, $anoLetivo, $secoes): array
     {
-        $turmaIds      = collect();
+        $turmaIds = collect();
         $disciplinaIds = collect();
 
         foreach ($secoes as $secao) {
@@ -81,6 +78,7 @@ class EstatisticasController extends Controller
                     break;
 
                 case 'coord_turma':
+                case 'admin':
                     foreach ($secao['itens'] as $item) {
                         $turmaIds->push($item['turma']->id);
                         foreach ($item['estatisticas'] as $disc) {
@@ -100,18 +98,18 @@ class EstatisticasController extends Controller
                     }
                     break;
 
-                case 'admin':
+                case 'coord_disciplina':
                     foreach ($secao['itens'] as $item) {
-                        $turmaIds->push($item['turma']->id);
-                        foreach ($item['estatisticas'] as $disc) {
-                            $disciplinaIds->push($disc['disciplina']->id);
+                        $disciplinaIds->push($item['disciplina']->id);
+                        foreach ($item['turmas'] as $turma) {
+                            $turmaIds->push($turma->id);
                         }
                     }
                     break;
             }
         }
 
-        $turmas      = Turma::whereIn('id', $turmaIds->unique()->values())
+        $turmas = Turma::whereIn('id', $turmaIds->unique()->values())
             ->with('curso')
             ->orderBy('classe')
             ->orderBy('nome')
@@ -137,14 +135,12 @@ class EstatisticasController extends Controller
                     if ($disciplinaId) {
                         $itens = $itens->filter(fn ($i) => $i['disciplina']->id === $disciplinaId);
                     }
-                    if ($trimestre !== 'todos') {
-                        $itens = $itens->map(function ($i) use ($trimestre) {
-                            $i['trimestres'] = $i['trimestres']->filter(
-                                fn ($t) => (string) $t['trimestre'] === $trimestre
-                            )->values();
-                            return $i;
-                        });
-                    }
+                    $itens = $itens->map(function ($item) use ($trimestre) {
+                        $item['trimestres'] = $this->filtrarTrimestres(collect($item['trimestres']), $trimestre);
+                        $item['resumo'] = $this->resumirTrimestres($item['trimestres']);
+
+                        return $item;
+                    });
                     break;
 
                 case 'coord_turma':
@@ -152,56 +148,179 @@ class EstatisticasController extends Controller
                     if ($turmaId) {
                         $itens = $itens->filter(fn ($i) => $i['turma']->id === $turmaId);
                     }
-                    $itens = $itens->map(function ($i) use ($disciplinaId, $trimestre) {
-                        $estatisticas = collect($i['estatisticas']);
+                    $itens = $itens->map(function ($item) use ($disciplinaId, $trimestre) {
+                        $estatisticas = collect($item['estatisticas']);
+
                         if ($disciplinaId) {
                             $estatisticas = $estatisticas->filter(
-                                fn ($e) => $e['disciplina']->id === $disciplinaId
+                                fn ($estatistica) => $estatistica['disciplina']->id === $disciplinaId
                             );
                         }
-                        if ($trimestre !== 'todos') {
-                            $estatisticas = $estatisticas->map(function ($e) use ($trimestre) {
-                                $e['trimestres'] = $e['trimestres']->filter(
-                                    fn ($t) => (string) $t['trimestre'] === $trimestre
-                                )->values();
-                                return $e;
-                            });
-                        }
-                        $i['estatisticas'] = $estatisticas->values();
-                        return $i;
+
+                        $estatisticas = $estatisticas->map(function ($estatistica) use ($trimestre) {
+                            $estatistica['trimestres'] = $this->filtrarTrimestres(
+                                collect($estatistica['trimestres']),
+                                $trimestre
+                            );
+                            $estatistica['resumo'] = $this->resumirTrimestres($estatistica['trimestres']);
+
+                            return $estatistica;
+                        })->values();
+
+                        $item['estatisticas'] = $estatisticas;
+                        $item['resumo'] = $this->resumirTrimestres(
+                            $estatisticas->flatMap(fn ($estatistica) => $estatistica['trimestres'])->values()
+                        );
+
+                        return $item;
                     });
                     break;
 
                 case 'coord_curso':
-                    // Filtro de turma: remove cursos que não tenham a turma selecionada
                     if ($turmaId) {
                         $itens = $itens->filter(
-                            fn ($i) => collect($i['turmas'])->contains(fn ($t) => $t->id === $turmaId)
+                            fn ($item) => collect($item['turmas'])->contains(fn ($turma) => $turma->id === $turmaId)
                         );
                     }
-                    $itens = $itens->map(function ($i) use ($disciplinaId, $trimestre) {
-                        $estatisticas = collect($i['estatisticas']);
+
+                    $itens = $itens->map(function ($item) use ($disciplinaId, $trimestre) {
+                        $estatisticas = collect($item['estatisticas']);
+
                         if ($disciplinaId) {
                             $estatisticas = $estatisticas->filter(
-                                fn ($e) => $e['disciplina']->id === $disciplinaId
+                                fn ($estatistica) => $estatistica['disciplina']->id === $disciplinaId
                             );
                         }
-                        if ($trimestre !== 'todos') {
-                            $estatisticas = $estatisticas->map(function ($e) use ($trimestre) {
-                                $e['trimestres'] = $e['trimestres']->filter(
-                                    fn ($t) => (string) $t['trimestre'] === $trimestre
-                                )->values();
-                                return $e;
-                            });
+
+                        $estatisticas = $estatisticas->map(function ($estatistica) use ($trimestre) {
+                            $estatistica['trimestres'] = $this->filtrarTrimestres(
+                                collect($estatistica['trimestres']),
+                                $trimestre
+                            );
+                            $estatistica['resumo'] = $this->resumirTrimestres($estatistica['trimestres']);
+
+                            return $estatistica;
+                        })->values();
+
+                        $item['estatisticas'] = $estatisticas;
+                        $item['resumo'] = $this->resumirTrimestres(
+                            $estatisticas->flatMap(fn ($estatistica) => $estatistica['trimestres'])->values()
+                        );
+
+                        return $item;
+                    });
+                    break;
+
+                case 'coord_disciplina':
+                    if ($disciplinaId) {
+                        $itens = $itens->filter(fn ($item) => $item['disciplina']->id === $disciplinaId);
+                    }
+
+                    if ($turmaId) {
+                        $itens = $itens->filter(
+                            fn ($item) => collect($item['turmas'])->contains(fn ($turma) => $turma->id === $turmaId)
+                        );
+                    }
+
+                    $itens = $itens->map(function ($item) use ($turmaId, $trimestre) {
+                        $turmas = collect($item['turmas']);
+
+                        if ($turmaId) {
+                            $turmas = $turmas->filter(fn ($turma) => $turma->id === $turmaId)->values();
                         }
-                        $i['estatisticas'] = $estatisticas->values();
-                        return $i;
+
+                        $estatisticas = collect($item['estatisticas'])
+                            ->when($turmaId, fn ($collection) => $collection->filter(
+                                fn ($estatistica) => $estatistica['turma']->id === $turmaId
+                            ))
+                            ->map(function ($estatistica) use ($trimestre) {
+                                $estatistica['trimestres'] = $this->filtrarTrimestres(
+                                    collect($estatistica['trimestres']),
+                                    $trimestre
+                                );
+                                $estatistica['resumo'] = $this->resumirTrimestres($estatistica['trimestres']);
+
+                                return $estatistica;
+                            })
+                            ->values();
+
+                        $item['turmas'] = $turmas;
+                        $item['estatisticas'] = $estatisticas;
+                        $item['trimestres'] = $turmaId
+                            ? $estatisticas->flatMap(fn ($estatistica) => $estatistica['trimestres'])->values()
+                            : $this->filtrarTrimestres(collect($item['trimestres']), $trimestre);
+                        $item['resumo'] = $this->resumirTrimestres($item['trimestres']);
+
+                        return $item;
                     });
                     break;
             }
 
             $secao['itens'] = $itens->values()->all();
+            $secao['resumo'] = $this->resumoSecao($secao['tipo'], collect($secao['itens']));
+
             return $secao;
-        })->filter(fn ($s) => count($s['itens']) > 0)->values();
+        })->filter(fn ($secao) => count($secao['itens']) > 0)->values();
+    }
+
+    private function filtrarTrimestres(Collection $trimestres, string $trimestre): Collection
+    {
+        if ($trimestre === 'todos') {
+            return $trimestres->values();
+        }
+
+        return $trimestres
+            ->filter(fn ($item) => (string) $item['trimestre'] === $trimestre)
+            ->values();
+    }
+
+    private function resumoSecao(string $tipo, Collection $itens): array
+    {
+        if ($itens->isEmpty()) {
+            return $this->resumoVazio();
+        }
+
+        return match ($tipo) {
+            'professor', 'coord_disciplina' => $this->resumirTrimestres(
+                $itens->flatMap(fn ($item) => collect($item['trimestres']))->values()
+            ),
+            default => $this->resumirTrimestres(
+                $itens->flatMap(fn ($item) => collect($item['estatisticas'] ?? [])
+                    ->flatMap(fn ($estatistica) => collect($estatistica['trimestres'])))->values()
+            ),
+        };
+    }
+
+    private function resumirTrimestres(Collection $trimestres): array
+    {
+        if ($trimestres->isEmpty()) {
+            return $this->resumoVazio();
+        }
+
+        $totalNotas = $trimestres->sum('total');
+        $totalPositivas = $trimestres->sum('positivas');
+        $totalNegativas = $trimestres->sum('negativas');
+        $somaTotal = (float) $trimestres->sum('soma');
+
+        return [
+            'total_notas' => $totalNotas,
+            'total_positivas' => $totalPositivas,
+            'total_negativas' => $totalNegativas,
+            'pct_aprovacao' => $totalNotas > 0 ? round(($totalPositivas / $totalNotas) * 100, 1) : 0,
+            'pct_reprovacao' => $totalNotas > 0 ? round(($totalNegativas / $totalNotas) * 100, 1) : 0,
+            'media_geral' => $totalNotas > 0 ? round($somaTotal / $totalNotas, 2) : null,
+        ];
+    }
+
+    private function resumoVazio(): array
+    {
+        return [
+            'total_notas' => 0,
+            'total_positivas' => 0,
+            'total_negativas' => 0,
+            'pct_aprovacao' => 0,
+            'pct_reprovacao' => 0,
+            'media_geral' => null,
+        ];
     }
 }

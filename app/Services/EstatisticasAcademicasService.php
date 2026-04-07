@@ -21,6 +21,7 @@ class EstatisticasAcademicasService
                 $this->construirSecaoProfessor($user, $anoLetivo),
                 $this->construirSecaoCoordenacaoTurma($user, $anoLetivo),
                 $this->construirSecaoCoordenacaoCurso($user, $anoLetivo),
+                $this->construirSecaoCoordenacaoDisciplina($user, $anoLetivo),
             ];
 
             foreach ($secoesProfessor as $secao) {
@@ -211,6 +212,67 @@ class EstatisticasAcademicasService
                 $itens->flatMap(fn ($item) => $item['estatisticas']->flatMap(fn ($disc) => $disc['trimestres']))->values()
             ),
             'itens'     => $itens->all(),
+        ];
+    }
+
+    private function construirSecaoCoordenacaoDisciplina(User $professor, AnoLetivo $anoLetivo): ?array
+    {
+        $disciplinas = Disciplina::query()
+            ->where('coordenador_id', $professor->id)
+            ->with([
+                'turmas' => fn ($query) => $query
+                    ->where('ano_letivo_id', $anoLetivo->id)
+                    ->with('curso'),
+            ])
+            ->orderBy('nome')
+            ->get()
+            ->values();
+
+        if ($disciplinas->isEmpty()) {
+            return null;
+        }
+
+        $itens = $disciplinas->map(function (Disciplina $disciplina) use ($anoLetivo) {
+            $turmas = $disciplina->turmas
+                ->sortBy(fn (Turma $turma) => $this->ordemTurma($turma))
+                ->values();
+
+            $notas = $this->buscarNotasPorEscopo(
+                [$disciplina->id],
+                $turmas->pluck('id')->all(),
+                $anoLetivo->id
+            );
+
+            $notasPorTurma = $notas->groupBy('turma_id');
+            $trimestres = $this->calcularTrimestres($notas);
+
+            $estatisticas = $turmas->map(function (Turma $turma) use ($notasPorTurma) {
+                $trimestresTurma = $this->calcularTrimestres($notasPorTurma->get($turma->id, collect()));
+
+                return [
+                    'turma' => $turma,
+                    'trimestres' => $trimestresTurma,
+                    'resumo' => $this->resumirTrimestres($trimestresTurma),
+                ];
+            })->values();
+
+            return [
+                'disciplina' => $disciplina,
+                'turmas' => $turmas,
+                'trimestres' => $trimestres,
+                'estatisticas' => $estatisticas,
+                'resumo' => $this->resumirTrimestres($trimestres),
+            ];
+        })->values();
+
+        return [
+            'tipo' => 'coord_disciplina',
+            'titulo' => 'Disciplinas sob minha coordenacao',
+            'descricao' => 'Consolidado anual da disciplina coordenada com detalhe por turma e por trimestre.',
+            'resumo' => $this->resumirTrimestres(
+                $itens->flatMap(fn ($item) => $item['trimestres'])->values()
+            ),
+            'itens' => $itens,
         ];
     }
 

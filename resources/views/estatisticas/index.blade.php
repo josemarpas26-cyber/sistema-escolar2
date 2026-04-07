@@ -239,18 +239,21 @@
         'professor'   => 'Professor',
         'coord_turma' => 'Diretor de Turma',
         'coord_curso' => 'Coordenador de Curso',
+        'coord_disciplina' => 'Coordenador de Disciplina',
         'admin'       => 'Administrativo',
     ];
     $tipoIcons = [
         'professor'   => 'fas fa-chalkboard-teacher',
         'coord_turma' => 'fas fa-users',
         'coord_curso' => 'fas fa-sitemap',
+        'coord_disciplina' => 'fas fa-book-open',
         'admin'       => 'fas fa-shield-alt',
     ];
     $tipoColors = [
         'professor'   => '#2563eb',
         'coord_turma' => '#0f766e',
         'coord_curso' => '#7c3aed',
+        'coord_disciplina' => '#1d4ed8',
         'admin'       => '#d97706',
     ];
     $trimLabels = [
@@ -491,6 +494,12 @@
             $itemSub    = collect($item['turmas'])->count() . ' turma(s)';
             $itemTrims  = null;
             $itemResumo = $item['resumo'];
+        } elseif ($secao['tipo'] === 'coord_disciplina') {
+            $itemTitulo = $item['disciplina']->nome . ' â€” ' . $item['disciplina']->codigo;
+            $itemTitulo = $item['disciplina']->nome . ' - ' . $item['disciplina']->codigo;
+            $itemSub    = collect($item['turmas'])->count() . ' turma(s) no ano lectivo';
+            $itemTrims  = $item['trimestres'];
+            $itemResumo = $item['resumo'];
         } else {
             // coord_turma e admin
             $itemTitulo = $item['turma']->nome_completo ?? '—';
@@ -592,6 +601,157 @@
                         </tbody>
                     </table>
                 </div>
+                @endif
+
+            {{-- === COORD_DISCIPLINA: resumo da disciplina + detalhe por turma === --}}
+            @elseif($secao['tipo'] === 'coord_disciplina' && $itemTrims !== null)
+                @if($itemTrims->isEmpty())
+                    <div class="est-empty" style="padding:28px 20px;">
+                        <i class="fas fa-clipboard-list" style="font-size:1.6rem;"></i>
+                        <div class="est-empty-title">Sem notas lanÃ§adas</div>
+                    </div>
+                @else
+                <div style="padding:14px 20px 0; font-size:.78rem; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:.04em;">
+                    Visao consolidada da disciplina
+                </div>
+                <div style="overflow-x:auto; padding:12px 1px 1px;">
+                    <table class="est-table">
+                        <thead>
+                            <tr>
+                                <th>Trimestre</th>
+                                <th class="tc">Total</th>
+                                <th class="tc">Masc.</th>
+                                <th class="tc">Masc. Aprov.</th>
+                                <th class="tc">Fem.</th>
+                                <th class="tc">Fem. Aprov.</th>
+                                <th class="tc">Positivas</th>
+                                <th class="tc">Negativas</th>
+                                <th>% AprovaÃ§Ã£o</th>
+                                <th class="tc">% Reprov.</th>
+                                <th class="tc">MÃ©dia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($itemTrims as $trim)
+                            <tr>
+                                <td>
+                                    <span class="est-trim-pill {{ $trimCores[$trim['trimestre']] ?? '' }}">
+                                        {{ $trim['trimestre'] }}Âº Trimestre
+                                    </span>
+                                </td>
+                                <td class="tc font-medium">{{ $trim['total'] }}</td>
+                                <td class="tc" style="color:#64748b">{{ $trim['masculino'] }}</td>
+                                <td class="tc" style="color:#16a34a">{{ $trim['masculino_aprov'] }}</td>
+                                <td class="tc" style="color:#64748b">{{ $trim['feminino'] }}</td>
+                                <td class="tc" style="color:#16a34a">{{ $trim['feminino_aprov'] }}</td>
+                                <td class="tc" style="color:#16a34a; font-weight:700">{{ $trim['positivas'] }}</td>
+                                <td class="tc" style="color:#dc2626; font-weight:700">{{ $trim['negativas'] }}</td>
+                                <td>
+                                    @php
+                                        $pct = $trim['pct_aprovacao'];
+                                        $barColor = $pct >= 70 ? '#16a34a' : ($pct >= 50 ? '#d97706' : '#dc2626');
+                                    @endphp
+                                    <div class="est-bar-wrap">
+                                        <div class="est-bar-track">
+                                            <div class="est-bar-fill" style="width:{{ $pct }}%; background:{{ $barColor }}"></div>
+                                        </div>
+                                        <span class="est-bar-label" style="color:{{ $barColor }}">{{ $pct }}%</span>
+                                    </div>
+                                </td>
+                                <td class="tc">
+                                    <span style="font-size:.7rem; font-weight:700; color:{{ $trim['pct_reprovacao'] > 30 ? '#dc2626' : '#64748b' }}">
+                                        {{ $trim['pct_reprovacao'] }}%
+                                    </span>
+                                </td>
+                                <td class="tc" style="font-weight:700; color:#0f766e">
+                                    {{ $trim['media'] !== null ? number_format($trim['media'],1) : 'â€”' }}
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @endif
+
+                @php $estatisticasTurmas = collect($item['estatisticas'] ?? []); @endphp
+
+                @if($estatisticasTurmas->isNotEmpty())
+                    <div style="padding:18px 20px 0; font-size:.78rem; font-weight:700; color:#0f766e; text-transform:uppercase; letter-spacing:.04em;">
+                        Detalhe por turma
+                    </div>
+                    @foreach($estatisticasTurmas as $turmaItem)
+                        <div class="est-disc-header">
+                            <span class="est-disc-name">{{ $turmaItem['turma']->nome_completo ?? 'â€”' }}</span>
+                            <span class="est-disc-code">{{ $turmaItem['turma']->curso->nome ?? '' }}</span>
+                            @if($turmaItem['resumo']['total_notas'] > 0)
+                                <span style="margin-left:auto; display:flex; gap:6px;">
+                                    <span class="est-chip est-chip-green" style="font-size:.6rem; padding:2px 6px;">{{ $turmaItem['resumo']['pct_aprovacao'] }}% apr</span>
+                                    <span class="est-chip est-chip-red" style="font-size:.6rem; padding:2px 6px;">{{ $turmaItem['resumo']['pct_reprovacao'] }}% rep</span>
+                                    @if($turmaItem['resumo']['media_geral'] !== null)
+                                    <span class="est-chip est-chip-blue" style="font-size:.6rem; padding:2px 6px;">MÃ©d. {{ number_format($turmaItem['resumo']['media_geral'],1) }}</span>
+                                    @endif
+                                </span>
+                            @endif
+                        </div>
+
+                        @if($turmaItem['trimestres']->isEmpty())
+                            <div style="padding:10px 20px; font-size:.8rem; color:#94a3b8;">Sem notas lanÃ§adas nesta turma.</div>
+                        @else
+                        <div style="overflow-x:auto;">
+                            <table class="est-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trimestre</th>
+                                        <th class="tc">Total</th>
+                                        <th class="tc">Masc.</th>
+                                        <th class="tc">Fem.</th>
+                                        <th class="tc">Positivas</th>
+                                        <th class="tc">Negativas</th>
+                                        <th>% AprovaÃ§Ã£o</th>
+                                        <th class="tc">% Reprov.</th>
+                                        <th class="tc">MÃ©dia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($turmaItem['trimestres'] as $trim)
+                                    <tr>
+                                        <td>
+                                            <span class="est-trim-pill {{ $trimCores[$trim['trimestre']] ?? '' }}">
+                                                {{ $trim['trimestre'] }}Âº Trimestre
+                                            </span>
+                                        </td>
+                                        <td class="tc font-medium">{{ $trim['total'] }}</td>
+                                        <td class="tc" style="color:#64748b">{{ $trim['masculino'] }}</td>
+                                        <td class="tc" style="color:#64748b">{{ $trim['feminino'] }}</td>
+                                        <td class="tc" style="color:#16a34a; font-weight:700">{{ $trim['positivas'] }}</td>
+                                        <td class="tc" style="color:#dc2626; font-weight:700">{{ $trim['negativas'] }}</td>
+                                        <td>
+                                            @php
+                                                $pct = $trim['pct_aprovacao'];
+                                                $bc  = $pct >= 70 ? '#16a34a' : ($pct >= 50 ? '#d97706' : '#dc2626');
+                                            @endphp
+                                            <div class="est-bar-wrap">
+                                                <div class="est-bar-track">
+                                                    <div class="est-bar-fill" style="width:{{ $pct }}%; background:{{ $bc }}"></div>
+                                                </div>
+                                                <span class="est-bar-label" style="color:{{ $bc }}">{{ $pct }}%</span>
+                                            </div>
+                                        </td>
+                                        <td class="tc">
+                                            <span style="font-size:.7rem; font-weight:700; color:{{ $trim['pct_reprovacao'] > 30 ? '#dc2626' : '#64748b' }}">
+                                                {{ $trim['pct_reprovacao'] }}%
+                                            </span>
+                                        </td>
+                                        <td class="tc" style="font-weight:700; color:#0f766e">
+                                            {{ $trim['media'] !== null ? number_format($trim['media'],1) : 'â€”' }}
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @endif
+                    @endforeach
                 @endif
 
             {{-- === COORD_TURMA / ADMIN / COORD_CURSO: lista de disciplinas === --}}

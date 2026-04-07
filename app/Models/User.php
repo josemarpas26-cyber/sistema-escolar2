@@ -93,6 +93,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Turma::class, 'coordenador_turma_id');
     }
 
+    public function disciplinaCoordenada()
+    {
+        return $this->hasOne(Disciplina::class, 'coordenador_id');
+    }
+
     // === SCOPES ===
 
     public function scopeAlunos($query)
@@ -140,6 +145,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isCoordenadorTurma(): bool
     {
         return $this->turmaCoordenada()->exists();
+    }
+
+    public function isCoordenadorDisciplina(): bool
+    {
+        return $this->disciplinaCoordenada()->exists();
     }
 
     public function hasPermission(string $permissionName): bool

@@ -83,6 +83,26 @@ class RelatorioController extends Controller
                         ->values();
                 }
             }
+
+            if ($this->isCoordenadorDisciplina($user)) {
+                $disciplinaCoordenada = $user->disciplinaCoordenada()->first();
+
+                if ($disciplinaCoordenada) {
+                    $disciplinaIdsProfessor = $disciplinaIdsProfessor
+                        ->push($disciplinaCoordenada->id)
+                        ->unique()
+                        ->values();
+
+                    $turmaIdsDisciplina = $disciplinaCoordenada->turmas()
+                        ->when($anoLetivoAtivoId, fn ($q) => $q->where('ano_letivo_id', $anoLetivoAtivoId))
+                        ->pluck('turmas.id');
+
+                    $turmaIdsPermitidas = $turmaIdsPermitidas
+                        ->merge($turmaIdsDisciplina)
+                        ->unique()
+                        ->values();
+                }
+            }
             $turmas = Turma::with(['curso', 'anoLetivo'])
                 ->whereIn('id', $turmaIdsPermitidas)
                 ->orderBy('classe')
@@ -243,8 +263,14 @@ class RelatorioController extends Controller
                 $query->whereIn('disciplina_id', $disciplinasPermitidas);
             }
 
-            $notas = $query->get()
-                ->groupBy('disciplina_id');
+            $notasColecao = $query->get();
+            $notas = $notasColecao->groupBy('disciplina_id');
+            $disciplinasVisiveis = $turma->disciplinas()
+                ->when($aplicarRestricaoProfessor, fn ($q) => $q->whereIn('disciplinas.id', $disciplinasPermitidas))
+                ->get();
+
+            $turma->setRelation('disciplinas', $disciplinasVisiveis);
+            $turma->setRelation('notas', $notasColecao);
 
             $dados = [
                 'turma' => $turma,
@@ -462,13 +488,24 @@ class RelatorioController extends Controller
         $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
         $trimestre = $request->trimestre ?? 'final';
 
-        $this->regrasAcessoPauta($user, $turma, null, $anoLetivoId, $anoLetivoAtivo);
+        [$aplicarRestricaoProfessor, $disciplinasPermitidas] = $this->regrasAcessoPauta(
+            $user,
+            $turma,
+            null,
+            $anoLetivoId,
+            $anoLetivoAtivo
+        );
         $anoLetivo = AnoLetivo::findOrFail($anoLetivoId);
 
-        $notas = Nota::where('turma_id', $turma->id)
+        $notasQuery = Nota::where('turma_id', $turma->id)
             ->where('ano_letivo_id', $anoLetivoId)
-            ->with(['aluno', 'disciplina'])
-            ->get();
+            ->with(['aluno', 'disciplina']);
+
+        if ($aplicarRestricaoProfessor) {
+            $notasQuery->whereIn('disciplina_id', $disciplinasPermitidas);
+        }
+
+        $notas = $notasQuery->get();
 
         // Agrupa por aluno
         $notasPorAluno = $notas->groupBy('aluno_id');
@@ -531,6 +568,30 @@ class RelatorioController extends Controller
         return $user->isProfessor() && $user->isCoordenadorCurso();
     }
 
+    private function isCoordenadorDisciplina(User $user): bool
+    {
+        return $user->isProfessor() && $user->isCoordenadorDisciplina();
+    }
+
+    private function disciplinaCoordenadaNaTurma(User $user, Turma $turma, int $anoLetivoId): ?Disciplina
+    {
+        if (! $this->isCoordenadorDisciplina($user) || $turma->ano_letivo_id !== $anoLetivoId) {
+            return null;
+        }
+
+        $disciplina = $user->disciplinaCoordenada()->first();
+
+        if (! $disciplina) {
+            return null;
+        }
+
+        $pertenceTurma = $turma->disciplinas()
+            ->where('disciplinas.id', $disciplina->id)
+            ->exists();
+
+        return $pertenceTurma ? $disciplina : null;
+    }
+
     private function regrasAcessoBoletim(
         User $user,
         Turma $turma,
@@ -553,6 +614,12 @@ class RelatorioController extends Controller
         if ($podeComoCoordenadorCurso || $podeComoCoordenadorTurma) {
 
             return [false, []];
+        }
+
+        $disciplinaCoordenada = $this->disciplinaCoordenadaNaTurma($user, $turma, $anoLetivo->id);
+
+        if ($disciplinaCoordenada && (! $disciplinaId || $disciplinaId === $disciplinaCoordenada->id)) {
+            return [true, [$disciplinaCoordenada->id]];
         }
 
         if (! $disciplinaId) {
@@ -607,6 +674,12 @@ class RelatorioController extends Controller
             return [false, []];
         }
 
+        $disciplinaCoordenada = $this->disciplinaCoordenadaNaTurma($user, $turma, $anoLetivoId);
+
+        if ($disciplinaCoordenada && (! $disciplina || $disciplina->id === $disciplinaCoordenada->id)) {
+            return [true, [$disciplinaCoordenada->id]];
+        }
+
         if (! $disciplina) {
             abort(403, 'Professor deve selecionar uma disciplina específica.');
         }
@@ -642,15 +715,32 @@ class RelatorioController extends Controller
         $anoLetivoId = $request->ano_letivo_id ?? $turma->ano_letivo_id;
         $trimestre = $request->trimestre ?? 'final';
 
-        $this->regrasAcessoPauta($user, $turma, null, $anoLetivoId, $anoLetivoAtivo);
+        [$aplicarRestricaoProfessor, $disciplinasPermitidas] = $this->regrasAcessoPauta(
+            $user,
+            $turma,
+            null,
+            $anoLetivoId,
+            $anoLetivoAtivo
+        );
 
         $anoLetivo = AnoLetivo::find($anoLetivoId);
 
-        $notas = Nota::where('turma_id', $turma->id)
+        $notasQuery = Nota::where('turma_id', $turma->id)
             ->where('ano_letivo_id', $anoLetivoId)
-            ->with(['aluno', 'disciplina'])
-            ->get()
-            ->groupBy('disciplina_id');
+            ->with(['aluno', 'disciplina']);
+
+        if ($aplicarRestricaoProfessor) {
+            $notasQuery->whereIn('disciplina_id', $disciplinasPermitidas);
+        }
+
+        $notasColecao = $notasQuery->get();
+        $notas = $notasColecao->groupBy('disciplina_id');
+        $disciplinasVisiveis = $turma->disciplinas()
+            ->when($aplicarRestricaoProfessor, fn ($q) => $q->whereIn('disciplinas.id', $disciplinasPermitidas))
+            ->get();
+
+        $turma->setRelation('disciplinas', $disciplinasVisiveis);
+        $turma->setRelation('notas', $notasColecao);
 
         $dados = [
             'turma' => $turma,

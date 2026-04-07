@@ -17,12 +17,13 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Codigo</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coordenador</th>
                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Classes</th>
                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Terminal</th>
                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acoes</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -34,16 +35,25 @@
                     <td class="px-6 py-4">
                         <span class="font-semibold text-gray-900">{{ $disciplina->nome }}</span>
                     </td>
+                    <td class="px-6 py-4">
+                        @if($disciplina->coordenador)
+                            <a href="{{ route('users.show', $disciplina->coordenador) }}" class="text-primary-600 font-medium hover:text-primary-800">
+                                {{ $disciplina->coordenador->name }}
+                            </a>
+                        @else
+                            <span class="text-sm text-gray-500">Sem coordenador</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 text-center">
-                        <div class="flex justify-center space-x-1">
+                        <div class="flex justify-center flex-wrap gap-1">
                             @if($disciplina->leciona_10)
-                            <x-badge type="info">10ª</x-badge>
+                            <x-badge type="info">10a</x-badge>
                             @endif
                             @if($disciplina->leciona_11)
-                            <x-badge type="info">11ª</x-badge>
+                            <x-badge type="info">11a</x-badge>
                             @endif
                             @if($disciplina->leciona_12)
-                            <x-badge type="info">12ª</x-badge>
+                            <x-badge type="info">12a</x-badge>
                             @endif
                         </div>
                     </td>
@@ -61,21 +71,21 @@
                     </td>
                     <td class="px-6 py-4 text-right whitespace-nowrap">
                         <div class="flex justify-end space-x-3">
-                            <a href="{{ route('disciplinas.show', $disciplina) }}" 
-                               class="text-primary-600 hover:text-primary-900" 
+                            <a href="{{ route('disciplinas.show', $disciplina) }}"
+                               class="text-primary-600 hover:text-primary-900"
                                title="Ver detalhes">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <a href="{{ route('disciplinas.edit', $disciplina) }}" 
-                               class="text-blue-600 hover:text-blue-900" 
+                            <a href="{{ route('disciplinas.edit', $disciplina) }}"
+                               class="text-blue-600 hover:text-blue-900"
                                title="Editar">
                                 <i class="fas fa-edit"></i>
                             </a>
                             <form method="POST" action="{{ route('disciplinas.destroy', $disciplina) }}" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" 
-                                        class="text-red-600 hover:text-red-900" 
+                                <button type="submit"
+                                        class="text-red-600 hover:text-red-900"
                                         title="Eliminar"
                                         onclick="return confirm('Deseja eliminar esta disciplina?')">
                                     <i class="fas fa-trash"></i>
@@ -89,14 +99,12 @@
         </table>
     </div>
 
-    <!-- Paginação -->
     <div class="mt-4">
         {{ $disciplinas->links('vendor.pagination.tailwind') }}
     </div>
 
     @else
 
-    <!-- Empty State -->
     <div class="text-center py-12">
         <i class="fas fa-book-open text-5xl text-gray-300 mb-4"></i>
         <h3 class="text-lg font-semibold text-gray-900 mb-2">Nenhuma disciplina cadastrada</h3>

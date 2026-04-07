@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Curso;
 use App\Models\Disciplina;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DisciplinaController extends Controller
 {
@@ -15,13 +17,13 @@ class DisciplinaController extends Controller
     {
         $this->checkPermission('disciplinas.view');
 
-        $query = Disciplina::withCount('turmas');
+        $query = Disciplina::with(['coordenador'])->withCount('turmas');
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nome', 'like', "%{$search}%")
-                  ->orWhere('codigo', 'like', "%{$search}%");
+                    ->orWhere('codigo', 'like', "%{$search}%");
             });
         }
 
@@ -35,15 +37,16 @@ class DisciplinaController extends Controller
     }
 
     /**
-     * Formulário de criação
+     * Formulario de criacao
      */
     public function create()
     {
         $this->checkPermission('disciplinas.create');
 
         $cursos = Curso::ativos()->orderBy('nome')->get();
+        $professores = $this->professoresCoordenadores();
 
-        return view('disciplinas.form', compact('cursos'));
+        return view('disciplinas.form', compact('cursos', 'professores'));
     }
 
     /**
@@ -53,32 +56,25 @@ class DisciplinaController extends Controller
     {
         $this->checkPermission('disciplinas.create');
 
-        // BUG CORRIGIDO 1: Removida validação 'boolean' dos checkboxes
-        // Checkboxes desmarcados não enviam valor, então a validação falhava
-        $validated = $request->validate([
-            'nome'              => 'required|string|max:255',
-            'codigo'            => 'required|string|max:10|unique:disciplinas,codigo',
-            'descricao'         => 'nullable|string|max:500',
-            'cursos_terminal'   => 'nullable|array',
-            'cursos_terminal.*' => 'nullable|in:10,11,12',
-        ]);
+        $validated = $request->validate(
+            $this->disciplinaRules(),
+            $this->disciplinaMessages()
+        );
 
-        // BUG CORRIGIDO 3: Validação de pelo menos uma classe
-        if (!$request->has('leciona_10') && 
-            !$request->has('leciona_11') && 
-            !$request->has('leciona_12')) {
+        if (! $request->has('leciona_10')
+            && ! $request->has('leciona_11')
+            && ! $request->has('leciona_12')) {
             return back()
-                ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina será lecionada.'])
+                ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina sera lecionada.'])
                 ->withInput();
         }
 
-        // Adicionar booleans manualmente (checkboxes só enviam quando marcados)
-        $validated['leciona_10']          = $request->has('leciona_10');
-        $validated['leciona_11']          = $request->has('leciona_11');
-        $validated['leciona_12']          = $request->has('leciona_12');
+        $validated['leciona_10'] = $request->has('leciona_10');
+        $validated['leciona_11'] = $request->has('leciona_11');
+        $validated['leciona_12'] = $request->has('leciona_12');
         $validated['disciplina_terminal'] = $request->has('disciplina_terminal');
-        $validated['ativo']               = $request->has('ativo');
-        
+        $validated['ativo'] = $request->has('ativo');
+
         $disciplina = Disciplina::create($validated);
 
         $this->syncTerminalPorCurso($disciplina, $request->input('cursos_terminal', []));
@@ -96,16 +92,17 @@ class DisciplinaController extends Controller
         $this->checkPermission('disciplinas.view');
 
         $disciplina->load([
-            'turmas'      => fn($q) => $q->with(['curso', 'anoLetivo'])->latest(),
-            'atribuicoes' => fn($q) => $q->with(['professor', 'turma'])->latest(),
-            'cursos'      => fn($q) => $q->orderBy('nome'),
+            'coordenador',
+            'turmas' => fn ($q) => $q->with(['curso', 'anoLetivo'])->latest(),
+            'atribuicoes' => fn ($q) => $q->with(['professor', 'turma'])->latest(),
+            'cursos' => fn ($q) => $q->orderBy('nome'),
         ]);
 
         return view('disciplinas.show', compact('disciplina'));
     }
 
     /**
-     * Formulário de edição
+     * Formulario de edicao
      */
     public function edit(Disciplina $disciplina)
     {
@@ -113,8 +110,9 @@ class DisciplinaController extends Controller
 
         $disciplina->load('cursos');
         $cursos = Curso::ativos()->orderBy('nome')->get();
+        $professores = $this->professoresCoordenadores();
 
-        return view('disciplinas.form', compact('disciplina', 'cursos'));
+        return view('disciplinas.form', compact('disciplina', 'cursos', 'professores'));
     }
 
     /**
@@ -124,30 +122,24 @@ class DisciplinaController extends Controller
     {
         $this->checkPermission('disciplinas.edit');
 
-        // BUG CORRIGIDO 1: Removida validação 'boolean' dos checkboxes
-        $validated = $request->validate([
-            'nome'              => 'required|string|max:255',
-            'codigo'            => 'required|string|max:10|unique:disciplinas,codigo,' . $disciplina->id,
-            'descricao'         => 'nullable|string|max:500',
-            'cursos_terminal'   => 'nullable|array',
-            'cursos_terminal.*' => 'nullable|in:10,11,12',
-        ]);
+        $validated = $request->validate(
+            $this->disciplinaRules($disciplina),
+            $this->disciplinaMessages()
+        );
 
-        // BUG CORRIGIDO 3: Validação de pelo menos uma classe
-        if (!$request->has('leciona_10') && 
-            !$request->has('leciona_11') && 
-            !$request->has('leciona_12')) {
+        if (! $request->has('leciona_10')
+            && ! $request->has('leciona_11')
+            && ! $request->has('leciona_12')) {
             return back()
-                ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina será lecionada.'])
+                ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina sera lecionada.'])
                 ->withInput();
         }
 
-        // Adicionar booleans manualmente
-        $validated['leciona_10']          = $request->has('leciona_10');
-        $validated['leciona_11']          = $request->has('leciona_11');
-        $validated['leciona_12']          = $request->has('leciona_12');
+        $validated['leciona_10'] = $request->has('leciona_10');
+        $validated['leciona_11'] = $request->has('leciona_11');
+        $validated['leciona_12'] = $request->has('leciona_12');
         $validated['disciplina_terminal'] = $request->has('disciplina_terminal');
-        $validated['ativo']               = $request->has('ativo');
+        $validated['ativo'] = $request->has('ativo');
 
         $disciplina->update($validated);
 
@@ -165,14 +157,12 @@ class DisciplinaController extends Controller
     {
         $this->checkPermission('disciplinas.delete');
 
-        // BUG CORRIGIDO 4: exists() é muito mais rápido que count() > 0
-        // exists() para na primeira row encontrada, count() conta todas
         if ($disciplina->turmas()->exists()) {
-            return back()->with('error', 'Não é possível deletar uma disciplina com turmas associadas!');
+            return back()->with('error', 'Nao e possivel deletar uma disciplina com turmas associadas!');
         }
 
         if ($disciplina->notas()->exists()) {
-            return back()->with('error', 'Não é possível deletar uma disciplina com notas lançadas!');
+            return back()->with('error', 'Nao e possivel deletar uma disciplina com notas lancadas!');
         }
 
         $disciplina->delete();
@@ -189,19 +179,69 @@ class DisciplinaController extends Controller
     {
         $this->checkPermission('disciplinas.edit');
 
-        $disciplina->update(['ativo' => !$disciplina->ativo]);
+        $disciplina->update(['ativo' => ! $disciplina->ativo]);
 
         $status = $disciplina->ativo ? 'ativada' : 'desativada';
-        
+
         return back()->with('success', "Disciplina {$status} com sucesso!");
     }
 
+    private function professoresCoordenadores()
+    {
+        return User::professores()
+            ->ativos()
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function disciplinaRules(?Disciplina $disciplina = null): array
+    {
+        return [
+            'nome' => 'required|string|max:255',
+            'codigo' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::unique('disciplinas', 'codigo')->ignore($disciplina?->id),
+            ],
+            'descricao' => 'nullable|string|max:500',
+            'coordenador_id' => [
+                'nullable',
+                'exists:users,id',
+                Rule::unique('disciplinas', 'coordenador_id')->ignore($disciplina?->id),
+                function ($attribute, $value, $fail) {
+                    if (! $value) {
+                        return;
+                    }
+
+                    $professorValido = User::professores()
+                        ->ativos()
+                        ->whereKey($value)
+                        ->exists();
+
+                    if (! $professorValido) {
+                        $fail('Selecione um professor ativo para coordenar a disciplina.');
+                    }
+                },
+            ],
+            'cursos_terminal' => 'nullable|array',
+            'cursos_terminal.*' => 'nullable|in:10,11,12',
+        ];
+    }
+
+    private function disciplinaMessages(): array
+    {
+        return [
+            'coordenador_id.unique' => 'Este professor ja coordena outra disciplina.',
+            'coordenador_id.exists' => 'O coordenador selecionado nao existe.',
+        ];
+    }
+
     /**
-     * Sincroniza a configuração de ano terminal por curso.
+     * Sincroniza a configuracao de ano terminal por curso.
      *
-     * BUG CORRIGIDO 2: O sync([]) vazio apagava TODAS as relações.
      * Agora processa todos os cursos recebidos no form, mantendo ano_terminal = null
-     * quando não foi especificado, e só faz sync() se houver dados.
+     * quando nao foi especificado, e so faz sync() se houver dados.
      *
      * @param  Disciplina  $disciplina
      * @param  array  $cursosTerminal  Array [curso_id => ano_terminal]
@@ -211,17 +251,12 @@ class DisciplinaController extends Controller
         $syncData = [];
 
         foreach ($cursosTerminal as $cursoId => $anoTerminal) {
-            // BUG CORRIGIDO 2: Antes, quando $anoTerminal era vazio, o continue
-            // fazia com que o curso não fosse incluído no sync(), resultando em
-            // sua remoção da tabela pivot. Agora, incluímos com ano_terminal = null
-            // para manter a relação mas sem ano definido.
             $syncData[(int) $cursoId] = [
-                'ano_terminal' => $anoTerminal ? (int) $anoTerminal : null
+                'ano_terminal' => $anoTerminal ? (int) $anoTerminal : null,
             ];
         }
 
-        // Só faz sync se houver dados (evita apagar tudo com sync([]))
-        if (!empty($syncData)) {
+        if (! empty($syncData)) {
             $disciplina->cursos()->sync($syncData);
         }
     }
