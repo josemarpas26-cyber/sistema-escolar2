@@ -103,7 +103,7 @@ class TurmaController extends Controller
 
         // 2️⃣ Validar dados
         $validated = $request->validate([
-            'nome' => 'required|string|max:10',
+            'nome' => ['required', 'string', 'size:1', 'regex:/^[A-Za-z]$/'],
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
@@ -115,9 +115,18 @@ class TurmaController extends Controller
                 }),
             ],
             'capacidade' => 'required|integer|min:1|max:100',
+            'turno' => ['required', 'in:M,T'],
             'disciplinas' => 'nullable|array',
             'disciplinas.*' => 'exists:disciplinas,id',
+        ], [
+            'nome.required' => 'O nome da turma é obrigatório.',
+            'nome.size' => 'O nome da turma deve ter exactamente 1 letra.',
+            'nome.regex' => 'O nome da turma deve ser uma letra de A a Z.',
+            'turno.required' => 'O turno é obrigatório.',
+            'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
         ]);
+
+            $validated['nome'] = strtoupper(trim($validated['nome']));
 
         // 3️⃣ Garantir que o ano selecionado é o ativo
         if ($validated['ano_letivo_id'] != $anoAtivo->id) {
@@ -207,7 +216,7 @@ class TurmaController extends Controller
         $this->checkPermission('turmas.edit');
 
         $validated = $request->validate([
-            'nome' => 'required|string|max:10',
+            'nome' => ['required', 'string', 'size:1', 'regex:/^[A-Za-z]$/'],
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
@@ -221,10 +230,19 @@ class TurmaController extends Controller
                     }),
             ],
             'capacidade' => 'required|integer|min:1|max:100',
+            'turno' => ['required', 'in:M,T'],
             'ativo' => 'boolean',
             'disciplinas' => 'nullable|array',
             'disciplinas.*' => 'exists:disciplinas,id',
+        ], [
+            'nome.required' => 'O nome da turma é obrigatório.',
+            'nome.size' => 'O nome da turma deve ter exactamente 1 letra.',
+            'nome.regex' => 'O nome da turma deve ser uma letra de A a Z.',
+            'turno.required' => 'O turno é obrigatório.',
+            'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
         ]);
+
+            $validated['nome'] = strtoupper(trim($validated['nome']));
 
         $turma->update($validated);
 
