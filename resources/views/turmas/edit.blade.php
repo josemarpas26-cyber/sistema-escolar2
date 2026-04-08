@@ -26,9 +26,9 @@
                     <div>
                         <label class="label">Classe *</label>
                         <select name="classe" class="input" required>
-                            <option value="10" {{ $turma->classe == 10 ? 'selected' : '' }}>10ª Classe</option>
-                            <option value="11" {{ $turma->classe == 11 ? 'selected' : '' }}>11ª Classe</option>
-                            <option value="12" {{ $turma->classe == 12 ? 'selected' : '' }}>12ª Classe</option>
+                            <option value="10" {{ old('classe', $turma->classe) == '10' ? 'selected' : '' }}>10ª Classe</option>
+                            <option value="11" {{ old('classe', $turma->classe) == '11' ? 'selected' : '' }}>11ª Classe</option>
+                            <option value="12" {{ old('classe', $turma->classe) == '12' ? 'selected' : '' }}>12ª Classe</option>
                         </select>
                     </div>
 
@@ -36,7 +36,7 @@
                         <label class="label">Curso *</label>
                         <select name="curso_id" class="input" required>
                             @foreach($cursos as $curso)
-                            <option value="{{ $curso->id }}" {{ $turma->curso_id == $curso->id ? 'selected' : '' }}>
+                                     <option value="{{ $curso->id }}" {{ old('curso_id', $turma->curso_id) == $curso->id ? 'selected' : '' }}>
                                 {{ $curso->nome }}
                             </option>
                             @endforeach
@@ -61,11 +61,26 @@
                                min="1" max="100" class="input" required>
                     </div>
 
+                    
+                    <div>
+                        <label class="label">Turno *</label>
+                        <select name="turno" id="turno" required class="input @error('turno') border-red-400 @enderror">
+                            <option value="">Selecione o turno...</option>
+                            <option value="M" {{ old('turno', $turma->turno) == 'M' ? 'selected' : '' }}>
+                                Manhã (M)
+                            </option>
+                            <option value="T" {{ old('turno', $turma->turno) == 'T' ? 'selected' : '' }}>
+                                Tarde (T)
+                            </option>
+                        </select>
+                        @error('turno')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
+                    </div>
+
                     <div>
                         <label class="label">Ano Letivo *</label>
                         <select name="ano_letivo_id" class="input" required>
                             @foreach($anosLetivos as $ano)
-                            <option value="{{ $ano->id }}" {{ $turma->ano_letivo_id == $ano->id ? 'selected' : '' }}>
+                             <option value="{{ $ano->id }}" {{ old('ano_letivo_id', $turma->ano_letivo_id) == $ano->id ? 'selected' : '' }}>
                                 {{ $ano->nome }} {{ $ano->ativo ? '(Ativo)' : '' }}
                             </option>
                             @endforeach

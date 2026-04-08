@@ -16,12 +16,14 @@ class Turma extends Model
         'ano_letivo_id',
         'coordenador_turma_id',
         'capacidade',
+        'turno',
         'ativo',
     ];
 
     protected $casts = [
         'ativo' => 'boolean',
         'capacidade' => 'integer',
+        'turno' => 'string',
     ];
 
     public function curso()
@@ -79,10 +81,19 @@ class Turma extends Model
         return $query->whereHas('anoLetivo', fn($q) => $q->ativo());
     }
 
-    // Helper: nome completo da turma
+    // Helper: nome completo da turma no formato CODIGO+CLASSE+NOME+TURNO
     public function getNomeCompletoAttribute(): string
     {
-        return "{$this->classe}ª {$this->nome} - {$this->curso->nome}";
+        $codigoCurso = strtoupper(trim((string) optional($this->curso)->codigo));
+        $classeNum = preg_replace('/[^0-9]/', '', (string) $this->classe);
+        $nome = strtoupper(trim((string) $this->nome));
+        $turno = strtoupper(trim((string) ($this->turno ?? 'M')));
+
+        if ($codigoCurso && $classeNum && $nome && $turno) {
+            return $codigoCurso . $classeNum . $nome . $turno;
+        }
+
+        return trim("{$this->classe} {$this->nome}");
     }
 
     // Contagem de alunos

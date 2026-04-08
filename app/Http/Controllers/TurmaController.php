@@ -115,8 +115,12 @@ class TurmaController extends Controller
                 }),
             ],
             'capacidade' => 'required|integer|min:1|max:100',
+            'turno' => ['required', 'in:M,T'],
             'disciplinas' => 'nullable|array',
             'disciplinas.*' => 'exists:disciplinas,id',
+        ], [
+            'turno.required' => 'O turno é obrigatório.',
+            'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
         ]);
 
         // 3️⃣ Garantir que o ano selecionado é o ativo
@@ -221,9 +225,13 @@ class TurmaController extends Controller
                     }),
             ],
             'capacidade' => 'required|integer|min:1|max:100',
+            'turno' => ['required', 'in:M,T'],
             'ativo' => 'boolean',
             'disciplinas' => 'nullable|array',
             'disciplinas.*' => 'exists:disciplinas,id',
+        ], [
+            'turno.required' => 'O turno é obrigatório.',
+            'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
         ]);
 
         $turma->update($validated);
