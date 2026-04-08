@@ -80,6 +80,9 @@ class NotaLog extends Model
             'exclusao' => 'Excluiu',
             'finalizacao' => 'Finalizou',
             'reabertura' => 'Reabriu',
+            'avaliacao_continua_criada' => 'Criou avaliação contínua',
+            'avaliacao_continua_editada' => 'Editou avaliação contínua',
+            'avaliacao_continua_removida' => 'Removeu avaliação contínua',
             default => 'Ação desconhecida',
         };
     }
@@ -91,6 +94,9 @@ class NotaLog extends Model
             'exclusao' => 'danger',
             'reabertura' => 'warning',
             'finalizacao' => 'secondary',
+            'avaliacao_continua_criada' => 'success',
+            'avaliacao_continua_editada' => 'info',
+            'avaliacao_continua_removida' => 'danger',
             default => 'info',
         };
     }
@@ -113,6 +119,7 @@ class NotaLog extends Model
             'bloqueado_t1' => 'Bloqueio 1º Trimestre',
             'bloqueado_t2' => 'Bloqueio 2º Trimestre',
             'bloqueado_t3' => 'Bloqueio 3º Trimestre',
+            'avaliacao_continua' => 'Avaliação contínua',
         ];
 
         $campos['pauta_completa'] = 'Pauta completa';

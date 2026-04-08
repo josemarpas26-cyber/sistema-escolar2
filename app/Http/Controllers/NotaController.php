@@ -980,7 +980,8 @@ class NotaController extends Controller
     public function adicionarAvaliacaoContinua(Request $request)
     {
         $user = auth()->user();
-        $podeComoProfessor = $user->isProfessor() && $user->can('avaliacoes_continuas.create');
+        $podeComoProfessor = $user->isProfessor()
+            && ($user->can('avaliacoes_continuas.create') || $user->can('notas.lancar'));
         $podeComoAdmin = ($user->isAdmin() || $user->isSecretaria()) && $user->can('avaliacoes_continuas.create');
 
         if (! $podeComoProfessor && ! $podeComoAdmin) {
