@@ -81,6 +81,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.finalizar');
     Route::post('notas/reabrir', [NotaController::class, 'reabrir'])
         ->name('notas.reabrir');
+    Route::post('notas/avaliacoes-continuas', [NotaController::class, 'adicionarAvaliacaoContinua'])
+        ->name('notas.avaliacoes-continuas.store');
+    Route::delete('notas/avaliacoes-continuas/{avaliacao}', [NotaController::class, 'removerAvaliacaoContinua'])
+        ->name('notas.avaliacoes-continuas.destroy');
 
     Route::resource('anos-letivos', AnoLetivoController::class)
         ->parameters([
