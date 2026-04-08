@@ -841,7 +841,7 @@ class RelatorioController extends Controller
         $turma = Turma::with([
             'curso',
             'anoLetivo',
-            'coordenadorTurma',
+            'coordenador',
             'alunos' => fn ($q) => $q->wherePivot('status', 'matriculado')->orderBy('name'),
         ])->findOrFail($validated['turma_id']);
 
