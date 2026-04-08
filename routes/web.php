@@ -81,8 +81,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.finalizar');
     Route::post('notas/reabrir', [NotaController::class, 'reabrir'])
         ->name('notas.reabrir');
+    Route::get('notas/avaliacoes-continuas', [NotaController::class, 'avaliacoesContinuasIndex'])
+        ->name('notas.avaliacoes-continuas.index');
     Route::post('notas/avaliacoes-continuas', [NotaController::class, 'adicionarAvaliacaoContinua'])
         ->name('notas.avaliacoes-continuas.store');
+    Route::put('notas/avaliacoes-continuas/{avaliacao}', [NotaController::class, 'atualizarAvaliacaoContinua'])
+        ->name('notas.avaliacoes-continuas.update');
     Route::delete('notas/avaliacoes-continuas/{avaliacao}', [NotaController::class, 'removerAvaliacaoContinua'])
         ->name('notas.avaliacoes-continuas.destroy');
 

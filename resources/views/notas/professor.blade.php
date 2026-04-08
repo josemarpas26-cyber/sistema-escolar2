@@ -1132,6 +1132,13 @@
 @endphp
 
 <div id="np-root">
+  <div class="mb-4 flex justify-end">
+    <a href="{{ route('notas.avaliacoes-continuas.index', ['turma_id' => request('turma_id'), 'disciplina_id' => request('disciplina_id')]) }}"
+       class="btn btn-outline">
+      <i class="fas fa-list-ol mr-2"></i>
+      Abrir tabela de avaliações contínuas
+    </a>
+  </div>
 
   {{-- ═══════════════════════════════════════════════
        SELECTOR BAR
@@ -2094,15 +2101,6 @@
                           <div class="font-medium text-slate-700">{{ $avaliacao->descricao }}</div>
                           <div class="text-slate-500">{{ number_format($avaliacao->valor, 2) }} valores</div>
                         </div>
-                        @if(! $bloqueadoTri)
-                        <form method="POST" action="{{ route('notas.avaliacoes-continuas.destroy', $avaliacao) }}">
-                          @csrf
-                          @method('DELETE')
-                          <button type="submit" class="text-red-600" title="Remover">
-                            <i class="fas fa-trash"></i>
-                          </button>
-                        </form>
-                        @endif
                       </div>
                     @empty
                       <span class="text-xs text-slate-400">Sem avaliações</span>
@@ -2137,6 +2135,9 @@
   @endif
 
 </div>{{-- /np-root --}}
+
+@endif  {{-- ← ADICIONA ESTE — fecha o @if(false && $notas...) --}}
+
 @endsection
 
 

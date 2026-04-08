@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\AvaliacaoContinua;
 use App\Models\Role;
 use App\Models\AnoLetivo;
 use App\Models\Curso;
@@ -291,6 +292,8 @@ class DemoDataSeeder extends Seeder
         $totalNotas = Nota::count();
         $this->command->info("✅ {$totalNotas} registos de notas criados (1º, 2º e 3º trimestres)");
 
+        $this->seedAvaliacoesContinuasDemo();
+        $this->command->info('✅ Avaliações contínuas de demonstração criadas');
 
         // =============================================
         // RESUMO FINAL
@@ -437,6 +440,56 @@ class DemoDataSeeder extends Seeder
 
             'status' => 'em_lancamento',
         ]);
+    }
+
+
+    private function seedAvaliacoesContinuasDemo(): void
+    {
+        $professorPadrao = User::whereHas('role', fn ($q) => $q->where('name', 'professor'))->first();
+
+        if (! $professorPadrao) {
+            return;
+        }
+
+        Nota::query()->limit(150)->get()->each(function (Nota $nota) use ($professorPadrao) {
+            foreach ([1, 2, 3] as $trimestre) {
+                $campoMac = 'mac'.$trimestre;
+                $mac = $nota->{$campoMac};
+
+                if ($mac === null) {
+                    continue;
+                }
+
+                $jaExiste = AvaliacaoContinua::where('nota_id', $nota->id)
+                    ->where('trimestre', $trimestre)
+                    ->exists();
+
+                if ($jaExiste) {
+                    continue;
+                }
+
+                $valor1 = max(0, min(20, round(((float) $mac) - 0.5, 2)));
+                $valor2 = max(0, min(20, round(((float) $mac) + 0.5, 2)));
+
+                AvaliacaoContinua::create([
+                    'nota_id' => $nota->id,
+                    'professor_id' => $professorPadrao->id,
+                    'trimestre' => $trimestre,
+                    'descricao' => "AC {$trimestre}.1",
+                    'valor' => $valor1,
+                    'data_avaliacao' => now()->subDays(15),
+                ]);
+
+                AvaliacaoContinua::create([
+                    'nota_id' => $nota->id,
+                    'professor_id' => $professorPadrao->id,
+                    'trimestre' => $trimestre,
+                    'descricao' => "AC {$trimestre}.2",
+                    'valor' => $valor2,
+                    'data_avaliacao' => now()->subDays(5),
+                ]);
+            }
+        });
     }
 
     /**
