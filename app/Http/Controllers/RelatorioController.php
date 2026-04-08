@@ -766,16 +766,60 @@ class RelatorioController extends Controller
     }
 
 
-// ════════════════════════════════════════════════════════════════════════════
-// ADICIONAR ao RelatorioController.php
-// ════════════════════════════════════════════════════════════════════════════
 
-// 1) No topo do ficheiro, adicionar o import:
-//    use App\Exports\BoletimMassaExport;
+    private function gerarBoletimMassaPDF(array $dados, string $sufixoAluno = '')
+    {
+        $pdf = Pdf::loadView('relatorios.pdf.boletins-massa', [
+            'turma' => $dados['turma'],
+            'trimestre' => $dados['trimestre'],
+            'periodoLabel' => $this->labelPeriodoBoletimMassa($dados['trimestre']),
+            'configNotas' => $this->configuracaoNotasBoletimMassa($dados['trimestre']),
+            'notasPorAluno' => $dados['notasPorAluno'],
+        ])->setPaper('a4', 'portrait');
 
-// 2) Adicionar este método à classe RelatorioController:
+        $nomeArquivo = 'boletins-'
+            . str($dados['turma']->nome)->slug()
+            . '-t'.$dados['trimestre']
+            . $sufixoAluno
+            . '.pdf';
 
-    /**
+        return $pdf->download($nomeArquivo);
+    }
+
+    private function configuracaoNotasBoletimMassa(string $trimestre): array
+    {
+        return match ($trimestre) {
+            '1' => [
+                ['key' => 'mt1', 'label' => 'MT1'],
+            ],
+            '2' => [
+                ['key' => 'mt1', 'label' => 'MT1'],
+                ['key' => 'mt2', 'label' => 'MT2'],
+                ['key' => 'mft2', 'label' => 'MFT2'],
+            ],
+            '3' => [
+                ['key' => 'mt1', 'label' => 'MT1'],
+                ['key' => 'mt2', 'label' => 'MT2'],
+                ['key' => 'mt3', 'label' => 'MT3'],
+            ],
+            default => [
+                ['key' => 'cfd', 'label' => 'CFD'],
+            ],
+        };
+    }
+
+    private function labelPeriodoBoletimMassa(string $trimestre): string
+    {
+        return match ($trimestre) {
+            '1' => 'Iº TRIMESTRE',
+            '2' => 'IIº TRIMESTRE',
+            '3' => 'IIIº TRIMESTRE',
+            default => 'CLASSIFICAÇÃO FINAL',
+        };
+    }
+
+
+/**
      * Gera boletins em massa para todos os alunos de uma turma.
      * Formato: 2 boletins por linha, idêntico ao template Excel.
      *
@@ -788,6 +832,8 @@ class RelatorioController extends Controller
 
         $validated = $request->validate([
             'turma_id'      => 'required|exists:turmas,id',
+            'aluno_id'      => 'nullable|exists:users,id',
+            'formato'       => 'nullable|in:xlsx,pdf',
             'trimestre'     => 'nullable|in:1,2,3,final',
             'ano_letivo_id' => 'nullable|exists:anos_letivos,id',
         ]);
@@ -795,7 +841,7 @@ class RelatorioController extends Controller
         $turma = Turma::with([
             'curso',
             'anoLetivo',
-            'coordenador',   // relação belongsTo para o director de turma
+            'coordenadorTurma',
             'alunos' => fn ($q) => $q->wherePivot('status', 'matriculado')->orderBy('name'),
         ])->findOrFail($validated['turma_id']);
 
@@ -808,17 +854,44 @@ class RelatorioController extends Controller
             return back()->with('error', 'Nenhum ano lectivo encontrado.');
         }
 
+        $alunoSelecionado = null;
+
+        if (! empty($validated['aluno_id'])) {
+            $alunoSelecionado = $turma->alunos->firstWhere('id', (int) $validated['aluno_id']);
+
+            if (! $alunoSelecionado) {
+                return back()->with('error', 'O aluno selecionado não pertence à turma escolhida.');
+            }
+
+            $turma->setRelation('alunos', collect([$alunoSelecionado]));
+        }
+
         $notas = Nota::where('turma_id', $turma->id)
             ->where('ano_letivo_id', $anoLetivoId)
+            ->when($alunoSelecionado, fn ($query) => $query->where('aluno_id', $alunoSelecionado->id))
             ->with(['disciplina:id,nome,codigo'])
             ->get()
             ->groupBy('aluno_id');
 
         $trimestre = $validated['trimestre'] ?? '2';
+        $formato = $validated['formato'] ?? 'xlsx';
+
+        $sufixoAluno = $alunoSelecionado
+            ? '-'.str($alunoSelecionado->numero_processo ?? $alunoSelecionado->id)->slug()
+            : '';
+
+        if ($formato === 'pdf') {
+            return $this->gerarBoletimMassaPDF([
+                'turma' => $turma,
+                'notasPorAluno' => $notas,
+                'trimestre' => $trimestre,
+            ], $sufixoAluno);
+        }
 
         $filename = 'boletins-'
             . str($turma->nome)->slug()
             . '-t' . $trimestre
+            . $sufixoAluno
             . '.xlsx';
 
         return Excel::download(
