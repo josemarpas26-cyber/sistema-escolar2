@@ -102,11 +102,6 @@
                     <div class="mt-2 text-lg font-bold" style="color:var(--tx-1);">{{ $turma->coordenador?->name ?? 'Nao definido' }}</div>
                     <div class="mt-1 text-sm" style="color:var(--tx-3);">Responsavel pelo acompanhamento da turma</div>
                 </div>
-                <div class="rounded-2xl p-4" style="background:var(--surface-sunken); border:1px solid var(--border);">
-                    <div class="text-xs font-bold uppercase tracking-[0.16em]" style="color:var(--tx-4);">Coordenacao de disciplinas</div>
-                    <div class="mt-2 text-lg font-bold" style="color:var(--tx-1);">{{ $disciplinas_detalhadas->whereNotNull('coordenador')->count() }} disciplina(s)</div>
-                    <div class="mt-1 text-sm" style="color:var(--tx-3);">Com coordenador associado</div>
-                </div>
             </div>
             @else
             <div class="py-10 text-center">
