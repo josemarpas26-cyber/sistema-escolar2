@@ -55,12 +55,53 @@
                     
                     <!-- Nome -->
                     <div>
-                        <label class="label">Nome da Turma *</label>
-                         <input type="text" name="nome" value="{{ old('nome') }}"
-                               placeholder="Ex: A, B, Sala 101" class="input" required
-                               x-model="nome" x-on:input="gerarNomeCompleto()">
+                      <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                            Nome da Turma *
+                        </label>
+                        <input
+                            type="text"
+                            name="nome"
+                            id="nome"
+                            required
+                            maxlength="1"
+                            pattern="[A-Za-z]"
+                            placeholder="Ex: A"
+                            x-model="nome"
+                            x-on:input="
+                                this.value = this.value
+                                    .replace(/[^A-Za-z]/g, '')
+                                    .slice(0, 1)
+                                    .toUpperCase();
+                                nome = this.value;
+                                gerarNomeCompleto();
+                            "
+                            x-on:keydown="
+                                const permitidas = /^[A-Za-z]$/;
+                                const teclasSistema = [
+                                    'Backspace','Delete','Tab','ArrowLeft','ArrowRight'
+                                ];
+                                if (!permitidas.test($event.key) &&
+                                    !teclasSistema.includes($event.key)) {
+                                    $event.preventDefault();
+                                }
+                            "
+                            x-on:paste="
+                                $event.preventDefault();
+                                const texto = ($event.clipboardData || window.clipboardData)
+                                    .getData('text');
+                                const letra = texto.replace(/[^A-Za-z]/g, '').slice(0,1).toUpperCase();
+                                this.value = letra;
+                                nome = letra;
+                                gerarNomeCompleto();
+                            "
+                            value="{{ old('nome', strtoupper($turma->nome ?? '')) }}"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm uppercase tracking-widest text-center font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('nome') border-red-400 bg-red-50 @enderror"
+                        />
+                        <p class="text-xs text-slate-400 mt-1">
+                            Apenas uma letra de A a Z (ex: A, B, C...)
+                        </p>
                         @error('nome')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                           <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
