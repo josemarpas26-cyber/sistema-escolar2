@@ -471,6 +471,82 @@
             color: var(--text-secondary, #64748b);
             font-family: var(--font-mono-ui, 'JetBrains Mono', monospace);
         }
+       
+        .dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --input-bg: #0f172a;
+            --input-border: #334155;
+            --brand-blue: #2563eb;
+            --brand-blue-hover: #1d4ed8;
+            --brand-blue-light: #3b82f6;
+            --feature-text: #93c5fd;
+            --feature-subtext: #bfdbfe;
+            --left-panel-bg: #1d4ed8;
+            --left-panel-card-bg: rgba(37, 99, 235, 0.5);
+            --left-panel-card-border: #3b82f6;
+        }
+
+        .dark body {
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, .16), transparent 34%),
+                radial-gradient(circle at bottom right, rgba(29, 78, 216, .14), transparent 28%),
+                linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+        }
+
+        .dark .auth-left {
+            background:
+                radial-gradient(circle at top right, rgba(255,255,255,.12), transparent 30%),
+                radial-gradient(circle at bottom left, rgba(255,255,255,.08), transparent 34%),
+                linear-gradient(160deg, var(--brand-blue-hover) 0%, var(--left-panel-bg) 52%, var(--brand-blue) 100%);
+            color: #ffffff;
+        }
+
+        .dark .auth-headline,
+        .dark .auth-brand-name,
+        .dark .auth-feature-icon {
+            color: #ffffff;
+        }
+
+        .dark .auth-sub,
+        .dark .auth-school-badge {
+            color: var(--feature-subtext);
+        }
+
+        .dark .auth-feature {
+            background: var(--left-panel-card-bg);
+            border-color: var(--left-panel-card-border);
+        }
+
+        .dark .auth-feature-text {
+            color: var(--feature-text);
+        }
+
+        .dark .auth-feature-desc {
+            color: var(--feature-subtext);
+        }
+
+        .dark .auth-right {
+            background: #111111;
+        }
+
+        .dark .auth-theme-toggle {
+            background: rgba(30, 41, 59, .8);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            box-shadow: 0 10px 18px rgba(2, 6, 23, .34);
+        }
+
+        .dark .auth-theme-toggle:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: #475569;
+        }
 
         @media (max-width: 640px) {
             .auth-right {
@@ -491,6 +567,67 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+        }
+        
+        .dark .auth-card {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            box-shadow: 0 24px 42px rgba(2, 6, 23, .45);
+        }
+
+        .dark .auth-mobile-name,
+        .dark .auth-title,
+        .dark .auth-label,
+        .dark .auth-checkbox-label,
+        .dark .auth-demo-role {
+            color: var(--text-primary);
+        }
+
+        .dark .auth-subtitle {
+            color: #cbd5e1;
+        }
+
+        .dark .auth-input {
+            color: #ffffff;
+            background: var(--input-bg);
+            border-color: var(--input-border);
+        }
+
+        .dark .auth-input::placeholder {
+            color: #64748b;
+            opacity: 1;
+        }
+
+        .dark .auth-input-icon {
+            color: #94a3b8;
+        }
+
+        .dark .auth-submit {
+            background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-hover));
+            color: #ffffff;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, .22);
+        }
+
+        .dark .auth-submit:hover {
+            box-shadow: 0 16px 28px rgba(37, 99, 235, .28);
+        }
+
+        .dark .auth-link {
+            color: #93c5fd;
+        }
+
+        .dark .auth-demo {
+            border-top-color: var(--border-color);
+        }
+
+        .dark .auth-demo-title,
+        .dark .auth-demo-cred {
+            color: #cbd5e1;
+        }
+
+        .dark .auth-demo-row {
+            background: #1e293b;
+            border-color: var(--border-color);
         }
     </style>
     @stack('styles')
