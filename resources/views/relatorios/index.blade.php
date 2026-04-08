@@ -7,7 +7,7 @@
 
     {{-- ================= BOLETIM ================= --}}
     <x-card title="Boletim do Aluno" icon="fas fa-file-pdf">
-        <form method="GET" action="{{ route('relatorios.boletim') }}" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <form method="GET" action="{{ route('relatorios.boletim') }}" class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-5">
             @csrf
             <select name="aluno_id" class="form-input" required>
                 <option value="">Aluno</option>
@@ -43,7 +43,7 @@
                 <option value="3">3º Trimestre</option>
             </select>
 
-            <div class="flex gap-2">
+            <div class="flex gap-3">
                 <button type="submit" class="btn btn-outline w-full">Ver</button>
                 <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
             </div>
@@ -55,7 +55,7 @@
 {{-- ================= BOLETINS EM MASSA ================= --}}
 <x-card title="Boletins em Massa (turma completa)" icon="fas fa-file-excel">
     <form method="GET" action="{{ route('relatorios.boletins-massa') }}"
-          class="grid grid-cols-1 md:grid-cols-4 gap-3">
+         class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
         @csrf
 
         <select name="turma_id" class="form-input" required>
@@ -89,7 +89,7 @@
             </button>
         </div>
     </form>
-    <p class="text-xs text-gray-400 mt-2">
+       <p class="mt-3 px-1 text-xs text-gray-400">
         Gera um ficheiro Excel com 2 boletins por linha, no formato oficial da escola.
     </p>
 </x-card>
@@ -100,7 +100,7 @@
         <form method="GET"
               id="form-pauta"
               action="{{ route('relatorios.pauta', ['turma' => $turmas->first()?->id ?? 1]) }}"
-              class="grid grid-cols-1 md:grid-cols-5 gap-3">
+              class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-5">
     @csrf
 
             <select name="turma_id" id="turma_id" class="form-input" required>
@@ -136,7 +136,7 @@
                 <option value="3">3º Trimestre</option>
             </select>
 
-            <div class="flex gap-2">
+            <div class="flex gap-3">
                 <button type="submit" class="btn btn-outline w-full">Ver</button>
                 <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
             </div>
@@ -149,7 +149,7 @@
     <form method="GET"
           id="form-pauta-geral"
           action="{{ route('relatorios.pauta-geral', ['turma' => $turmas->first()?->id ?? 1]) }}"
-          class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
         @csrf
 
         <select name="turma_id" id="turma_id_geral" class="form-input" required>
@@ -176,7 +176,7 @@
             <option value="3">3º Trimestre</option>
         </select>
 
-        <div class="flex gap-2">
+        <div class="flex gap-3">
             <button type="submit" class="btn btn-outline w-full">Ver</button>
             <button type="submit" name="formato" value="xlsx" class="btn btn-success w-full">XLSX</button>
             <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
@@ -189,7 +189,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         <x-card title="Histórico Académico do Aluno" icon="fas fa-history">
-            <form method="GET" action="{{ route('relatorios.historico') }}" class="space-y-3">
+            <form method="GET" action="{{ route('relatorios.historico') }}" class="mt-1 space-y-4">
     @csrf
 
                 <select name="aluno_id" class="form-input" required>
@@ -201,7 +201,7 @@
                     @endforeach
                 </select>
 
-                <div class="flex gap-2">
+                   <div class="flex gap-3">
                     <button type="submit" formtarget="_blank" class="btn btn-outline w-full">Ver</button>
                     <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
                 </div>
@@ -210,7 +210,7 @@
         </x-card>
 
         <x-card title="Histórico de Turmas do Professor" icon="fas fa-chalkboard-teacher">
-            <form method="GET" action="{{ route('relatorios.historico-professor') }}" target="_blank" class="space-y-3">
+               <form method="GET" action="{{ route('relatorios.historico-professor') }}" target="_blank" class="mt-1 space-y-4">
     @csrf
 
                 <select name="professor_id" class="form-input" required>
@@ -222,7 +222,7 @@
                     @endforeach
                 </select>
 
-                <div class="flex gap-2">
+                 <div class="flex gap-3">
                     <button type="submit" class="btn btn-outline w-full">Ver</button>
                     <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">PDF</button>
                 </div>
