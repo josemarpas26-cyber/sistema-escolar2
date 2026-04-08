@@ -11,7 +11,44 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="label">Código *</label>
-                        <input type="text" name="codigo" value="{{ old('codigo', $curso->codigo ?? '') }}" class="input" required>
+                          <input
+                            type="text"
+                            name="codigo"
+                            id="codigo"
+                            required
+                            maxlength="10"
+                            placeholder="Ex: CFB, CH, TIC..."
+                            value="{{ old('codigo', strtoupper($curso->codigo ?? '')) }}"
+                            x-on:input="
+                                this.value = this.value
+                                    .replace(/[^A-Za-z]/g, '')
+                                    .toUpperCase();
+                            "
+                            x-on:keydown="
+                                const permitidas = /^[A-Za-z]$/;
+                                const teclasSistema = [
+                                    'Backspace','Delete','Tab',
+                                    'ArrowLeft','ArrowRight','Home','End'
+                                ];
+                                if (!permitidas.test($event.key) &&
+                                    !teclasSistema.includes($event.key)) {
+                                    $event.preventDefault();
+                                }
+                            "
+                            x-on:paste="
+                                $event.preventDefault();
+                                const texto = ($event.clipboardData || window.clipboardData)
+                                    .getData('text');
+                                const apenasLetras = texto
+                                    .replace(/[^A-Za-z]/g, '')
+                                    .toUpperCase();
+                                this.value = apenasLetras;
+                            "
+                            class="input uppercase font-semibold tracking-widest @error('codigo') border-red-400 bg-red-50 @enderror"
+                        >
+                        <p class="text-xs text-slate-400 mt-1">
+                            Apenas letras de A a Z, sem espaços ou símbolos. Ex: CFB, CH, TIC
+                        </p>
                         @error('codigo')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>

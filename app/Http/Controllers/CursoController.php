@@ -57,7 +57,14 @@ class CursoController extends Controller
 
         $validated = $request->validate([
             'nome' => 'required|string|max:255',
-            'codigo' => 'required|string|max:10|unique:cursos,codigo',
+            'codigo' => [
+                'required',
+                'string',
+                'min:2',
+                'max:10',
+                'regex:/^[A-Z]+$/',
+                Rule::unique('cursos', 'codigo'),
+            ],
             'descricao' => 'nullable|string',
             'coordenador_id' => [
                 'nullable',
@@ -67,8 +74,15 @@ class CursoController extends Controller
                 }),
             ],
             'ativo' => 'boolean',
+                    ], [
+            'codigo.required' => 'O código do curso é obrigatório.',
+            'codigo.min' => 'O código deve ter pelo menos 2 letras.',
+            'codigo.max' => 'O código não pode ter mais de 10 letras.',
+            'codigo.regex' => 'O código deve conter apenas letras de A a Z.',
+            'codigo.unique' => 'Este código já está a ser usado por outro curso.',
         ]);
 
+        $validated['codigo'] = strtoupper(trim($validated['codigo']));
         $curso = Curso::create($validated);
 
         return redirect()
@@ -112,7 +126,14 @@ class CursoController extends Controller
 
         $validated = $request->validate([
             'nome' => 'required|string|max:255',
-            'codigo' => 'required|string|max:10|unique:cursos,codigo,' . $curso->id,
+             'codigo' => [
+                'required',
+                'string',
+                'min:2',
+                'max:10',
+                'regex:/^[A-Z]+$/',
+                Rule::unique('cursos', 'codigo')->ignore($curso->id),
+            ],
             'descricao' => 'nullable|string',
             'coordenador_id' => [
                 'nullable',
@@ -124,8 +145,15 @@ class CursoController extends Controller
                     }),
             ],
             'ativo' => 'boolean',
+                    ], [
+            'codigo.required' => 'O código do curso é obrigatório.',
+            'codigo.min' => 'O código deve ter pelo menos 2 letras.',
+            'codigo.max' => 'O código não pode ter mais de 10 letras.',
+            'codigo.regex' => 'O código deve conter apenas letras de A a Z.',
+            'codigo.unique' => 'Este código já está a ser usado por outro curso.',
         ]);
 
+        $validated['codigo'] = strtoupper(trim($validated['codigo']));
         $curso->update($validated);
 
         return redirect()
