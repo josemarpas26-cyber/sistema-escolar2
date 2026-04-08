@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
 use App\Models\Disciplina;
+use App\Models\DivisaoAritmeticaSolicitacao;
 use App\Models\Nota;
 use App\Models\NotaLog;
 use App\Models\Turma;
