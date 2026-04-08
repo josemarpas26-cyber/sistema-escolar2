@@ -116,6 +116,10 @@
             </div>
             @if($disciplinaSelecionada)
                 <div class="nr-sel-actions">
+                    <a href="{{ route('notas.avaliacoes-continuas.index', ['turma_id' => $turmaSelecionada->id, 'disciplina_id' => $disciplinaSelecionada->id]) }}"
+                       class="nr-btn nr-btn-ghost">
+                        <i class="fas fa-list-ol"></i> Avaliações Contínuas
+                    </a>
                     <a href="{{ route('relatorios.pauta', [$turmaSelecionada, $disciplinaSelecionada]) }}"
                        class="nr-btn nr-btn-ghost" target="_blank">
                         <i class="fas fa-file-alt"></i> Ver Pauta

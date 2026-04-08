@@ -45,6 +45,10 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'notas.view_turma', 'display_name' => 'Ver notas da turma'],
             ['name' => 'notas.view_curso', 'display_name' => 'Ver notas do curso'],
             ['name' => 'notas.view_all', 'display_name' => 'Ver todas notas'],
+            ['name' => 'avaliacoes_continuas.view', 'display_name' => 'Ver avaliações contínuas'],
+            ['name' => 'avaliacoes_continuas.create', 'display_name' => 'Criar avaliações contínuas'],
+            ['name' => 'avaliacoes_continuas.edit', 'display_name' => 'Editar avaliações contínuas'],
+            ['name' => 'avaliacoes_continuas.delete', 'display_name' => 'Remover avaliações contínuas'],
             
             // Gestão de anos letivos
             ['name' => 'anos.create', 'display_name' => 'Criar ano letivo'],
@@ -87,6 +91,7 @@ class RolePermissionSeeder extends Seeder
             'disciplinas.create', 'disciplinas.edit', 'disciplinas.view',
             'turmas.create', 'turmas.edit', 'turmas.view', 'turmas.promote',
             'notas.editar', 'notas.view_all',
+            'avaliacoes_continuas.view', 'avaliacoes_continuas.edit', 'avaliacoes_continuas.delete',
             'relatorios.boletins', 'relatorios.pautas', 'relatorios.historico',
             'logs.view',
         ])->pluck('id'));
@@ -98,6 +103,7 @@ class RolePermissionSeeder extends Seeder
         );
         $professor->permissions()->sync(Permission::whereIn('name', [
             'notas.lancar', 'notas.view_turma',
+            'avaliacoes_continuas.view', 'avaliacoes_continuas.create',
             'turmas.view',
             'disciplinas.view','relatorios.boletins', "relatorios.pautas",
         ])->pluck('id'));

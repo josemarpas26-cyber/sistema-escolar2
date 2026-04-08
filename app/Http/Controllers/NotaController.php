@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
+use App\Models\AvaliacaoContinua;
 use App\Models\Disciplina;
 use App\Models\DivisaoAritmeticaSolicitacao;
 use App\Models\Nota;
 use App\Models\NotaLog;
 use App\Models\Turma;
+use App\Models\User;
 use App\Services\EstatisticasAcademicasService;
 use App\Services\NotaService;
 use Illuminate\Http\RedirectResponse;
@@ -83,7 +85,7 @@ class NotaController extends Controller
             $notasPorAluno = Nota::where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
                 ->where('ano_letivo_id', $anoLetivo->id)
-                ->with(['aluno.turmas', 'anoLetivo'])
+                ->with(['aluno.turmas', 'anoLetivo', 'avaliacoesContinuas'])
                 ->get()
                 ->keyBy('aluno_id');
 
@@ -193,7 +195,7 @@ class NotaController extends Controller
 
         $notas = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
-            ->with(['disciplina', 'turma'])
+            ->with(['disciplina', 'turma', 'avaliacoesContinuas'])
             ->get();
 
         $turmaAtual = $notas->first()?->turma;
@@ -211,6 +213,80 @@ class NotaController extends Controller
             'mediaGeral',
             'aprovacoes',
             'reprovacoes'
+        ));
+    }
+
+    public function avaliacoesContinuasIndex(Request $request)
+    {
+        $user = auth()->user();
+        $anoLetivo = AnoLetivo::ativo()->first();
+
+        if (! $anoLetivo) {
+            return $this->redirectSemAnoLetivoAtivo();
+        }
+
+        $turmas = collect();
+        $disciplinas = collect();
+        $atribuicoes = collect();
+
+        if ($user->isProfessor()) {
+            $this->checkPermission('avaliacoes_continuas.view');
+            $atribuicoes = $user->atribuicoes()
+                ->where('ano_letivo_id', $anoLetivo->id)
+                ->with(['turma', 'disciplina'])
+                ->get();
+
+            $turmas = $atribuicoes->pluck('turma')->unique('id')->sortBy('nome')->values();
+        } else {
+            $this->checkPermission('avaliacoes_continuas.view');
+            $turmas = Turma::anoAtivo()->with('curso')->orderBy('classe')->get();
+        }
+
+        $turmaId = $request->integer('turma_id');
+        $disciplinaId = $request->integer('disciplina_id');
+        $notas = collect();
+
+        if ($turmaId) {
+            if ($user->isProfessor()) {
+                $disciplinas = $atribuicoes->where('turma_id', $turmaId)
+                    ->pluck('disciplina')
+                    ->unique('id')
+                    ->sortBy('nome')
+                    ->values();
+            } else {
+                $turmaSelecionada = Turma::findOrFail($turmaId);
+                $disciplinas = $turmaSelecionada->disciplinas()->orderBy('nome')->get();
+            }
+        }
+
+        if ($turmaId && $disciplinaId) {
+            if ($user->isProfessor()) {
+                $temAtribuicao = $atribuicoes
+                    ->where('turma_id', $turmaId)
+                    ->where('disciplina_id', $disciplinaId)
+                    ->isNotEmpty();
+
+                if (! $temAtribuicao) {
+                    abort(403, 'Você não leciona esta disciplina nesta turma.');
+                }
+            }
+
+            $notas = Nota::query()
+                ->where('turma_id', $turmaId)
+                ->where('disciplina_id', $disciplinaId)
+                ->where('ano_letivo_id', $anoLetivo->id)
+                ->with(['aluno', 'avaliacoesContinuas.professor'])
+                ->orderBy(User::select('name')->whereColumn('users.id', 'notas.aluno_id'))
+                ->get();
+        }
+
+        return view('notas.avaliacoes-continuas', compact(
+            'turmas',
+            'disciplinas',
+            'notas',
+            'turmaId',
+            'disciplinaId',
+            'anoLetivo'
         ));
     }
 
@@ -900,4 +976,186 @@ class NotaController extends Controller
 
         return back()->with('success', 'Solicitação processada com sucesso.');
     }
+
+    public function adicionarAvaliacaoContinua(Request $request)
+    {
+        $user = auth()->user();
+        $podeComoProfessor = $user->isProfessor() && $user->can('avaliacoes_continuas.create');
+        $podeComoAdmin = ($user->isAdmin() || $user->isSecretaria()) && $user->can('avaliacoes_continuas.create');
+
+        if (! $podeComoProfessor && ! $podeComoAdmin) {
+            abort(403, 'Sem permissão para lançar avaliações contínuas.');
+        }
+
+        $dados = $request->validate([
+            'nota_id' => 'required|exists:notas,id',
+            'trimestre' => 'required|in:1,2,3',
+            'descricao' => 'required|string|max:120',
+            'valor' => 'required|numeric|min:0|max:20',
+            'data_avaliacao' => 'nullable|date',
+        ]);
+
+        $nota = Nota::with(['turma', 'disciplina', 'aluno.turmas', 'anoLetivo'])->findOrFail($dados['nota_id']);
+
+        if ($podeComoProfessor) {
+            $temAtribuicao = $user->atribuicoes()
+                ->where('turma_id', $nota->turma_id)
+                ->where('disciplina_id', $nota->disciplina_id)
+                ->where('ano_letivo_id', $nota->ano_letivo_id)
+                ->exists();
+
+            if (! $temAtribuicao) {
+                abort(403, 'Você não leciona esta disciplina nesta turma.');
+            }
+        }
+
+        $trimestre = (int) $dados['trimestre'];
+
+        if (! $nota->trimestreEstaDisponivel($trimestre)) {
+            return back()->with('error', $this->mensagemTrimestreNaoAplicavel($nota, $trimestre));
+        }
+
+        if ((bool) $nota->{"bloqueado_t{$trimestre}"}) {
+            return back()->with('error', "O {$trimestre}º trimestre está bloqueado para este aluno.");
+        }
+
+        AvaliacaoContinua::create([
+            'nota_id' => $nota->id,
+            'professor_id' => $user->id,
+            'trimestre' => $trimestre,
+            'descricao' => $dados['descricao'],
+            'valor' => round((float) $dados['valor'], 2),
+            'data_avaliacao' => $dados['data_avaliacao'] ?? null,
+        ]);
+
+        $this->registarLogAvaliacaoContinua($nota, 'avaliacao_continua_criada', $trimestre, null, [
+            'descricao' => $dados['descricao'],
+            'valor' => round((float) $dados['valor'], 2),
+        ]);
+
+        $this->recalcularMacPorAvaliacoes($nota, $trimestre);
+
+        return back()->with('success', 'Avaliação contínua registada com sucesso.');
+    }
+
+    public function removerAvaliacaoContinua(AvaliacaoContinua $avaliacao)
+    {
+        $user = auth()->user();
+        $this->checkPermission('avaliacoes_continuas.delete');
+
+        if (! ($user->isAdmin() || $user->isSecretaria())) {
+            abort(403, 'Apenas administração/secretaria pode remover avaliações contínuas após o lançamento.');
+        }
+
+        $nota = $avaliacao->nota()->with(['turma', 'disciplina', 'aluno.turmas', 'anoLetivo'])->firstOrFail();
+
+        $trimestre = (int) $avaliacao->trimestre;
+
+        if ((bool) $nota->{"bloqueado_t{$trimestre}"}) {
+            return back()->with('error', "O {$trimestre}º trimestre está bloqueado para este aluno.");
+        }
+
+        $dadosAnteriores = [
+            'descricao' => $avaliacao->descricao,
+            'valor' => $avaliacao->valor,
+            'professor_id' => $avaliacao->professor_id,
+        ];
+
+        $avaliacao->delete();
+
+        $this->registarLogAvaliacaoContinua(
+            $nota,
+            'avaliacao_continua_removida',
+            $trimestre,
+            $dadosAnteriores,
+            null
+        );
+
+        $this->recalcularMacPorAvaliacoes($nota, $trimestre);
+
+        return back()->with('success', 'Avaliação contínua removida com sucesso.');
+    }
+
+    public function atualizarAvaliacaoContinua(Request $request, AvaliacaoContinua $avaliacao)
+    {
+        $user = auth()->user();
+        $this->checkPermission('avaliacoes_continuas.edit');
+
+        if (! ($user->isAdmin() || $user->isSecretaria())) {
+            abort(403, 'Apenas administração/secretaria pode editar avaliações contínuas.');
+        }
+
+        $dados = $request->validate([
+            'descricao' => 'required|string|max:120',
+            'valor' => 'required|numeric|min:0|max:20',
+            'data_avaliacao' => 'nullable|date',
+        ]);
+
+        $nota = $avaliacao->nota()->with(['turma', 'disciplina', 'aluno.turmas', 'anoLetivo'])->firstOrFail();
+        $trimestre = (int) $avaliacao->trimestre;
+
+        if ((bool) $nota->{"bloqueado_t{$trimestre}"}) {
+            return back()->with('error', "O {$trimestre}º trimestre está bloqueado para este aluno.");
+        }
+
+        $dadosAnteriores = $avaliacao->only(['descricao', 'valor', 'data_avaliacao']);
+
+        $avaliacao->update([
+            'descricao' => $dados['descricao'],
+            'valor' => round((float) $dados['valor'], 2),
+            'data_avaliacao' => $dados['data_avaliacao'] ?? null,
+        ]);
+
+        $this->registarLogAvaliacaoContinua(
+            $nota,
+            'avaliacao_continua_editada',
+            $trimestre,
+            $dadosAnteriores,
+            $avaliacao->only(['descricao', 'valor', 'data_avaliacao'])
+        );
+
+        $this->recalcularMacPorAvaliacoes($nota, $trimestre);
+
+        return back()->with('success', 'Avaliação contínua atualizada com sucesso.');
+    }
+
+    private function recalcularMacPorAvaliacoes(Nota $nota, int $trimestre): void
+    {
+        $campoMac = "mac{$trimestre}";
+
+        $media = $nota->avaliacoesContinuas()
+            ->where('trimestre', $trimestre)
+            ->avg('valor');
+
+        $nota->{$campoMac} = $media !== null ? round((float) $media, 2) : null;
+
+        $this->notaService->recalcularNota($nota);
+        $nota->save();
+    }
+
+    private function registarLogAvaliacaoContinua(
+        Nota $nota,
+        string $acao,
+        int $trimestre,
+        mixed $anterior = null,
+        mixed $novo = null
+    ): void {
+        NotaLog::create([
+            'nota_id' => $nota->id,
+            'usuario_id' => auth()->id(),
+            'aluno_id' => $nota->aluno_id,
+            'turma_id' => $nota->turma_id,
+            'disciplina_id' => $nota->disciplina_id,
+            'acao_global' => false,
+            'acao' => $acao,
+            'campo_alterado' => 'avaliacao_continua',
+            'valor_anterior' => $anterior ? json_encode($anterior, JSON_UNESCAPED_UNICODE) : null,
+            'valor_novo' => $novo ? json_encode($novo, JSON_UNESCAPED_UNICODE) : null,
+            'trimestre' => (string) $trimestre,
+            'motivo' => null,
+            'ip_address' => request()?->ip(),
+            'data_alteracao' => now(),
+        ]);
+    }
+
 }
