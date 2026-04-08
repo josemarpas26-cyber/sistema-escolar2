@@ -268,6 +268,7 @@
 {{-- ── FILTROS ── --}}
 <div class="est-filters">
     <form method="GET" action="{{ route('estatisticas.index') }}">
+        @csrf
         <div class="est-filter-grid">
 
             {{-- Secção / Contexto --}}
