@@ -2135,6 +2135,9 @@
   @endif
 
 </div>{{-- /np-root --}}
+
+@endif  {{-- ← ADICIONA ESTE — fecha o @if(false && $notas...) --}}
+
 @endsection
 
 

@@ -21,6 +21,7 @@
                     <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Classe</th>
                     <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Alunos</th>
                     <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Ano Letivo</th>
+                    <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Turno</th>
                     <th style="padding:10px 20px;text-align:right;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Ações</th>
                 </tr>
             </thead>
@@ -37,7 +38,7 @@
                                 {{ $turma->classe }}ª
                             </div>
                             <div>
-                                <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);">{{ $turma->nome }}</div>
+                                <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);">{{ $turma->nome_completo }}</div>
                                 @if($turma->coordenador)
                                 <div style="font-size:11.5px;color:var(--text-tertiary);">Dir: {{ $turma->coordenador->name }}</div>
                                 @endif
@@ -64,6 +65,13 @@
                         <div style="font-size:13px;color:var(--text-secondary);">{{ $turma->anoLetivo->nome }}</div>
                         @if($turma->anoLetivo->ativo)
                         <div style="font-size:11px;color:#16a34a;font-weight:600;margin-top:1px;">● Ativo</div>
+                        @endif
+                    </td>
+                    <td style="padding:14px 16px;text-align:center;">
+                        @if($turma->turno === 'M')
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">☀ Manhã</span>
+                        @else
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">🌙 Tarde</span>
                         @endif
                     </td>
                     <td style="padding:14px 20px;text-align:right;">
