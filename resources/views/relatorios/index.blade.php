@@ -55,7 +55,7 @@
 {{-- ================= BOLETINS EM MASSA ================= --}}
 <x-card title="Boletins em Massa (turma completa)" icon="fas fa-file-excel">
     <form method="GET" action="{{ route('relatorios.boletins-massa') }}"
-         class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
+         class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-5">
         @csrf
 
         <select name="turma_id" class="form-input" required>
@@ -63,6 +63,15 @@
             @foreach($turmas as $turma)
                 <option value="{{ $turma->id }}">
                     {{ $turma->nome_completo }} — {{ $turma->anoLetivo->nome }}
+                </option>
+            @endforeach
+        </select>
+
+        <select name="aluno_id" class="form-input">
+            <option value="">Todos os alunos (massa)</option>
+            @foreach($alunos as $aluno)
+                <option value="{{ $aluno->id }}">
+                    {{ $aluno->name }} ({{ $aluno->numero_processo }})
                 </option>
             @endforeach
         </select>
@@ -82,15 +91,19 @@
             <option value="3">3º Trimestre</option>
         </select>
 
-        <div class="flex items-end">
-            <button type="submit" class="btn btn-success w-full">
+        <div class="flex gap-3 items-end">
+            <button type="submit" name="formato" value="xlsx" class="btn btn-success w-full">
                 <i class="fas fa-file-excel mr-2"></i>
-                Baixar XLSX (todos os alunos)
+                XLSX
+            </button>
+            <button type="submit" name="formato" value="pdf" class="btn btn-primary w-full">
+                <i class="fas fa-file-pdf mr-2"></i>
+                PDF
             </button>
         </div>
     </form>
        <p class="mt-3 px-1 text-xs text-gray-400">
-        Gera um ficheiro Excel com 2 boletins por linha, no formato oficial da escola.
+        Sem aluno selecionado: exportação em massa. Com aluno selecionado: exportação única.
     </p>
 </x-card>
 
