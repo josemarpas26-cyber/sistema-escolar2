@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\AvaliacaoContinua;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -63,6 +64,12 @@ class Nota extends Model
     public function logs()
     {
         return $this->hasMany(NotaLog::class);
+    }
+
+
+    public function avaliacoesContinuas()
+    {
+        return $this->hasMany(AvaliacaoContinua::class)->orderBy('trimestre')->orderBy('data_avaliacao')->orderBy('id');
     }
 
     public function recalcular(): void

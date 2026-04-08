@@ -1382,7 +1382,7 @@
                     <td>
                       <div class="np-input-wrap">
                         <input type="number" step="0.01" min="-1" max="20"
-                               name="notas[{{ $idx }}][mac1]"
+                               name="notas[{{ $idx }}][mac1]" readonly title="Calculada automaticamente pela média das avaliações contínuas"
                                value="{{ $nota->mac1 }}"
                                class="np-nota-input {{ $nota->mac1 !== null ? ($nota->mac1 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                                {{ $locked1 ? 'disabled' : '' }}
@@ -1540,7 +1540,7 @@
                     </td>
                     <td><div class="np-input-wrap">
                       <input type="number" step="0.01" min="-1" max="20"
-                             name="notas[{{ $idx }}][mac2]" value="{{ $nota->mac2 }}"
+                             name="notas[{{ $idx }}][mac2]" readonly title="Calculada automaticamente pela média das avaliações contínuas" value="{{ $nota->mac2 }}"
                              class="np-nota-input {{ $nota->mac2 !== null ? ($nota->mac2 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked2 ? 'disabled' : '' }}
                              @input="onNotaInput($event, {{ $idx }}, 't2')"
@@ -1702,7 +1702,7 @@
                     </td>
                     <td><div class="np-input-wrap">
                       <input type="number" step="0.01" min="-1" max="20"
-                             name="notas[{{ $idx }}][mac3]" value="{{ $nota->mac3 }}"
+                             name="notas[{{ $idx }}][mac3]" readonly title="Calculada automaticamente pela média das avaliações contínuas" value="{{ $nota->mac3 }}"
                              class="np-nota-input {{ $nota->mac3 !== null ? ($nota->mac3 >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked3 ? 'disabled' : '' }}
                              @input="onNotaInput($event, {{ $idx }}, 't3')"
@@ -2060,6 +2060,80 @@
       @endforeach
     </div>
   </div>
+  @if($notas && $turma && $disciplina)
+  <x-card class="mt-6" title="Avaliações Contínuas (cálculo automático da MAC)" icon="fas fa-list-ol">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-3 py-2 text-left">Aluno</th>
+            <th class="px-3 py-2 text-left">T1</th>
+            <th class="px-3 py-2 text-left">T2</th>
+            <th class="px-3 py-2 text-left">T3</th>
+            <th class="px-3 py-2 text-center">MACs</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          @foreach($notas as $nota)
+            <tr>
+              <td class="px-3 py-3 align-top">
+                <div class="font-medium text-slate-800">{{ $nota->aluno->name }}</div>
+                <div class="text-xs text-slate-500">{{ $nota->aluno->numero_processo ?? '—' }}</div>
+              </td>
+
+              @for($trimestre = 1; $trimestre <= 3; $trimestre++)
+                @php
+                  $avaliacoesTri = $nota->avaliacoesContinuas->where('trimestre', $trimestre);
+                  $bloqueadoTri = (bool) $nota->{"bloqueado_t{$trimestre}"};
+                @endphp
+                <td class="px-3 py-3 align-top">
+                  <div class="space-y-2">
+                    @forelse($avaliacoesTri as $avaliacao)
+                      <div class="rounded border border-slate-200 px-2 py-1 text-xs flex items-center justify-between gap-2">
+                        <div>
+                          <div class="font-medium text-slate-700">{{ $avaliacao->descricao }}</div>
+                          <div class="text-slate-500">{{ number_format($avaliacao->valor, 2) }} valores</div>
+                        </div>
+                        @if(! $bloqueadoTri)
+                        <form method="POST" action="{{ route('notas.avaliacoes-continuas.destroy', $avaliacao) }}">
+                          @csrf
+                          @method('DELETE')
+                          <button type="submit" class="text-red-600" title="Remover">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </form>
+                        @endif
+                      </div>
+                    @empty
+                      <span class="text-xs text-slate-400">Sem avaliações</span>
+                    @endforelse
+
+                    @if($nota->trimestreEstaDisponivel($trimestre) && ! $bloqueadoTri)
+                    <form method="POST" action="{{ route('notas.avaliacoes-continuas.store') }}" class="grid grid-cols-12 gap-2">
+                      @csrf
+                      <input type="hidden" name="nota_id" value="{{ $nota->id }}">
+                      <input type="hidden" name="trimestre" value="{{ $trimestre }}">
+                      <input type="text" name="descricao" required maxlength="120" placeholder="Descrição" class="col-span-7 form-input text-xs h-8">
+                      <input type="number" step="0.01" min="0" max="20" name="valor" required placeholder="Valor" class="col-span-3 form-input text-xs h-8">
+                      <button type="submit" class="col-span-2 btn btn-primary text-xs h-8">+</button>
+                    </form>
+                    @endif
+                  </div>
+                </td>
+              @endfor
+
+              <td class="px-3 py-3 align-top text-center">
+                <div class="text-xs text-slate-600">T1: <strong>{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '—' }}</strong></div>
+                <div class="text-xs text-slate-600">T2: <strong>{{ $nota->mac2 !== null ? number_format($nota->mac2, 2) : '—' }}</strong></div>
+                <div class="text-xs text-slate-600">T3: <strong>{{ $nota->mac3 !== null ? number_format($nota->mac3, 2) : '—' }}</strong></div>
+              </td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-3 text-xs text-slate-500">A MAC de cada trimestre é calculada automaticamente pela média das avaliações contínuas lançadas.</p>
+  </x-card>
   @endif
 
 </div>{{-- /np-root --}}

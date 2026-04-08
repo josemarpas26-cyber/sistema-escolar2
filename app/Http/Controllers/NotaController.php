@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
+use App\Models\AvaliacaoContinua;
 use App\Models\Disciplina;
 use App\Models\DivisaoAritmeticaSolicitacao;
 use App\Models\Nota;
@@ -83,7 +84,7 @@ class NotaController extends Controller
             $notasPorAluno = Nota::where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
                 ->where('ano_letivo_id', $anoLetivo->id)
-                ->with(['aluno.turmas', 'anoLetivo'])
+                ->with(['aluno.turmas', 'anoLetivo', 'avaliacoesContinuas'])
                 ->get()
                 ->keyBy('aluno_id');
 
@@ -193,7 +194,7 @@ class NotaController extends Controller
 
         $notas = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
-            ->with(['disciplina', 'turma'])
+            ->with(['disciplina', 'turma', 'avaliacoesContinuas'])
             ->get();
 
         $turmaAtual = $notas->first()?->turma;
@@ -900,4 +901,108 @@ class NotaController extends Controller
 
         return back()->with('success', 'Solicitação processada com sucesso.');
     }
+
+    public function adicionarAvaliacaoContinua(Request $request)
+    {
+        $this->checkPermission('notas.lancar');
+
+        $professor = auth()->user();
+
+        if (! $professor->isProfessor()) {
+            abort(403, 'Apenas professores podem lançar avaliações contínuas.');
+        }
+
+        $dados = $request->validate([
+            'nota_id' => 'required|exists:notas,id',
+            'trimestre' => 'required|in:1,2,3',
+            'descricao' => 'required|string|max:120',
+            'valor' => 'required|numeric|min:0|max:20',
+            'data_avaliacao' => 'nullable|date',
+        ]);
+
+        $nota = Nota::with(['turma', 'disciplina', 'aluno.turmas', 'anoLetivo'])->findOrFail($dados['nota_id']);
+
+        $temAtribuicao = $professor->atribuicoes()
+            ->where('turma_id', $nota->turma_id)
+            ->where('disciplina_id', $nota->disciplina_id)
+            ->where('ano_letivo_id', $nota->ano_letivo_id)
+            ->exists();
+
+        if (! $temAtribuicao) {
+            abort(403, 'Você não leciona esta disciplina nesta turma.');
+        }
+
+        $trimestre = (int) $dados['trimestre'];
+
+        if (! $nota->trimestreEstaDisponivel($trimestre)) {
+            return back()->with('error', $this->mensagemTrimestreNaoAplicavel($nota, $trimestre));
+        }
+
+        if ((bool) $nota->{"bloqueado_t{$trimestre}"}) {
+            return back()->with('error', "O {$trimestre}º trimestre está bloqueado para este aluno.");
+        }
+
+        AvaliacaoContinua::create([
+            'nota_id' => $nota->id,
+            'professor_id' => $professor->id,
+            'trimestre' => $trimestre,
+            'descricao' => $dados['descricao'],
+            'valor' => round((float) $dados['valor'], 2),
+            'data_avaliacao' => $dados['data_avaliacao'] ?? null,
+        ]);
+
+        $this->recalcularMacPorAvaliacoes($nota, $trimestre);
+
+        return back()->with('success', 'Avaliação contínua registada com sucesso.');
+    }
+
+    public function removerAvaliacaoContinua(AvaliacaoContinua $avaliacao)
+    {
+        $this->checkPermission('notas.lancar');
+
+        $professor = auth()->user();
+
+        if (! $professor->isProfessor()) {
+            abort(403);
+        }
+
+        $nota = $avaliacao->nota()->with(['turma', 'disciplina', 'aluno.turmas', 'anoLetivo'])->firstOrFail();
+
+        $temAtribuicao = $professor->atribuicoes()
+            ->where('turma_id', $nota->turma_id)
+            ->where('disciplina_id', $nota->disciplina_id)
+            ->where('ano_letivo_id', $nota->ano_letivo_id)
+            ->exists();
+
+        if (! $temAtribuicao) {
+            abort(403, 'Você não tem permissão para remover esta avaliação.');
+        }
+
+        $trimestre = (int) $avaliacao->trimestre;
+
+        if ((bool) $nota->{"bloqueado_t{$trimestre}"}) {
+            return back()->with('error', "O {$trimestre}º trimestre está bloqueado para este aluno.");
+        }
+
+        $avaliacao->delete();
+
+        $this->recalcularMacPorAvaliacoes($nota, $trimestre);
+
+        return back()->with('success', 'Avaliação contínua removida com sucesso.');
+    }
+
+    private function recalcularMacPorAvaliacoes(Nota $nota, int $trimestre): void
+    {
+        $campoMac = "mac{$trimestre}";
+
+        $media = $nota->avaliacoesContinuas()
+            ->where('trimestre', $trimestre)
+            ->avg('valor');
+
+        $nota->{$campoMac} = $media !== null ? round((float) $media, 2) : null;
+
+        $this->notaService->recalcularNota($nota);
+        $nota->save();
+    }
+
 }

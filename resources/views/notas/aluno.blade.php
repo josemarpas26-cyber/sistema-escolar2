@@ -66,9 +66,12 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Disciplina</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MAC1</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT1</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MAC2</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT2</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MFT2</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MAC3</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT3</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">PG</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">CFD</th>
@@ -82,15 +85,18 @@
                             <div class="font-medium text-gray-900">{{ $nota->disciplina->nome }}</div>
                             <div class="text-xs text-gray-500">{{ $nota->disciplina->codigo }}</div>
                         </td>
+                        <td class="px-6 py-4 text-center">{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '-' }}</td>
                         <td class="px-6 py-4 text-center">
                             {{ $nota->mt1 ? number_format($nota->mt1, 2) : '-' }}
                         </td>
+                        <td class="px-6 py-4 text-center">{{ $nota->mac2 !== null ? number_format($nota->mac2, 2) : '-' }}</td>
                         <td class="px-6 py-4 text-center">
                             {{ $nota->mt2 ? number_format($nota->mt2, 2) : '-' }}
                         </td>
                         <td class="px-6 py-4 text-center font-semibold">
                             {{ $nota->mft2 ? number_format($nota->mft2, 2) : '-' }}
                         </td>
+                        <td class="px-6 py-4 text-center">{{ $nota->mac3 !== null ? number_format($nota->mac3, 2) : '-' }}</td>
                         <td class="px-6 py-4 text-center">
                             {{ $nota->mt3 ? number_format($nota->mt3, 2) : '-' }}
                         </td>
@@ -114,6 +120,17 @@
                             @else
                             <x-badge type="gray">Pendente</x-badge>
                             @endif
+                        </td>
+                    </tr>
+                    <tr class="bg-gray-50/60">
+                        <td class="px-6 pb-4 pt-0 text-xs text-gray-600" colspan="11">
+                            @php
+                                $av1 = $nota->avaliacoesContinuas->where('trimestre', 1);
+                                $av2 = $nota->avaliacoesContinuas->where('trimestre', 2);
+                                $av3 = $nota->avaliacoesContinuas->where('trimestre', 3);
+                            @endphp
+                            <span class="font-semibold text-gray-700">Avaliações contínuas:</span>
+                            T1 ({{ $av1->count() }}), T2 ({{ $av2->count() }}), T3 ({{ $av3->count() }})
                         </td>
                     </tr>
                     @endforeach
