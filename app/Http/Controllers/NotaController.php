@@ -981,8 +981,10 @@ class NotaController extends Controller
     {
         $user = auth()->user();
         $podeComoProfessor = $user->isProfessor()
-            && ($user->can('avaliacoes_continuas.create') || $user->can('notas.lancar'));
-        $podeComoAdmin = ($user->isAdmin() || $user->isSecretaria()) && $user->can('avaliacoes_continuas.create');
+            && ($user->hasPermission('avaliacoes_continuas.create') || $user->hasPermission('notas.lancar'));
+
+        $podeComoAdmin = ($user->isAdmin() || $user->isSecretaria())
+            && $user->hasPermission('avaliacoes_continuas.create');
 
         if (! $podeComoProfessor && ! $podeComoAdmin) {
             abort(403, 'Sem permissão para lançar avaliações contínuas.');
