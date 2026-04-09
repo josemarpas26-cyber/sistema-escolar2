@@ -1271,18 +1271,21 @@ class NotaController extends Controller
             return back()->with('error', "O {$trimestre}º trimestre está bloqueado para este aluno.");
         }
 
+        $dataAvaliacao = $this->normalizarDataAvaliacao($dados['data_avaliacao'] ?? null);
+
         AvaliacaoContinua::create([
             'nota_id' => $nota->id,
             'professor_id' => $user->id,
             'trimestre' => $trimestre,
             'descricao' => $dados['descricao'],
             'valor' => round((float) $dados['valor'], 2),
-            'data_avaliacao' => $dados['data_avaliacao'] ?? null,
+            'data_avaliacao' => $dataAvaliacao,
         ]);
 
         $this->registarLogAvaliacaoContinua($nota, 'avaliacao_continua_criada', $trimestre, null, [
             'descricao' => $dados['descricao'],
             'valor' => round((float) $dados['valor'], 2),
+            'data_avaliacao' => $dataAvaliacao?->toDateString(),
         ]);
 
         $this->recalcularMacPorAvaliacoes($nota, $trimestre);
@@ -1311,6 +1314,7 @@ class NotaController extends Controller
             'descricao' => $avaliacao->descricao,
             'valor' => $avaliacao->valor,
             'professor_id' => $avaliacao->professor_id,
+            'data_avaliacao' => optional($avaliacao->data_avaliacao)?->toDateString(),
         ];
 
         $avaliacao->delete();
@@ -1351,11 +1355,12 @@ class NotaController extends Controller
         }
 
         $dadosAnteriores = $avaliacao->only(['descricao', 'valor', 'data_avaliacao']);
+        $dataAvaliacao = $this->normalizarDataAvaliacao($dados['data_avaliacao'] ?? null, $avaliacao->data_avaliacao);
 
         $avaliacao->update([
             'descricao' => $dados['descricao'],
             'valor' => round((float) $dados['valor'], 2),
-            'data_avaliacao' => $dados['data_avaliacao'] ?? null,
+            'data_avaliacao' => $dataAvaliacao,
         ]);
 
         $this->registarLogAvaliacaoContinua(
@@ -1363,7 +1368,10 @@ class NotaController extends Controller
             'avaliacao_continua_editada',
             $trimestre,
             $dadosAnteriores,
-            $avaliacao->only(['descricao', 'valor', 'data_avaliacao'])
+            array_merge(
+                $avaliacao->only(['descricao', 'valor']),
+                ['data_avaliacao' => $dataAvaliacao?->toDateString()]
+            )
         );
 
         $this->recalcularMacPorAvaliacoes($nota, $trimestre);
@@ -1408,6 +1416,19 @@ class NotaController extends Controller
             'ip_address' => request()?->ip(),
             'data_alteracao' => now(),
         ]);
+    }
+
+    private function normalizarDataAvaliacao(mixed $novaData, mixed $fallback = null): \Illuminate\Support\Carbon
+    {
+        if ($novaData) {
+            return \Illuminate\Support\Carbon::parse($novaData);
+        }
+
+        if ($fallback) {
+            return \Illuminate\Support\Carbon::parse($fallback);
+        }
+
+        return now();
     }
 
 }
