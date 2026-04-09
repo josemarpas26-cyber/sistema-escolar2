@@ -81,6 +81,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.finalizar');
     Route::post('notas/reabrir', [NotaController::class, 'reabrir'])
         ->name('notas.reabrir');
+    Route::post('notas/notificacoes/{notificationId}/marcar-lida', [NotaController::class, 'marcarNotificacaoComoLida'])
+        ->name('notas.notificacoes.marcar-lida');
     Route::get('notas/avaliacoes-continuas', [NotaController::class, 'avaliacoesContinuasIndex'])
         ->name('notas.avaliacoes-continuas.index');
     Route::post('notas/avaliacoes-continuas', [NotaController::class, 'adicionarAvaliacaoContinua'])

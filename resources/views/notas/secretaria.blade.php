@@ -139,6 +139,13 @@
                                 <option value="2">Bloquear 2º Tri</option>
                                 <option value="3">Bloquear 3º Tri</option>
                             </select>
+                            <span class="nr-op-label">Campo:</span>
+                            <select name="campo" class="nr-input nr-input-inline">
+                                <option value="">Todos os campos</option>
+                                <option value="pp">PP (exige trimestre)</option>
+                                <option value="pt">PT (T1/T2)</option>
+                                <option value="pg">PG (T3)</option>
+                            </select>
                             <span class="nr-op-label">Aluno:</span>
                             <select name="aluno_id" class="nr-input nr-input-inline">
                                 <option value="">Todos os alunos</option>
@@ -166,6 +173,13 @@
                                 <option value="1">Desbloq 1º Tri</option>
                                 <option value="2">Desbloq 2º Tri</option>
                                 <option value="3">Desbloq 3º Tri</option>
+                            </select>
+                            <span class="nr-op-label">Campo:</span>
+                            <select name="campo" class="nr-input nr-input-inline">
+                                <option value="">Todos os campos</option>
+                                <option value="pp">PP (exige trimestre)</option>
+                                <option value="pt">PT (T1/T2)</option>
+                                <option value="pg">PG (T3)</option>
                             </select>
                             <span class="nr-op-label">Aluno:</span>
                             <select name="aluno_id" class="nr-input nr-input-inline">

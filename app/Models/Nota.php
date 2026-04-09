@@ -27,6 +27,7 @@ class Nota extends Model
         'ca_10', 'ca_11',
         'status',
         'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
+        'bloqueado_pp1', 'bloqueado_pt1', 'bloqueado_pp2', 'bloqueado_pt2', 'bloqueado_pp3', 'bloqueado_pg',
         'observacoes',
     ];
 
@@ -39,6 +40,8 @@ class Nota extends Model
         'cfd' => 'decimal:2',
         'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2',
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
+        'bloqueado_pp1' => 'boolean', 'bloqueado_pt1' => 'boolean', 'bloqueado_pp2' => 'boolean',
+        'bloqueado_pt2' => 'boolean', 'bloqueado_pp3' => 'boolean', 'bloqueado_pg' => 'boolean',
     ];
 
     public function aluno()
