@@ -338,41 +338,47 @@
                 @endphp
                 @if($notasDaDisciplina->isEmpty()) @continue @endif
 
-                <div style="margin-bottom:12px;">
+                <div class="bg-slate-800/60 rounded-xl border border-slate-700/50 mb-6 overflow-hidden">
                     {{-- Cabeçalho da disciplina --}}
-                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px 8px 0 0;padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:none;">
-                        <i class="fas fa-book" style="color:#3b82f6;font-size:.8rem;"></i>
-                        <span style="font-size:.78rem;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em;">{{ $disc->nome }}</span>
+                    <div class="flex items-center justify-between px-5 py-3.5 bg-slate-900/60 border-b border-slate-700/50">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-white uppercase tracking-widest">{{ $disc->nome }}</span>
+                            <span class="text-xs text-slate-400">{{ $disc->codigo }}</span>
+                        </div>
                         @php
                             $cfds = $notasDaDisciplina->whereNotNull('cfd');
                             $mediaDisc = $cfds->avg('cfd');
                             $aprovDisc = $cfds->filter(fn($n) => $n->isAprovado())->count();
                             $reprovDisc = $cfds->filter(fn($n) => !$n->isAprovado())->count();
                         @endphp
-                        <span style="margin-left:auto;display:flex;gap:10px;align-items:center;">
+                         <div class="flex items-center gap-2 text-xs">
+                            <span class="text-slate-400">Média:</span>
                             @if($mediaDisc)
-                                <span style="font-size:.7rem;color:#64748b;">Média: <strong style="color:#0f172a;">{{ number_format($mediaDisc,2) }}</strong></span>
+                                <span class="font-bold text-white">{{ number_format($mediaDisc,2) }}</span>
+                            @else
+                                <span class="font-bold text-white">—</span>
                             @endif
                             <span class="nr-badge nr-badge-ok" style="font-size:.63rem;padding:2px 7px;">{{ $aprovDisc }} Apr</span>
                             <span class="nr-badge nr-badge-fail" style="font-size:.63rem;padding:2px 7px;">{{ $reprovDisc }} Rep</span>
-                        </span>
+                        </div>
                     </div>
 
                     {{-- Tabela da disciplina --}}
-                    <div style="border:1px solid #bfdbfe;border-radius:0 0 8px 8px;overflow:hidden;">
-                        <table style="width:100%;border-collapse:collapse;font-size:.8rem;">
+                    <div class="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50">
+                        <table class="w-full min-w-[900px] border-collapse text-sm">
                             <thead>
                                 <tr style="background:#f8fafc;">
-                                    <th style="width:36px;text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Nº</th>
-                                    <th style="text-align:left;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Aluno</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">MT1</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">MT2</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;font-weight:800;color:#0f172a;">MFT2</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">MT3</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#1d4ed8;font-size:.65rem;font-weight:800;text-transform:uppercase;border-bottom:1px solid #e2e8f0;background:#eff6ff;">CFD</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Estado</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">T1/T2/T3</th>
-                                    <th style="text-align:center;padding:7px 8px;color:#64748b;font-size:.65rem;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Ação</th>
+                                 <tr class="bg-slate-800 dark:bg-slate-800 text-slate-300 text-xs uppercase tracking-wider">
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center w-8">Nº</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-left">Aluno</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">MT1</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">MT2</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center font-bold">MFT2</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">MT3</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center bg-blue-900/30 text-blue-400 font-bold">CFD</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">Estado</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">T1/T2/T3</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">Ação</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -389,26 +395,25 @@
                                     $t2B     = $nota->bloqueado_t2 ?? false;
                                     $t3B     = $nota->bloqueado_t3 ?? false;
                                     $algumB  = $t1B || $t2B || $t3B;
-                                    $trBg    = $loop->odd ? '#fafbfd' : '#fff';
                                 @endphp
-                                <tr style="background:{{ $trBg }};" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='{{ $trBg }}'">
-                                    <td style="text-align:center;padding:8px;color:#94a3b8;border-bottom:1px solid #f1f5f9;">{{ $cnt++ }}</td>
-                                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;">
+                                <tr class="border-b border-slate-700/50 transition-colors duration-150 hover:bg-white/5 dark:hover:bg-white/5 group @if($loop->even) bg-slate-800/20 @endif">
+                                    <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-500 group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
                                         <a href="{{ route('users.show', $aluno) }}" class="nr-aluno-link">{{ $aluno->name ?? '—' }}</a>
                                         <span class="nr-proc">{{ $aluno->numero_processo ?? '' }}</span>
                                     </td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">{{ $nota->mt1 ? number_format($nota->mt1,2) : '—' }}</td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">{{ $nota->mt2 ? number_format($nota->mt2,2) : '—' }}</td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;font-weight:700;">{{ $nota->mft2 ? number_format($nota->mft2,2) : '—' }}</td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;background:#f8faff;">
+                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt1 ? number_format($nota->mt1,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt2 ? number_format($nota->mt2,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center font-bold">{{ $nota->mft2 ? number_format($nota->mft2,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-center font-bold text-sm bg-blue-900/10">
                                         @if($temCfd)
                                             <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd,2) }}</strong>
                                         @else
                                             <span class="nr-muted">—</span>
                                         @endif
                                     </td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">
+                                     <td class="px-4 py-3 text-center text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
                                         @if($temCfd)
                                             <span class="nr-badge {{ $aprov ? 'nr-badge-ok' : 'nr-badge-fail' }}" style="font-size:.62rem;padding:2px 6px;">
                                                 <i class="fas {{ $aprov ? 'fa-check' : 'fa-times' }}"></i>
@@ -418,7 +423,7 @@
                                             <span class="nr-badge nr-badge-pend" style="font-size:.62rem;padding:2px 6px;"><i class="fas fa-hourglass-half"></i> Pend</span>
                                         @endif
                                     </td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">
+                                     <td class="px-4 py-3 text-center text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
                                         @if(($nota->status ?? '') === 'finalizado' && !$algumB)
                                             <div class="nr-tri-wrap">
                                                 <span class="nr-tri nr-tri-lock">T1</span>
@@ -439,7 +444,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td style="text-align:center;padding:8px;border-bottom:1px solid #f1f5f9;">
+                                              <td class="px-4 py-3 text-center text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
                                         @if($locked)
                                             <span class="nr-act-lock" title="Finalizado"><i class="fas fa-lock"></i></span>
                                         @else
@@ -488,7 +493,7 @@
 #notas-root {
     width: 100%;
     min-width: 0;
-    overflow-x: hidden;
+    overflow-x: visible;
 }
 
 .nr-mb { margin-bottom: 16px; }
