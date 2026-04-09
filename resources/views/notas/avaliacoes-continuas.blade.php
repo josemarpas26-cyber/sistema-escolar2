@@ -67,8 +67,9 @@
                                         <form method="POST" action="{{ route('notas.avaliacoes-continuas.update', $item) }}" class="grid grid-cols-12 gap-1">
                                             @csrf
                                             @method('PUT')
-                                            <input name="descricao" value="{{ $item->descricao }}" maxlength="120" class="col-span-6 form-input h-8 text-xs" required>
-                                            <input name="valor" type="number" step="0.01" min="0" max="20" value="{{ $item->valor }}" class="col-span-3 form-input h-8 text-xs" required>
+                                            <input name="descricao" value="{{ $item->descricao }}" maxlength="120" class="col-span-5 form-input h-8 text-xs" required>
+                                            <input name="valor" type="number" step="0.01" min="0" max="20" value="{{ $item->valor }}" class="col-span-2 form-input h-8 text-xs" required>
+                                            <input name="data_avaliacao" type="date" value="{{ optional($item->data_avaliacao)->format('Y-m-d') }}" class="col-span-3 form-input h-8 text-xs">
                                             <button class="col-span-2 btn btn-outline h-8 text-xs" type="submit">Salvar</button>
                                         </form>
                                         <form method="POST" action="{{ route('notas.avaliacoes-continuas.destroy', $item) }}" class="mt-1">
@@ -90,8 +91,9 @@
                                         @csrf
                                         <input type="hidden" name="nota_id" value="{{ $nota->id }}">
                                         <input type="hidden" name="trimestre" value="{{ $trimestre }}">
-                                        <input type="text" name="descricao" maxlength="120" required class="col-span-7 form-input h-8 text-xs" placeholder="Descrição">
-                                        <input type="number" step="0.01" min="0" max="20" name="valor" required class="col-span-3 form-input h-8 text-xs" placeholder="Nota">
+                                        <input type="text" name="descricao" maxlength="120" required class="col-span-5 form-input h-8 text-xs" placeholder="Descrição">
+                                        <input type="number" step="0.01" min="0" max="20" name="valor" required class="col-span-2 form-input h-8 text-xs" placeholder="Nota">
+                                        <input type="date" name="data_avaliacao" class="col-span-3 form-input h-8 text-xs" value="{{ now()->toDateString() }}">
                                         <button type="submit" class="col-span-2 btn btn-primary h-8 text-xs">+</button>
                                     </form>
                                 @endif

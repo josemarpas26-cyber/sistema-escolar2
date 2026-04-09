@@ -250,6 +250,7 @@
                             <th class="nr-th-c nr-th-cfd">CFD</th>
                             <th class="nr-th-c" style="width:110px">Status</th>
                             <th class="nr-th-c" style="width:150px">Trimestres</th>
+                            <th class="nr-th-c" style="width:170px">Campos (PP/PT/PG)</th>
                             <th class="nr-th-c" style="width:54px">Ações</th>
                         </tr>
                     </thead>
@@ -264,6 +265,11 @@
                             $t2Bloqueado    = $nota->bloqueado_t2 ?? false;
                             $t3Bloqueado    = $nota->bloqueado_t3 ?? false;
                             $algumBloqueado = $t1Bloqueado || $t2Bloqueado || $t3Bloqueado;
+                            $ppTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pp1 ?? false) && ($nota->bloqueado_pp2 ?? false) && ($nota->bloqueado_pp3 ?? false));
+                            $ppParcial = ! $ppTotal && (($nota->bloqueado_pp1 ?? false) || ($nota->bloqueado_pp2 ?? false) || ($nota->bloqueado_pp3 ?? false));
+                            $ptTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pt1 ?? false) && ($nota->bloqueado_pt2 ?? false));
+                            $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false));
+                            $pgTotal = ($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false);
                         @endphp
                         <tr class="{{ $loop->odd ? 'nr-odd' : '' }}">
                             <td class="nr-td-c nr-muted">{{ $cnt++ }}</td>
@@ -315,6 +321,13 @@
                                 @endif
                             </td>
                             <td class="nr-td-c">
+                                <div class="nr-tri-wrap">
+                                    <span class="nr-tri {{ $ppTotal ? 'nr-tri-lock' : ($ppParcial ? 'nr-tri-mid' : 'nr-tri-open') }}" title="PP {{ $ppTotal ? 'bloqueado' : ($ppParcial ? 'parcial' : 'aberto') }}">PP</span>
+                                    <span class="nr-tri {{ $ptTotal ? 'nr-tri-lock' : ($ptParcial ? 'nr-tri-mid' : 'nr-tri-open') }}" title="PT {{ $ptTotal ? 'bloqueado' : ($ptParcial ? 'parcial' : 'aberto') }}">PT</span>
+                                    <span class="nr-tri {{ $pgTotal ? 'nr-tri-lock' : 'nr-tri-open' }}" title="PG {{ $pgTotal ? 'bloqueado' : 'aberto' }}">PG</span>
+                                </div>
+                            </td>
+                            <td class="nr-td-c">
                                 @if($locked)
                                     <span class="nr-act-lock" title="Finalizado"><i class="fas fa-lock"></i></span>
                                 @else
@@ -323,7 +336,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="10" class="nr-empty">
+                        <tr><td colspan="11" class="nr-empty">
                             <i class="fas fa-clipboard-list" style="font-size:2rem;color:#cbd5e1;display:block;margin-bottom:10px"></i>
                             Nenhuma nota encontrada para os filtros selecionados
                         </td></tr>
@@ -381,6 +394,7 @@
                                     <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center bg-blue-900/30 text-blue-400 font-bold">CFD</th>
                                     <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">Estado</th>
                                     <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">T1/T2/T3</th>
+                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">PP/PT/PG</th>
                                     <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">Ação</th>
                                 </tr>
                             </thead>
@@ -398,6 +412,11 @@
                                     $t2B    = $nota->bloqueado_t2 ?? false;
                                     $t3B    = $nota->bloqueado_t3 ?? false;
                                     $algumB = $t1B || $t2B || $t3B;
+                                    $ppTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pp1 ?? false) && ($nota->bloqueado_pp2 ?? false) && ($nota->bloqueado_pp3 ?? false));
+                                    $ppParcial = ! $ppTotal && (($nota->bloqueado_pp1 ?? false) || ($nota->bloqueado_pp2 ?? false) || ($nota->bloqueado_pp3 ?? false));
+                                    $ptTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pt1 ?? false) && ($nota->bloqueado_pt2 ?? false));
+                                    $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false));
+                                    $pgTotal = ($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false);
                                 @endphp
                                 <tr class="border-b border-gray-100 dark:border-slate-700/30 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-slate-700/30 group @if($loop->even) bg-gray-50/80 dark:bg-slate-800/20 @endif">
                                     <td class="px-4 py-3 text-sm text-gray-400 dark:text-slate-500 group-hover:text-gray-700 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
@@ -446,6 +465,13 @@
                                                 <span class="nr-tri nr-tri-open">T3</span>
                                             </div>
                                         @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-center text-sm">
+                                        <div class="nr-tri-wrap">
+                                            <span class="nr-tri {{ $ppTotal ? 'nr-tri-lock' : ($ppParcial ? 'nr-tri-mid' : 'nr-tri-open') }}">PP</span>
+                                            <span class="nr-tri {{ $ptTotal ? 'nr-tri-lock' : ($ptParcial ? 'nr-tri-mid' : 'nr-tri-open') }}">PT</span>
+                                            <span class="nr-tri {{ $pgTotal ? 'nr-tri-lock' : 'nr-tri-open' }}">PG</span>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3 text-center text-sm">
                                         @if($locked)
@@ -866,6 +892,13 @@
     background: #f0fdf4;
     color: #16a34a;
     border: 1.5px solid #86efac;
+}
+
+/* Parcial — âmbar */
+.nr-tri-mid {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1.5px solid #fcd34d;
 }
 </style>
 @endpush

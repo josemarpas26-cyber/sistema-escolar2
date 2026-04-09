@@ -167,6 +167,11 @@ class NotaLog extends Model
             return '—';
         }
 
+        $avaliacaoFormatada = $this->formatarValorAvaliacaoContinua($valor);
+        if ($avaliacaoFormatada !== null) {
+            return $avaliacaoFormatada;
+        }
+
         if (is_numeric($valor)) {
             return number_format((float) $valor, 2, ',', '.');
         }
@@ -182,5 +187,39 @@ class NotaLog extends Model
         ];
 
         return $labels[$valor] ?? $valor;
+    }
+
+    private function formatarValorAvaliacaoContinua(mixed $valor): ?string
+    {
+        if (! is_string($valor)) {
+            return null;
+        }
+
+        $dados = json_decode($valor, true);
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($dados)) {
+            return null;
+        }
+
+        $descricao = trim((string) ($dados['descricao'] ?? 'Sem descrição'));
+        if ($descricao === '') {
+            $descricao = 'Sem descrição';
+        }
+
+        $valorAvaliacao = array_key_exists('valor', $dados) && is_numeric($dados['valor'])
+            ? number_format((float) $dados['valor'], 2, ',', '.')
+            : '—';
+
+        $data = $dados['data_avaliacao'] ?? null;
+        if (! $data) {
+            $dataFormatada = 'Sem data';
+        } else {
+            try {
+                $dataFormatada = \Illuminate\Support\Carbon::parse($data)->format('d/m/Y');
+            } catch (\Throwable) {
+                $dataFormatada = (string) $data;
+            }
+        }
+
+        return "{$descricao} | {$valorAvaliacao} | {$dataFormatada}";
     }
 }

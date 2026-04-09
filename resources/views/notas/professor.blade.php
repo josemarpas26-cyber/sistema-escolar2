@@ -1990,6 +1990,37 @@
           Operações da Pauta
         </div>
         <div class="np-op-body">
+          @php
+            $ppTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pp1 ?? false) && ($n->bloqueado_pp2 ?? false) && ($n->bloqueado_pp3 ?? false)));
+            $ppParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pp1 ?? false) || ($n->bloqueado_pp2 ?? false) || ($n->bloqueado_pp3 ?? false));
+            $ptTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pt1 ?? false) && ($n->bloqueado_pt2 ?? false)));
+            $ptParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pt1 ?? false) || ($n->bloqueado_pt2 ?? false));
+            $pgTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || ($n->bloqueado_pg ?? false));
+          @endphp
+
+          <div class="space-y-2 mb-3">
+            <div class="np-trim-row">
+              <span class="np-trim-name">PP</span>
+              <span class="np-trim-badge {{ $ppTotalBloqueado ? 'lock' : ($ppParcial ? 'empty' : 'open') }}">
+                <i class="fas {{ $ppTotalBloqueado ? 'fa-lock' : ($ppParcial ? 'fa-adjust' : 'fa-lock-open') }}"></i>
+                {{ $ppTotalBloqueado ? 'Bloqueado' : ($ppParcial ? 'Parcial' : 'Aberto') }}
+              </span>
+            </div>
+            <div class="np-trim-row">
+              <span class="np-trim-name">PT</span>
+              <span class="np-trim-badge {{ $ptTotalBloqueado ? 'lock' : ($ptParcial ? 'empty' : 'open') }}">
+                <i class="fas {{ $ptTotalBloqueado ? 'fa-lock' : ($ptParcial ? 'fa-adjust' : 'fa-lock-open') }}"></i>
+                {{ $ptTotalBloqueado ? 'Bloqueado' : ($ptParcial ? 'Parcial' : 'Aberto') }}
+              </span>
+            </div>
+            <div class="np-trim-row">
+              <span class="np-trim-name">PG</span>
+              <span class="np-trim-badge {{ $pgTotalBloqueado ? 'lock' : 'open' }}">
+                <i class="fas {{ $pgTotalBloqueado ? 'fa-lock' : 'fa-lock-open' }}"></i>
+                {{ $pgTotalBloqueado ? 'Bloqueado' : 'Aberto' }}
+              </span>
+            </div>
+          </div>
 
           @if($podeFinalizarNotas)
           <form method="POST" action="{{ route('notas.finalizar') }}">
@@ -2012,6 +2043,15 @@
                 @foreach($opcoesAlunos as $al)
                 <option value="{{ $al->id }}">{{ $al->name }}</option>
                 @endforeach
+              </select>
+            </div>
+            <div class="np-op-row">
+              <label class="np-op-lbl">Campo</label>
+              <select name="campo" class="np-op-select">
+                <option value="">Todos os campos</option>
+                <option value="pp">PP (exige trimestre)</option>
+                <option value="pt">PT (T1/T2)</option>
+                <option value="pg">PG (T3)</option>
               </select>
             </div>
             <button type="submit" class="np-btn np-btn-danger" style="width:100%"
@@ -2047,6 +2087,15 @@
                 @foreach($opcoesAlunos as $al)
                 <option value="{{ $al->id }}">{{ $al->name }}</option>
                 @endforeach
+              </select>
+            </div>
+            <div class="np-op-row">
+              <label class="np-op-lbl">Campo</label>
+              <select name="campo" class="np-op-select">
+                <option value="">Todos os campos</option>
+                <option value="pp">PP (exige trimestre)</option>
+                <option value="pt">PT (T1/T2)</option>
+                <option value="pg">PG (T3)</option>
               </select>
             </div>
             <button type="submit" class="np-btn np-btn-ghost" style="width:100%">
@@ -2214,8 +2263,9 @@
                       @csrf
                       <input type="hidden" name="nota_id" value="{{ $nota->id }}">
                       <input type="hidden" name="trimestre" value="{{ $trimestre }}">
-                      <input type="text" name="descricao" required maxlength="120" placeholder="Descrição" class="col-span-7 form-input text-xs h-8">
-                      <input type="number" step="0.01" min="0" max="20" name="valor" required placeholder="Valor" class="col-span-3 form-input text-xs h-8">
+                      <input type="text" name="descricao" required maxlength="120" placeholder="Descrição" class="col-span-5 form-input text-xs h-8">
+                      <input type="number" step="0.01" min="0" max="20" name="valor" required placeholder="Valor" class="col-span-2 form-input text-xs h-8">
+                      <input type="date" name="data_avaliacao" value="{{ now()->toDateString() }}" class="col-span-3 form-input text-xs h-8">
                       <button type="submit" class="col-span-2 btn btn-primary text-xs h-8">+</button>
                     </form>
                     @endif
