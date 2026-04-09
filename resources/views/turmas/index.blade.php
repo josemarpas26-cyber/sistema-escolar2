@@ -69,9 +69,9 @@
                     </td>
                     <td style="padding:14px 16px;text-align:center;">
                         @if($turma->turno === 'M')
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">☀ Manhã</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"><i class="fa-solid fa-sun" style="margin-right: 8px;"></i> Manhã</span>
                         @else
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">🌙 Tarde</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700"><i class="fa-solid fa-moon" style="margin-right: 8px;"></i> Tarde</span>
                         @endif
                     </td>
                     <td style="padding:14px 20px;text-align:right;">
