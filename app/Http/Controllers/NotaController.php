@@ -10,8 +10,10 @@ use App\Models\Nota;
 use App\Models\NotaLog;
 use App\Models\Turma;
 use App\Models\User;
+use App\Notifications\PautaDesbloqueadaNotification;
 use App\Services\EstatisticasAcademicasService;
 use App\Services\NotaService;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +69,11 @@ class NotaController extends Controller
         $turma = null;
         $disciplina = null;
         $estatisticasPauta = null;
+        $notificacoesDesbloqueio = $professor->unreadNotifications()
+            ->where('type', PautaDesbloqueadaNotification::class)
+            ->latest()
+            ->take(5)
+            ->get();
 
         if ($turmaId && $disciplinaId) {
             $temAtribuicao = $atribuicoes
@@ -110,7 +117,8 @@ class NotaController extends Controller
             'notas',
             'turma',
             'disciplina',
-            'estatisticasPauta'
+            'estatisticasPauta',
+            'notificacoesDesbloqueio'
         ));
     }
 
@@ -803,10 +811,38 @@ class NotaController extends Controller
         });
 
         $escopoAluno = $alunoId ? ' para o aluno selecionado' : '';
+        $this->notificarProfessoresSobreReabertura(
+            $turma,
+            $disciplina,
+            $validated['trimestre'] ?? null,
+            $validated['motivo'] ?? null,
+            $validated['aluno_id'] ?? null,
+            $reabertas
+        );
 
         return back()->with('success', $trimestre
             ? "Reabertura do {$trimestre}o trimestre{$escopoAluno} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
             : "Reabertura geral{$escopoAluno} concluida: {$reabertas} notas reabertas e {$jaAbertas} ja estavam em lancamento.");
+    }
+
+    public function marcarNotificacaoComoLida(string $notificationId): RedirectResponse
+    {
+        $user = auth()->user();
+
+        if (! $user->isProfessor()) {
+            abort(403);
+        }
+
+        $notificacao = $user->notifications()
+            ->where('id', $notificationId)
+            ->where('type', PautaDesbloqueadaNotification::class)
+            ->first();
+
+        if ($notificacao instanceof DatabaseNotification) {
+            $notificacao->markAsRead();
+        }
+
+        return back();
     }
 
     // -------------------------------------------------------------------------
@@ -823,6 +859,47 @@ class NotaController extends Controller
 
         if (! $temAtribuicao) {
             abort(403, 'Voce nao tem permissao para editar esta nota.');
+        }
+    }
+
+    private function notificarProfessoresSobreReabertura(
+        Turma $turma,
+        Disciplina $disciplina,
+        ?string $trimestre,
+        ?string $motivo,
+        ?int $alunoId,
+        int $totalReabertas
+    ): void {
+        if ($totalReabertas <= 0 || $alunoId !== null) {
+            return;
+        }
+
+        $autor = auth()->user();
+
+        if (! $autor->isSecretaria() && ! $autor->isAdmin()) {
+            return;
+        }
+
+        $professores = User::query()
+            ->whereHas('role', fn ($query) => $query->where('name', 'professor'))
+            ->whereHas('atribuicoes', fn ($query) => $query
+                ->where('turma_id', $turma->id)
+                ->where('disciplina_id', $disciplina->id))
+            ->where('ativo', true)
+            ->get();
+
+        if ($professores->isEmpty()) {
+            return;
+        }
+
+        foreach ($professores as $professor) {
+            $professor->notify(new PautaDesbloqueadaNotification(
+                turma: $turma,
+                disciplina: $disciplina,
+                autor: $autor,
+                trimestre: $trimestre,
+                motivo: $motivo
+            ));
         }
     }
 
