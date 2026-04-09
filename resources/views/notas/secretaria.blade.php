@@ -20,10 +20,10 @@
     $totalReprovados = $notasComCfd->filter(fn($n) => !$n->isAprovado())->count();
     $totalPendentes  = $notas->whereNull('cfd')->count();
 
-    $totalFinalizadas  = $notas->where('status', 'finalizado')->count();
-    $totalEmLancamento = $notas->where('status', '!=', 'finalizado')->count();
+    $totalFinalizadas         = $notas->where('status', 'finalizado')->count();
+    $totalEmLancamento        = $notas->where('status', '!=', 'finalizado')->count();
     $totalBloqueadasTrimestre = $notas->filter(fn($n) => $n->bloqueado_t1 || $n->bloqueado_t2 || $n->bloqueado_t3)->count();
-    $opcoesAlunosOperacao = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
+    $opcoesAlunosOperacao     = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
 @endphp
 
 <div id="notas-root">
@@ -42,7 +42,7 @@
                     <div class="nr-field">
                         <label class="nr-label"><i class="fas fa-users"></i> Turma</label>
                         <select name="turma_id" class="nr-input" onchange="this.form.submit()">
-                            <option value="">Todas as turmas</option>
+                            <option value="">Selecionar Turma</option>
                             @foreach($turmas as $turma)
                                 <option value="{{ $turma->id }}" {{ request('turma_id') == $turma->id ? 'selected' : '' }}>
                                     {{ $turma->nome_completo }}
@@ -53,10 +53,10 @@
 
                     <div class="nr-field">
                         <label class="nr-label"><i class="fas fa-book-open"></i> Disciplina <span style="color:#dc2626">*</span></label>
-                            <select name="disciplina_id" class="nr-input {{ !request('turma_id') ? 'nr-disabled' : '' }}"
-                                    {{ !request('turma_id') ? 'disabled' : '' }}
-                                    onchange="this.form.submit()">
-                                <option value="" {{ !request('disciplina_id') ? 'selected' : '' }}>Todas as disciplinas</option>
+                        <select name="disciplina_id" class="nr-input {{ !request('turma_id') ? 'nr-disabled' : '' }}"
+                                {{ !request('turma_id') ? 'disabled' : '' }}
+                                onchange="this.form.submit()">
+                            <option value="" {{ !request('disciplina_id') ? 'selected' : '' }}>Todas as disciplinas</option>
                             @if(request('turma_id') && $disciplinas->isNotEmpty())
                                 @foreach($disciplinas as $disciplina)
                                     <option value="{{ $disciplina->id }}" {{ request('disciplina_id') == $disciplina->id ? 'selected' : '' }}>
@@ -65,8 +65,6 @@
                                 @endforeach
                             @endif
                         </select>
-
-                       
                     </div>
 
                     <div class="nr-field">
@@ -245,16 +243,13 @@
                         @php $cnt = 1; @endphp
                         @forelse($notas as $nota)
                         @php
-                            $temCfd = !is_null($nota->cfd ?? null);
-                            $aprov  = $temCfd && $nota->isAprovado();
-                            $locked = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
-
-                            // Determina estado de bloqueio por trimestre
-                            $t1Bloqueado = $nota->bloqueado_t1 ?? false;
-                            $t2Bloqueado = $nota->bloqueado_t2 ?? false;
-                            $t3Bloqueado = $nota->bloqueado_t3 ?? false;
+                            $temCfd         = !is_null($nota->cfd ?? null);
+                            $aprov          = $temCfd && $nota->isAprovado();
+                            $locked         = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
+                            $t1Bloqueado    = $nota->bloqueado_t1 ?? false;
+                            $t2Bloqueado    = $nota->bloqueado_t2 ?? false;
+                            $t3Bloqueado    = $nota->bloqueado_t3 ?? false;
                             $algumBloqueado = $t1Bloqueado || $t2Bloqueado || $t3Bloqueado;
-                            $todosDesbloqueados = !$algumBloqueado && ($nota->status ?? '') !== 'finalizado';
                         @endphp
                         <tr class="{{ $loop->odd ? 'nr-odd' : '' }}">
                             <td class="nr-td-c nr-muted">{{ $cnt++ }}</td>
@@ -283,25 +278,21 @@
                                     <span class="nr-badge nr-badge-pend"><i class="fas fa-hourglass-half"></i> Pendente</span>
                                 @endif
                             </td>
-
                             {{-- ── COLUNA DE TRIMESTRES ── --}}
                             <td class="nr-td-c">
                                 @if(($nota->status ?? '') === 'finalizado' && !$algumBloqueado)
-                                    {{-- Pauta totalmente finalizada/bloqueada --}}
                                     <div class="nr-tri-wrap">
                                         <span class="nr-tri nr-tri-lock" title="1º Trimestre bloqueado">T1</span>
                                         <span class="nr-tri nr-tri-lock" title="2º Trimestre bloqueado">T2</span>
                                         <span class="nr-tri nr-tri-lock" title="3º Trimestre bloqueado">T3</span>
                                     </div>
                                 @elseif($algumBloqueado)
-                                    {{-- Bloqueio parcial por trimestre --}}
                                     <div class="nr-tri-wrap">
-                                        <span class="nr-tri {{ $t1Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="1º Trimestre {{ $t1Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T1</span>
-                                        <span class="nr-tri {{ $t2Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="2º Trimestre {{ $t2Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T2</span>
-                                        <span class="nr-tri {{ $t3Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="3º Trimestre {{ $t3Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T3</span>
+                                        <span class="nr-tri {{ $t1Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="1º Tri {{ $t1Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T1</span>
+                                        <span class="nr-tri {{ $t2Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="2º Tri {{ $t2Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T2</span>
+                                        <span class="nr-tri {{ $t3Bloqueado ? 'nr-tri-lock' : 'nr-tri-open' }}" title="3º Tri {{ $t3Bloqueado ? 'bloqueado' : 'desbloqueado' }}">T3</span>
                                     </div>
                                 @else
-                                    {{-- Totalmente desbloqueado / em lançamento --}}
                                     <div class="nr-tri-wrap">
                                         <span class="nr-tri nr-tri-open" title="1º Trimestre desbloqueado">T1</span>
                                         <span class="nr-tri nr-tri-open" title="2º Trimestre desbloqueado">T2</span>
@@ -309,7 +300,6 @@
                                     </div>
                                 @endif
                             </td>
-
                             <td class="nr-td-c">
                                 @if($locked)
                                     <span class="nr-act-lock" title="Finalizado"><i class="fas fa-lock"></i></span>
@@ -328,31 +318,30 @@
                 </table>
             </div>
 
-           @else
+            @else
             {{-- ── TODAS AS DISCIPLINAS ── --}}
             @if($notasAgrupadas && $notasAgrupadas->isNotEmpty())
                 @foreach($disciplinas as $disc)
                 @php
                     $notasDaDisciplina = $notas->where('disciplina_id', $disc->id);
-                    $alunosComNota = $notasAgrupadas->filter(fn($d) => $d['notas']->has($disc->id));
                 @endphp
                 @if($notasDaDisciplina->isEmpty()) @continue @endif
 
-                <div class="bg-slate-800/60 rounded-xl border border-slate-700/50 mb-6 overflow-hidden">
+                <div class="bg-white dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700/50 mb-6 overflow-hidden">
                     {{-- Cabeçalho da disciplina --}}
-                    <div class="flex items-center justify-between px-5 py-3.5 bg-slate-900/60 border-b border-slate-700/50">
+                    <div class="flex items-center justify-between px-5 py-3.5 bg-gray-800 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700/50">
                         <div class="flex items-center gap-3">
                             <span class="text-xs font-bold text-white uppercase tracking-widest">{{ $disc->nome }}</span>
-                            <span class="text-xs text-slate-400">{{ $disc->codigo }}</span>
+                            <span class="text-xs text-slate-300 dark:text-slate-400">{{ $disc->codigo }}</span>
                         </div>
                         @php
-                            $cfds = $notasDaDisciplina->whereNotNull('cfd');
-                            $mediaDisc = $cfds->avg('cfd');
-                            $aprovDisc = $cfds->filter(fn($n) => $n->isAprovado())->count();
+                            $cfds       = $notasDaDisciplina->whereNotNull('cfd');
+                            $mediaDisc  = $cfds->avg('cfd');
+                            $aprovDisc  = $cfds->filter(fn($n) => $n->isAprovado())->count();
                             $reprovDisc = $cfds->filter(fn($n) => !$n->isAprovado())->count();
                         @endphp
-                         <div class="flex items-center gap-2 text-xs">
-                            <span class="text-slate-400">Média:</span>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="text-slate-200 dark:text-slate-400">Média:</span>
                             @if($mediaDisc)
                                 <span class="font-bold text-white">{{ number_format($mediaDisc,2) }}</span>
                             @else
@@ -364,11 +353,11 @@
                     </div>
 
                     {{-- Tabela da disciplina --}}
-                    <div class="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50">
+                    <div class="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-gray-100 dark:scrollbar-track-slate-800">
                         <table class="w-full min-w-[900px] border-collapse text-sm">
                             <thead>
-                                <tr style="background:#f8fafc;">
-                                 <tr class="bg-slate-800 dark:bg-slate-800 text-slate-300 text-xs uppercase tracking-wider">
+                                {{-- CORRIGIDO: removida a <tr> duplicada e o <th> CFD duplicado --}}
+                                <tr class="bg-slate-800 dark:bg-slate-800 text-slate-300 text-xs uppercase tracking-wider">
                                     <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center w-8">Nº</th>
                                     <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-left">Aluno</th>
                                     <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">MT1</th>
@@ -387,35 +376,35 @@
                                 @php
                                     $nota = $dados['notas']->get($disc->id);
                                     if (!$nota) continue;
-                                    $aluno   = $dados['aluno'];
-                                    $temCfd  = !is_null($nota->cfd);
-                                    $aprov   = $temCfd && $nota->isAprovado();
-                                    $locked  = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
-                                    $t1B     = $nota->bloqueado_t1 ?? false;
-                                    $t2B     = $nota->bloqueado_t2 ?? false;
-                                    $t3B     = $nota->bloqueado_t3 ?? false;
-                                    $algumB  = $t1B || $t2B || $t3B;
+                                    $aluno  = $dados['aluno'];
+                                    $temCfd = !is_null($nota->cfd);
+                                    $aprov  = $temCfd && $nota->isAprovado();
+                                    $locked = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
+                                    $t1B    = $nota->bloqueado_t1 ?? false;
+                                    $t2B    = $nota->bloqueado_t2 ?? false;
+                                    $t3B    = $nota->bloqueado_t3 ?? false;
+                                    $algumB = $t1B || $t2B || $t3B;
                                 @endphp
-                                <tr class="border-b border-slate-700/50 transition-colors duration-150 hover:bg-white/5 dark:hover:bg-white/5 group @if($loop->even) bg-slate-800/20 @endif">
-                                    <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-500 group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
-                                        <a href="{{ route('users.show', $aluno) }}" class="nr-aluno-link">{{ $aluno->name ?? '—' }}</a>
-                                        <span class="nr-proc">{{ $aluno->numero_processo ?? '' }}</span>
+                                <tr class="border-b border-gray-100 dark:border-slate-700/30 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-slate-700/30 group @if($loop->even) bg-gray-50/80 dark:bg-slate-800/20 @endif">
+                                    <td class="px-4 py-3 text-sm text-gray-400 dark:text-slate-500 group-hover:text-gray-700 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150">
+                                        <a href="{{ route('users.show', $aluno) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">{{ $aluno->name ?? '—' }}</a>
+                                        <span class="text-gray-400 dark:text-slate-500 text-xs">{{ $aluno->numero_processo ?? '' }}</span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt1 ? number_format($nota->mt1,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt2 ? number_format($nota->mt2,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center font-bold">{{ $nota->mft2 ? number_format($nota->mft2,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-center font-bold text-sm bg-blue-900/10">
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt1 ? number_format($nota->mt1,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt2 ? number_format($nota->mt2,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center font-bold">{{ $nota->mft2 ? number_format($nota->mft2,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
+                                    <td class="px-4 py-3 text-center font-bold text-sm bg-blue-50 dark:bg-blue-900/10">
                                         @if($temCfd)
                                             <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd,2) }}</strong>
                                         @else
                                             <span class="nr-muted">—</span>
                                         @endif
                                     </td>
-                                     <td class="px-4 py-3 text-center text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
+                                    <td class="px-4 py-3 text-center text-sm">
                                         @if($temCfd)
-                                            <span class="nr-badge {{ $aprov ? 'nr-badge-ok' : 'nr-badge-fail' }}" style="font-size:.62rem;padding:2px 6px;">
+                                            <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold {{ $aprov ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700/50' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700/50' }}" style="font-size:.62rem;padding:2px 6px;">
                                                 <i class="fas {{ $aprov ? 'fa-check' : 'fa-times' }}"></i>
                                                 {{ $aprov ? 'Apr' : 'Rep' }}
                                             </span>
@@ -423,7 +412,7 @@
                                             <span class="nr-badge nr-badge-pend" style="font-size:.62rem;padding:2px 6px;"><i class="fas fa-hourglass-half"></i> Pend</span>
                                         @endif
                                     </td>
-                                     <td class="px-4 py-3 text-center text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
+                                    <td class="px-4 py-3 text-center text-sm">
                                         @if(($nota->status ?? '') === 'finalizado' && !$algumB)
                                             <div class="nr-tri-wrap">
                                                 <span class="nr-tri nr-tri-lock">T1</span>
@@ -444,11 +433,11 @@
                                             </div>
                                         @endif
                                     </td>
-                                              <td class="px-4 py-3 text-center text-sm text-slate-300 dark:text-slate-300 group-hover:text-white transition-colors duration-150">
+                                    <td class="px-4 py-3 text-center text-sm">
                                         @if($locked)
                                             <span class="nr-act-lock" title="Finalizado"><i class="fas fa-lock"></i></span>
                                         @else
-                                            <a href="{{ route('notas.edit', $nota) }}" class="nr-act-edit" title="Editar"><i class="fas fa-pen"></i></a>
+                                            <a href="{{ route('notas.edit', $nota) }}" class="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-blue-300 dark:border-blue-700/40 bg-blue-100 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-600/40 transition-colors duration-150" title="Editar"><i class="fas fa-pen"></i></a>
                                         @endif
                                     </td>
                                 </tr>
@@ -851,14 +840,14 @@
 }
 .nr-tri:hover { transform: scale(1.12); }
 
-/* Bloqueado — vermelho/cadeado */
+/* Bloqueado — vermelho */
 .nr-tri-lock {
     background: #fef2f2;
     color: #dc2626;
     border: 1.5px solid #fca5a5;
 }
 
-/* Desbloqueado — verde/aberto */
+/* Desbloqueado — verde */
 .nr-tri-open {
     background: #f0fdf4;
     color: #16a34a;
@@ -874,7 +863,6 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ── Validação: disciplina obrigatória se turma selecionada ── */
     var form = document.querySelector('#notas-root form');
     if (form) {
-
         var discSel = form.querySelector('[name="disciplina_id"]');
         if (discSel) {
             discSel.addEventListener('change', function () {
