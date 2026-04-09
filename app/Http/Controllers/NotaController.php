@@ -982,6 +982,26 @@ class NotaController extends Controller
         return back();
     }
 
+    public function marcarNotificacaoComoLida(string $notificationId): RedirectResponse
+    {
+        $user = auth()->user();
+
+        if (! $user->isProfessor()) {
+            abort(403);
+        }
+
+        $notificacao = $user->notifications()
+            ->where('id', $notificationId)
+            ->where('type', PautaDesbloqueadaNotification::class)
+            ->first();
+
+        if ($notificacao instanceof DatabaseNotification) {
+            $notificacao->markAsRead();
+        }
+
+        return back();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers privados
     // -------------------------------------------------------------------------
