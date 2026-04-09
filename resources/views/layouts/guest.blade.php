@@ -325,7 +325,7 @@
         .auth-input {
             width: 100%;
             height: 46px;
-            padding: 0 14px 0 40px;
+            padding: 0 42px 0 40px;
             border: 1.5px solid var(--inp-border, #e2e8f0);
             border-radius: 12px;
             font-size: 14px;

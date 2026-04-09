@@ -155,14 +155,30 @@
         </x-card>
 
         <x-card title="Alterar Senha" icon="fas fa-lock">
-            <form method="POST" action="{{ route('profile.password') }}">
+             <form method="POST" action="{{ route('profile.password') }}" x-data="{ mostrarAtual: false, mostrarNova: false, mostrarConfirmar: false }">
                 @csrf
                 @method('PUT')
 
                 <div class="space-y-4">
                     <div>
                         <label class="label">Senha Atual *</label>
-                        <input type="password" name="current_password" class="input" required>
+                        <div class="relative">
+                            <input :type="mostrarAtual ? 'text' : 'password'" name="current_password" class="input pr-11" required>
+                            <button type="button"
+                                    x-on:click="mostrarAtual = !mostrarAtual"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
+                                    :aria-label="mostrarAtual ? 'Ocultar senha' : 'Mostrar senha'"
+                                    tabindex="-1">
+                                <svg x-show="mostrarAtual" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                <svg x-show="!mostrarAtual" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                </svg>
+                            </button>
+                        </div>
                         @error('current_password')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -171,7 +187,23 @@
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
                             <label class="label">Nova Senha *</label>
-                            <input type="password" name="password" class="input" required minlength="8">
+                             <div class="relative">
+                                <input :type="mostrarNova ? 'text' : 'password'" name="password" class="input pr-11" required minlength="8">
+                                <button type="button"
+                                        x-on:click="mostrarNova = !mostrarNova"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
+                                        :aria-label="mostrarNova ? 'Ocultar senha' : 'Mostrar senha'"
+                                        tabindex="-1">
+                                    <svg x-show="mostrarNova" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <svg x-show="!mostrarNova" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                        <line x1="1" y1="1" x2="23" y2="23"/>
+                                    </svg>
+                                </button>
+                            </div>
                             @error('password')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -179,7 +211,23 @@
 
                         <div>
                             <label class="label">Confirmar Nova Senha *</label>
-                            <input type="password" name="password_confirmation" class="input" required>
+                            <div class="relative">
+                                <input :type="mostrarConfirmar ? 'text' : 'password'" name="password_confirmation" class="input pr-11" required>
+                                <button type="button"
+                                        x-on:click="mostrarConfirmar = !mostrarConfirmar"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
+                                        :aria-label="mostrarConfirmar ? 'Ocultar senha' : 'Mostrar senha'"
+                                        tabindex="-1">
+                                    <svg x-show="mostrarConfirmar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <svg x-show="!mostrarConfirmar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                        <line x1="1" y1="1" x2="23" y2="23"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -312,17 +360,34 @@
                     method="POST"
                     action="{{ route('profile.destroy') }}"
                     onsubmit="return confirm('Tem a certeza? Esta ação não pode ser desfeita!')"
+                    x-data="{ mostrarEliminar: false }"
                 >
                     @csrf
                     @method('DELETE')
 
-                    <input
-                        type="password"
-                        name="password"
-                        placeholder="Confirme a sua palavra-passe"
-                        class="input mb-3"
-                        required
-                    >
+                    <div class="relative mb-3">
+                        <input
+                            :type="mostrarEliminar ? 'text' : 'password'"
+                            name="password"
+                            placeholder="Confirme a sua palavra-passe"
+                            class="input pr-11"
+                            required
+                        >
+                        <button type="button"
+                                x-on:click="mostrarEliminar = !mostrarEliminar"
+                                class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
+                                :aria-label="mostrarEliminar ? 'Ocultar senha' : 'Mostrar senha'"
+                                tabindex="-1">
+                            <svg x-show="mostrarEliminar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg x-show="!mostrarEliminar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
 
                     <button type="submit" class="btn btn-danger w-full">
                         <i class="fas fa-trash mr-2"></i>
