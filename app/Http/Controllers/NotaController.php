@@ -971,6 +971,7 @@ class NotaController extends Controller
             abort(403);
         }
 
+        
         $notificacao = $user->notifications()
             ->where('id', $notificationId)
             ->where('type', PautaDesbloqueadaNotification::class)
