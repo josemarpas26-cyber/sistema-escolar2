@@ -510,6 +510,16 @@
   border-color: var(--ink-300);
   color: var(--ink-800);
 }
+.np-btn-outline {
+  background: transparent;
+  border-color: var(--ink-200);
+  color: var(--ink-700);
+}
+.np-btn-outline:hover {
+  background: var(--surface-2);
+  border-color: var(--ink-300);
+  color: var(--ink-800);
+}
 
 /* Primary */
 .np-btn-primary {
@@ -753,6 +763,12 @@
   flex-shrink: 0;
   letter-spacing: -.01em;
 }
+.np-aluno-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
 .np-aluno-name {
   font-size: 13px;
   font-weight: 600;
@@ -784,6 +800,38 @@
   white-space: nowrap;
 }
 .np-lock-badge.partial { background: var(--amber-50); color: #92400e; }
+
+.np-notification-stack {
+  margin-bottom: 18px;
+  display: grid;
+  gap: 10px;
+}
+.np-notification-item {
+  background: var(--blue-50);
+  border: 1px solid var(--blue-100);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.np-notification-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-600);
+}
+.np-notification-desc {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--ink-700);
+}
+.np-notification-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ink-500);
+}
 
 /* ─── INPUT DE NOTA ─── */
 .np-input-wrap {
@@ -1217,6 +1265,40 @@
     </div>
   </form>
 
+  @if(($notificacoesDesbloqueio ?? collect())->isNotEmpty())
+    <div class="np-notification-stack">
+      @foreach($notificacoesDesbloqueio as $notificacao)
+        @php $dadosNotificacao = $notificacao->data; @endphp
+        <div class="np-notification-item">
+          <div>
+            <p class="np-notification-title">
+              <i class="fas fa-bell mr-1"></i>
+              {{ $dadosNotificacao['titulo'] ?? 'Pauta desbloqueada' }}
+            </p>
+            <p class="np-notification-desc">
+              {{ $dadosNotificacao['descricao'] ?? 'A secretaria desbloqueou uma pauta para edição.' }}
+            </p>
+            <p class="np-notification-meta">
+              {{ $dadosNotificacao['turma_nome'] ?? 'Turma' }} · {{ $dadosNotificacao['disciplina_nome'] ?? 'Disciplina' }}
+              @if(!empty($dadosNotificacao['motivo']))
+                · Motivo: {{ $dadosNotificacao['motivo'] }}
+              @endif
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            @if(!empty($dadosNotificacao['link']))
+              <a href="{{ $dadosNotificacao['link'] }}" class="np-btn np-btn-primary">Abrir pauta</a>
+            @endif
+            <form method="POST" action="{{ route('notas.notificacoes.marcar-lida', $notificacao->id) }}">
+              @csrf
+              <button type="submit" class="np-btn np-btn-outline">Marcar como lida</button>
+            </form>
+          </div>
+        </div>
+      @endforeach
+    </div>
+  @endif
+
   {{-- ═══════════════════════════════════════════════
        CONTEXT BANNER (só quando pauta carregada)
   ═══════════════════════════════════════════════ --}}
@@ -1371,6 +1453,7 @@
                     $locked1 = !$t1Disponivel || (!$podeReabrirNotas && ($nota->status === 'finalizado' || ($nota->bloqueado_t1 ?? false)));
                     $initials = strtoupper(substr($nota->aluno->name ?? 'A', 0, 1));
                     $avatarColor = $avatarColors[crc32($nota->aluno->name ?? '') % count($avatarColors)];
+                    $alunoTemFoto = filled($nota->aluno->foto_perfil ?? null);
                   @endphp
                   <tr class="{{ $locked1 ? 'np-row-readonly' : '' }}"
                       data-aluno="{{ strtolower($nota->aluno->name ?? '') }}">
@@ -1378,7 +1461,13 @@
                     <td class="td-left td-sticky">
                       <input type="hidden" name="notas[{{ $idx }}][id]" value="{{ $nota->id }}">
                       <div class="np-aluno-cell">
-                        <div class="np-aluno-avatar" style="background:{{ $avatarColor }}">{{ $initials }}</div>
+                        <div class="np-aluno-avatar" style="{{ $alunoTemFoto ? '' : 'background:'.$avatarColor }}">
+                          @if($alunoTemFoto)
+                            <img src="{{ $nota->aluno->foto_perfil_url }}" alt="Foto de {{ $nota->aluno->name }}" class="np-aluno-avatar-img">
+                          @else
+                            {{ $initials }}
+                          @endif
+                        </div>
                         <div>
                           <div class="np-aluno-name">{{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
@@ -1527,13 +1616,20 @@
                     $locked2 = !$podeReabrirNotas && ($nota->status === 'finalizado' || ($nota->bloqueado_t2 ?? false));
                     $initials = strtoupper(substr($nota->aluno->name ?? 'A', 0, 1));
                     $avatarColor = $avatarColors[crc32($nota->aluno->name ?? '') % count($avatarColors)];
+                    $alunoTemFoto = filled($nota->aluno->foto_perfil ?? null);
                   @endphp
                   <tr class="{{ $locked2 ? 'np-row-readonly' : '' }}"
                       data-aluno="{{ strtolower($nota->aluno->name ?? '') }}">
                     <td class="td-left td-sticky">
                       <input type="hidden" name="notas[{{ $idx }}][id]" value="{{ $nota->id }}">
                       <div class="np-aluno-cell">
-                        <div class="np-aluno-avatar" style="background:{{ $avatarColor }}">{{ $initials }}</div>
+                        <div class="np-aluno-avatar" style="{{ $alunoTemFoto ? '' : 'background:'.$avatarColor }}">
+                          @if($alunoTemFoto)
+                            <img src="{{ $nota->aluno->foto_perfil_url }}" alt="Foto de {{ $nota->aluno->name }}" class="np-aluno-avatar-img">
+                          @else
+                            {{ $initials }}
+                          @endif
+                        </div>
                         <div>
                           <div class="np-aluno-name">{{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
@@ -1689,13 +1785,20 @@
                     $locked3 = !$podeReabrirNotas && ($nota->status === 'finalizado' || ($nota->bloqueado_t3 ?? false));
                     $initials = strtoupper(substr($nota->aluno->name ?? 'A', 0, 1));
                     $avatarColor = $avatarColors[crc32($nota->aluno->name ?? '') % count($avatarColors)];
+                    $alunoTemFoto = filled($nota->aluno->foto_perfil ?? null);
                   @endphp
                   <tr class="{{ $locked3 ? 'np-row-readonly' : '' }}"
                       data-aluno="{{ strtolower($nota->aluno->name ?? '') }}">
                     <td class="td-left td-sticky">
                       <input type="hidden" name="notas[{{ $idx }}][id]" value="{{ $nota->id }}">
                       <div class="np-aluno-cell">
-                        <div class="np-aluno-avatar" style="background:{{ $avatarColor }}">{{ $initials }}</div>
+                        <div class="np-aluno-avatar" style="{{ $alunoTemFoto ? '' : 'background:'.$avatarColor }}">
+                          @if($alunoTemFoto)
+                            <img src="{{ $nota->aluno->foto_perfil_url }}" alt="Foto de {{ $nota->aluno->name }}" class="np-aluno-avatar-img">
+                          @else
+                            {{ $initials }}
+                          @endif
+                        </div>
                         <div>
                           <div class="np-aluno-name">{{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
