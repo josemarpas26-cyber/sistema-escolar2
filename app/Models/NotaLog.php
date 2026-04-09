@@ -119,6 +119,12 @@ class NotaLog extends Model
             'bloqueado_t1' => 'Bloqueio 1º Trimestre',
             'bloqueado_t2' => 'Bloqueio 2º Trimestre',
             'bloqueado_t3' => 'Bloqueio 3º Trimestre',
+            'bloqueado_pp1' => 'Bloqueio PP 1º Trimestre',
+            'bloqueado_pt1' => 'Bloqueio PT 1º Trimestre',
+            'bloqueado_pp2' => 'Bloqueio PP 2º Trimestre',
+            'bloqueado_pt2' => 'Bloqueio PT 2º Trimestre',
+            'bloqueado_pp3' => 'Bloqueio PP 3º Trimestre',
+            'bloqueado_pg' => 'Bloqueio PG',
             'avaliacao_continua' => 'Avaliação contínua',
         ];
 

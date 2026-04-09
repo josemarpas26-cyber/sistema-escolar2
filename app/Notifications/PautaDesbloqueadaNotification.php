@@ -17,6 +17,7 @@ class PautaDesbloqueadaNotification extends Notification
         private readonly Disciplina $disciplina,
         private readonly User $autor,
         private readonly ?string $trimestre,
+        private readonly ?string $campo,
         private readonly ?string $motivo
     ) {}
 
@@ -27,13 +28,18 @@ class PautaDesbloqueadaNotification extends Notification
 
     public function toArray(object $notifiable): array
     {
-        $titulo = $this->trimestre
-            ? "{$this->trimestre}º trimestre desbloqueado"
-            : 'Pauta reaberta para edição';
+        $campoLabel = $this->campo ? strtoupper($this->campo) : null;
+        $titulo = $this->campo && $this->trimestre
+            ? "{$campoLabel} do {$this->trimestre}º trimestre desbloqueado"
+            : ($this->trimestre
+                ? "{$this->trimestre}º trimestre desbloqueado"
+                : 'Pauta reaberta para edição');
 
-        $descricao = $this->trimestre
-            ? "A secretaria desbloqueou o {$this->trimestre}º trimestre da pauta."
-            : 'A secretaria reabriu a pauta completa para edição.';
+        $descricao = $this->campo && $this->trimestre
+            ? "A secretaria desbloqueou o campo {$campoLabel} do {$this->trimestre}º trimestre."
+            : ($this->trimestre
+                ? "A secretaria desbloqueou o {$this->trimestre}º trimestre da pauta."
+                : 'A secretaria reabriu a pauta completa para edição.');
 
         return [
             'titulo' => $titulo,
@@ -43,6 +49,7 @@ class PautaDesbloqueadaNotification extends Notification
             'disciplina_id' => $this->disciplina->id,
             'disciplina_nome' => $this->disciplina->nome,
             'trimestre' => $this->trimestre,
+            'campo' => $this->campo,
             'motivo' => $this->motivo,
             'autor_nome' => $this->autor->name,
             'link' => route('notas.professor-index', [

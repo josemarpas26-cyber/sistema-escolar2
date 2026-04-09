@@ -28,6 +28,27 @@ class NotaController extends Controller
         '3' => ['mac3', 'pp3', 'pg'],
     ];
 
+    private const CAMPOS_EDITAVEIS_POR_TRIMESTRE = [
+        '1' => ['pp1', 'pt1'],
+        '2' => ['pp2', 'pt2'],
+        '3' => ['pp3', 'pg'],
+    ];
+
+    private const BLOQUEIO_POR_CAMPO = [
+        'pp1' => 'bloqueado_pp1',
+        'pt1' => 'bloqueado_pt1',
+        'pp2' => 'bloqueado_pp2',
+        'pt2' => 'bloqueado_pt2',
+        'pp3' => 'bloqueado_pp3',
+        'pg' => 'bloqueado_pg',
+    ];
+
+    private const CAMPO_OPERACAO_POR_TRIMESTRE = [
+        '1' => ['pp' => 'pp1', 'pt' => 'pt1'],
+        '2' => ['pp' => 'pp2', 'pt' => 'pt2'],
+        '3' => ['pp' => 'pp3', 'pg' => 'pg'],
+    ];
+
     public function __construct(
         private readonly NotaService $notaService,
         private readonly EstatisticasAcademicasService $estatisticasAcademicas
@@ -369,7 +390,7 @@ class NotaController extends Controller
             ? $this->checkPermission('notas.lancar')
             : $this->checkPermission('notas.editar');
 
-        $campos = self::CAMPOS_TRIMESTRE[$trimestre];
+        $campos = self::CAMPOS_EDITAVEIS_POR_TRIMESTRE[$trimestre];
         $rules = ['notas' => 'required|array', 'notas.*.id' => 'required|exists:notas,id'];
 
         foreach ($campos as $campo) {
@@ -419,15 +440,29 @@ class NotaController extends Controller
                     continue;
                 }
 
-                // Atribui os valores do formulário
+                $teveCampoEditavel = false;
+                $teveCampoBloqueado = false;
+
+                // Atribui apenas campos editáveis (PP/PT/PG). MAC é sempre calculado.
                 foreach ($campos as $campo) {
-                    // Só atribui se o campo foi enviado no request
                     if (array_key_exists($campo, $notaData)) {
+                        if ($this->campoEstaBloqueado($nota, $campo)) {
+                            $teveCampoBloqueado = true;
+
+                            continue;
+                        }
+
+                        $teveCampoEditavel = true;
                         $nota->{$campo} = $notaData[$campo];
                     }
                 }
 
-                // Só recalcula e salva se algum campo do trimestre realmente mudou
+                if (! $teveCampoEditavel) {
+                    $teveCampoBloqueado ? $bloqueadas++ : $semAlteracao++;
+
+                    continue;
+                }
+
                 if (! $nota->isDirty($campos)) {
                     $semAlteracao++;
 
@@ -501,6 +536,12 @@ class NotaController extends Controller
             fn ($value) => ! is_null($value)
         ));
 
+        // MAC só pode vir da média de avaliações contínuas.
+        if (! $user->isProfessor()) {
+            unset($validated['mac1'], $validated['mac2'], $validated['mac3']);
+            $camposAlterados = array_values(array_diff($camposAlterados, ['mac1', 'mac2', 'mac3']));
+        }
+
         // 🧠 Mapear campos → trimestre
         foreach (self::CAMPOS_TRIMESTRE as $trimestre => $campos) {
             $intersect = array_intersect($camposAlterados, $campos);
@@ -513,6 +554,14 @@ class NotaController extends Controller
                     throw ValidationException::withMessages([
                         reset($intersect) => $this->mensagemTrimestreNaoAplicavel($nota, (int) $trimestre),
                     ]);
+                }
+
+                foreach ($intersect as $campo) {
+                    if ($this->campoEstaBloqueado($nota, $campo)) {
+                        throw ValidationException::withMessages([
+                            $campo => 'Este campo está bloqueado para edição. Reabra apenas este campo na secretaria para voltar a editar.',
+                        ]);
+                    }
                 }
             }
         }
@@ -612,6 +661,7 @@ class NotaController extends Controller
             'disciplina_id' => 'required|exists:disciplinas,id',
             'motivo' => 'nullable|string|max:500',
             'trimestre' => 'nullable|in:1,2,3',
+            'campo' => 'nullable|in:pp,pt,pg',
             'aluno_id' => 'nullable|exists:users,id',
         ]);
 
@@ -630,6 +680,13 @@ class NotaController extends Controller
 
         $alunoId = $validated['aluno_id'] ?? null;
         $trimestre = $validated['trimestre'] ?? null;
+        $campoOperacao = $validated['campo'] ?? null;
+        $campoConfig = $this->resolverCampoOperacao($trimestre, $campoOperacao);
+
+        if ($campoOperacao && ! $campoConfig) {
+            return back()->with('error', 'Campo selecionado não é válido para o trimestre informado.');
+        }
+
         $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
 
         if ($notas->isEmpty()) {
@@ -639,7 +696,7 @@ class NotaController extends Controller
         // DEPOIS
         $registrarLogPorNota = $alunoId !== null;
 
-        [$finalizadas, $jaFinalizadas] = DB::transaction(function () use ($notas, $trimestre, $registrarLogPorNota) {
+        [$finalizadas, $jaFinalizadas] = DB::transaction(function () use ($notas, $trimestre, $campoOperacao, $campoConfig, $registrarLogPorNota) {
             $finalizadas = 0;
             $jaFinalizadas = 0;
             $notaReferencia = null;
@@ -648,7 +705,17 @@ class NotaController extends Controller
 
             try {
                 foreach ($notas as $nota) {
-                    if ($trimestre) {
+                    if ($campoOperacao && $campoConfig) {
+                        $campoBloqueio = $campoConfig['bloqueio'];
+
+                        if ((bool) $nota->{$campoBloqueio}) {
+                            $jaFinalizadas++;
+
+                            continue;
+                        }
+
+                        $nota->update([$campoBloqueio => true]);
+                    } elseif ($trimestre) {
                         $campo = "bloqueado_t{$trimestre}";
 
                         if ($nota->{$campo}) {
@@ -657,12 +724,23 @@ class NotaController extends Controller
                             continue;
                         }
 
-                        $nota->update([$campo => true]);
+                        $dadosBloqueio = [$campo => true];
+                        foreach (self::CAMPOS_EDITAVEIS_POR_TRIMESTRE[$trimestre] as $campoEditavel) {
+                            $dadosBloqueio[self::BLOQUEIO_POR_CAMPO[$campoEditavel]] = true;
+                        }
+
+                        $nota->update($dadosBloqueio);
                     } else {
                         if ($nota->status === 'finalizado'
                             && $nota->bloqueado_t1
                             && $nota->bloqueado_t2
                             && $nota->bloqueado_t3
+                            && $nota->bloqueado_pp1
+                            && $nota->bloqueado_pt1
+                            && $nota->bloqueado_pp2
+                            && $nota->bloqueado_pt2
+                            && $nota->bloqueado_pp3
+                            && $nota->bloqueado_pg
                         ) {
                             $jaFinalizadas++;
 
@@ -674,6 +752,12 @@ class NotaController extends Controller
                             'bloqueado_t1' => true,
                             'bloqueado_t2' => true,
                             'bloqueado_t3' => true,
+                            'bloqueado_pp1' => true,
+                            'bloqueado_pt1' => true,
+                            'bloqueado_pp2' => true,
+                            'bloqueado_pt2' => true,
+                            'bloqueado_pp3' => true,
+                            'bloqueado_pg' => true,
                         ]);
                     }
 
@@ -681,7 +765,7 @@ class NotaController extends Controller
                     $notaReferencia ??= $nota;
 
                     if ($registrarLogPorNota) {
-                        $this->registrarLogOperacaoPauta($nota, 'finalizacao', $trimestre);
+                        $this->registrarLogOperacaoPauta($nota, 'finalizacao', $trimestre, false, $campoConfig['bloqueio'] ?? null);
                     }
 
                     $finalizadas++;
@@ -691,17 +775,20 @@ class NotaController extends Controller
             }
 
             if (! $registrarLogPorNota && $notaReferencia) {
-                $this->registrarLogOperacaoPauta($notaReferencia, 'finalizacao', $trimestre, true);
+                $this->registrarLogOperacaoPauta($notaReferencia, 'finalizacao', $trimestre, true, $campoConfig['bloqueio'] ?? null);
             }
 
             return [$finalizadas, $jaFinalizadas];
         });
 
         $escopoAluno = $alunoId ? ' para o aluno selecionado' : '';
+        $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
 
-        return back()->with('success', $trimestre
+        return back()->with('success', $labelCampo && $trimestre
+            ? "Bloqueio de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
+            : ($trimestre
             ? "Bloqueio do {$trimestre}o trimestre{$escopoAluno} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
-            : "Finalizacao geral{$escopoAluno} concluida: {$finalizadas} notas finalizadas e {$jaFinalizadas} ja estavam finalizadas.");
+            : "Finalizacao geral{$escopoAluno} concluida: {$finalizadas} notas finalizadas e {$jaFinalizadas} ja estavam finalizadas."));
     }
 
     public function reabrir(Request $request)
@@ -713,6 +800,7 @@ class NotaController extends Controller
             'disciplina_id' => 'required|exists:disciplinas,id',
             'motivo' => 'nullable|string|max:500',
             'trimestre' => 'nullable|in:1,2,3',
+            'campo' => 'nullable|in:pp,pt,pg',
             'aluno_id' => 'nullable|exists:users,id',
         ]);
 
@@ -731,6 +819,13 @@ class NotaController extends Controller
 
         $alunoId = $validated['aluno_id'] ?? null;
         $trimestre = $validated['trimestre'] ?? null;
+        $campoOperacao = $validated['campo'] ?? null;
+        $campoConfig = $this->resolverCampoOperacao($trimestre, $campoOperacao);
+
+        if ($campoOperacao && ! $campoConfig) {
+            return back()->with('error', 'Campo selecionado não é válido para o trimestre informado.');
+        }
+
         $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
 
         if ($notas->isEmpty()) {
@@ -739,7 +834,7 @@ class NotaController extends Controller
 
         $registrarLogPorNota = $alunoId !== null;
 
-        [$reabertas, $jaAbertas] = DB::transaction(function () use ($notas, $trimestre, $registrarLogPorNota) {
+        [$reabertas, $jaAbertas] = DB::transaction(function () use ($notas, $trimestre, $campoOperacao, $campoConfig, $registrarLogPorNota) {
             $reabertas = 0;
             $jaAbertas = 0;
             $notaReferencia = null;
@@ -748,7 +843,29 @@ class NotaController extends Controller
 
             try {
                 foreach ($notas as $nota) {
-                    if ($trimestre) {
+                    if ($campoOperacao && $campoConfig) {
+                        $campoBloqueio = $campoConfig['bloqueio'];
+                        $precisaDesbloquear = (bool) $nota->{$campoBloqueio};
+                        $precisaReabrirStatus = $nota->status === 'finalizado';
+
+                        if (! $precisaDesbloquear && ! $precisaReabrirStatus) {
+                            $jaAbertas++;
+
+                            continue;
+                        }
+
+                        $dadosAtualizacao = [];
+
+                        if ($precisaDesbloquear) {
+                            $dadosAtualizacao[$campoBloqueio] = false;
+                        }
+
+                        if ($precisaReabrirStatus) {
+                            $dadosAtualizacao['status'] = 'em_lancamento';
+                        }
+
+                        $nota->update($dadosAtualizacao);
+                    } elseif ($trimestre) {
                         $campo = "bloqueado_t{$trimestre}";
                         $precisaDesbloquear = (bool) $nota->{$campo};
                         $precisaReabrirStatus = $nota->status === 'finalizado';
@@ -763,6 +880,9 @@ class NotaController extends Controller
 
                         if ($precisaDesbloquear) {
                             $dadosAtualizacao[$campo] = false;
+                            foreach (self::CAMPOS_EDITAVEIS_POR_TRIMESTRE[$trimestre] as $campoEditavel) {
+                                $dadosAtualizacao[self::BLOQUEIO_POR_CAMPO[$campoEditavel]] = false;
+                            }
                         }
 
                         if ($precisaReabrirStatus) {
@@ -774,7 +894,13 @@ class NotaController extends Controller
                         $jaEstaAberto = $nota->status !== 'finalizado'
                             && ! $nota->bloqueado_t1
                             && ! $nota->bloqueado_t2
-                            && ! $nota->bloqueado_t3;
+                            && ! $nota->bloqueado_t3
+                            && ! $nota->bloqueado_pp1
+                            && ! $nota->bloqueado_pt1
+                            && ! $nota->bloqueado_pp2
+                            && ! $nota->bloqueado_pt2
+                            && ! $nota->bloqueado_pp3
+                            && ! $nota->bloqueado_pg;
 
                         if ($jaEstaAberto) {
                             $jaAbertas++;
@@ -787,6 +913,12 @@ class NotaController extends Controller
                             'bloqueado_t1' => false,
                             'bloqueado_t2' => false,
                             'bloqueado_t3' => false,
+                            'bloqueado_pp1' => false,
+                            'bloqueado_pt1' => false,
+                            'bloqueado_pp2' => false,
+                            'bloqueado_pt2' => false,
+                            'bloqueado_pp3' => false,
+                            'bloqueado_pg' => false,
                         ]);
                     }
 
@@ -794,7 +926,7 @@ class NotaController extends Controller
                     $notaReferencia ??= $nota;
 
                     if ($registrarLogPorNota) {
-                        $this->registrarLogOperacaoPauta($nota, 'reabertura', $trimestre);
+                        $this->registrarLogOperacaoPauta($nota, 'reabertura', $trimestre, false, $campoConfig['bloqueio'] ?? null);
                     }
 
                     $reabertas++;
@@ -804,7 +936,7 @@ class NotaController extends Controller
             }
 
             if (! $registrarLogPorNota && $notaReferencia) {
-                $this->registrarLogOperacaoPauta($notaReferencia, 'reabertura', $trimestre, true);
+                $this->registrarLogOperacaoPauta($notaReferencia, 'reabertura', $trimestre, true, $campoConfig['bloqueio'] ?? null);
             }
 
             return [$reabertas, $jaAbertas];
@@ -815,14 +947,39 @@ class NotaController extends Controller
             $turma,
             $disciplina,
             $validated['trimestre'] ?? null,
+            $validated['campo'] ?? null,
             $validated['motivo'] ?? null,
             $validated['aluno_id'] ?? null,
             $reabertas
         );
 
-        return back()->with('success', $trimestre
+        $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
+
+        return back()->with('success', $labelCampo && $trimestre
+            ? "Reabertura de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
+            : ($trimestre
             ? "Reabertura do {$trimestre}o trimestre{$escopoAluno} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
-            : "Reabertura geral{$escopoAluno} concluida: {$reabertas} notas reabertas e {$jaAbertas} ja estavam em lancamento.");
+            : "Reabertura geral{$escopoAluno} concluida: {$reabertas} notas reabertas e {$jaAbertas} ja estavam em lancamento."));
+    }
+
+    public function marcarNotificacaoComoLida(string $notificationId): RedirectResponse
+    {
+        $user = auth()->user();
+
+        if (! $user->isProfessor()) {
+            abort(403);
+        }
+
+        $notificacao = $user->notifications()
+            ->where('id', $notificationId)
+            ->where('type', PautaDesbloqueadaNotification::class)
+            ->first();
+
+        if ($notificacao instanceof DatabaseNotification) {
+            $notificacao->markAsRead();
+        }
+
+        return back();
     }
 
     public function marcarNotificacaoComoLida(string $notificationId): RedirectResponse
@@ -866,6 +1023,7 @@ class NotaController extends Controller
         Turma $turma,
         Disciplina $disciplina,
         ?string $trimestre,
+        ?string $campo,
         ?string $motivo,
         ?int $alunoId,
         int $totalReabertas
@@ -898,6 +1056,7 @@ class NotaController extends Controller
                 disciplina: $disciplina,
                 autor: $autor,
                 trimestre: $trimestre,
+                campo: $campo,
                 motivo: $motivo
             ));
         }
@@ -914,6 +1073,35 @@ class NotaController extends Controller
         }
 
         return $nota->status === 'finalizado';
+    }
+
+    private function campoEstaBloqueado(Nota $nota, string $campo): bool
+    {
+        $campoBloqueio = self::BLOQUEIO_POR_CAMPO[$campo] ?? null;
+
+        if (! $campoBloqueio) {
+            return false;
+        }
+
+        return (bool) ($nota->{$campoBloqueio} ?? false);
+    }
+
+    private function resolverCampoOperacao(?string $trimestre, ?string $campo): ?array
+    {
+        if (! $trimestre || ! $campo) {
+            return null;
+        }
+
+        $campoNota = self::CAMPO_OPERACAO_POR_TRIMESTRE[$trimestre][$campo] ?? null;
+
+        if (! $campoNota) {
+            return null;
+        }
+
+        return [
+            'campo' => $campoNota,
+            'bloqueio' => self::BLOQUEIO_POR_CAMPO[$campoNota],
+        ];
     }
 
     private function validarBloqueioFinalizacao(Nota $nota, ?string $trimestre = null): void
@@ -933,8 +1121,11 @@ class NotaController extends Controller
         Nota $nota,
         string $acao,
         ?string $trimestre = null,
-        bool $acaoGlobal = false
+        bool $acaoGlobal = false,
+        ?string $campoBloqueio = null
     ): void {
+        $campoAlterado = $campoBloqueio ?? ($trimestre ? "bloqueado_t{$trimestre}" : 'pauta_completa');
+
         NotaLog::create([
             'nota_id' => $nota->id,
             'usuario_id' => auth()->id(),
@@ -943,7 +1134,7 @@ class NotaController extends Controller
             'disciplina_id' => $nota->disciplina_id,
             'acao_global' => $acaoGlobal,
             'acao' => $acao,
-            'campo_alterado' => $trimestre ? "bloqueado_t{$trimestre}" : 'pauta_completa',
+            'campo_alterado' => $campoAlterado,
             'valor_anterior' => $acao === 'finalizacao' ? 'em_lancamento' : 'finalizado',
             'valor_novo' => $acao === 'finalizacao' ? 'finalizado' : 'em_lancamento',
             'trimestre' => $trimestre,

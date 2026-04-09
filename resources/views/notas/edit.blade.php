@@ -7,6 +7,7 @@
     $notaFinalizada = $nota->status === 'finalizado';
     $podeReabrirNota = auth()->user()?->hasPermission('notas.reabrir') ?? false;
     $somenteLeitura = $notaFinalizada && !$podeReabrirNota;
+    $bloquearMacDireta = auth()->user()?->isAdmin() || auth()->user()?->isSecretaria();
 @endphp
 
 <div class="max-w-4xl mx-auto">
@@ -48,7 +49,8 @@
                 <div>
                     <label class="label">MAC1</label>
                     <input type="number" name="mac1" value="{{ old('mac1', $nota->mac1) }}" 
-                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura || $bloquearMacDireta ? 'disabled' : '' }}>
+                    @if($bloquearMacDireta)<p class="text-xs text-gray-500 mt-1">MAC é calculada automaticamente pelas avaliações contínuas.</p>@endif
                     @error('mac1')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -77,7 +79,8 @@
                 <div>
                     <label class="label">MAC2</label>
                     <input type="number" name="mac2" value="{{ old('mac2', $nota->mac2) }}" 
-                          step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                          step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura || $bloquearMacDireta ? 'disabled' : '' }}>
+                    @if($bloquearMacDireta)<p class="text-xs text-gray-500 mt-1">MAC é calculada automaticamente pelas avaliações contínuas.</p>@endif
                     @error('mac2')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -111,7 +114,8 @@
                 <div>
                     <label class="label">MAC3</label>
                     <input type="number" name="mac3" value="{{ old('mac3', $nota->mac3) }}" 
-                                 step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                                 step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura || $bloquearMacDireta ? 'disabled' : '' }}>
+                    @if($bloquearMacDireta)<p class="text-xs text-gray-500 mt-1">MAC é calculada automaticamente pelas avaliações contínuas.</p>@endif
                     @error('mac3')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
