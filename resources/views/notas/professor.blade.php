@@ -70,8 +70,8 @@
 }
 
 /* ═══ RESET SCOPE ═══ */
-#np-root * { box-sizing: border-box; font-family: var(--font-body); }
-#np-root { font-size: 14px; color: var(--ink-800); }
+#np-root * { box-sizing: border-box; }
+#np-root { font-size: 14px; color: var(--ink-800); font-family: var(--font-body); }
 
 /* ═══════════════════════════════════════════════════════════════
    HEADER SELECTOR
