@@ -4,6 +4,7 @@ use App\Http\Controllers\AnoLetivoController;
 use App\Http\Controllers\CursoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaController;
+use App\Http\Controllers\FormulaAvaliacaoController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\NotaController;
 use App\Http\Controllers\RelatorioController;
@@ -102,6 +103,17 @@ Route::middleware(['auth'])->group(function () {
         ->name('anos-letivos.encerrar');
     Route::post('anos-letivos/{anoLetivo}/reativar', [AnoLetivoController::class, 'reativar'])
         ->name('anos-letivos.reativar');
+
+
+    Route::resource('formulas', FormulaAvaliacaoController::class)->except(['destroy']);
+    Route::post('formulas/{formula}/restaurar-versoes/{versao}', [FormulaAvaliacaoController::class, 'restaurarVersao'])
+        ->name('formulas.restaurar-versao');
+    Route::post('formulas/{formula}/avaliacoes', [FormulaAvaliacaoController::class, 'storeAvaliacao'])
+        ->name('formulas.avaliacoes.store');
+    Route::put('formulas/{formula}/avaliacoes/{avaliacao}', [FormulaAvaliacaoController::class, 'updateAvaliacao'])
+        ->name('formulas.avaliacoes.update');
+    Route::delete('formulas/{formula}/avaliacoes/{avaliacao}', [FormulaAvaliacaoController::class, 'destroyAvaliacao'])
+        ->name('formulas.avaliacoes.destroy');
 
     Route::get('relatorios', [RelatorioController::class, 'index'])
         ->name('relatorios.index');

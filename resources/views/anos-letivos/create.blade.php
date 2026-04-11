@@ -46,6 +46,31 @@
 
                 </div>
 
+
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="herdar_configuracoes" value="1" {{ old('herdar_configuracoes') ? 'checked' : '' }}
+                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" id="herdar-config">
+                        <span class="ml-2 text-sm font-semibold text-amber-800">Herdar configurações do ano anterior</span>
+                    </label>
+
+                    <div id="bloco-heranca" class="{{ old('herdar_configuracoes') ? '' : 'hidden' }}">
+                        <label class="label">Ano origem</label>
+                        <select name="ano_origem_id" class="input">
+                            <option value="">Selecione o ano para clonar fórmulas</option>
+                            @foreach(($anosParaHerdar ?? collect()) as $ano)
+                                <option value="{{ $ano->id }}" {{ old('ano_origem_id') == $ano->id ? 'selected' : '' }}>
+                                    {{ $ano->nome }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('ano_origem_id')
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+
                 <!-- Informações -->
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div class="flex items-start">
@@ -102,6 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const dataInicio = document.querySelector('[name="data_inicio"]');
     const dataFim = document.querySelector('[name="data_fim"]');
     const nomeInput = document.querySelector('[name="nome"]');
+    const herdarCheck = document.getElementById('herdar-config');
+    const blocoHeranca = document.getElementById('bloco-heranca');
 
     // Sugerir nome baseado nas datas
     function sugerirNome() {
@@ -133,6 +160,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Validação manual caso o usuário digite no campo nome
+
+    herdarCheck?.addEventListener('change', function() {
+        blocoHeranca?.classList.toggle('hidden', !herdarCheck.checked);
+    });
+
     nomeInput.addEventListener('input', function() {
         const regex = /^20\d{2}\/20\d{2}$/;
         if (!regex.test(nomeInput.value)) {

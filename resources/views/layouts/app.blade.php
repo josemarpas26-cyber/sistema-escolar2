@@ -777,6 +777,11 @@
                class="nav-item {{ request()->routeIs('anos-letivos.*') ? 'active' : '' }}">
                 <span class="nav-item-icon"><i class="fas fa-calendar-alt"></i></span>Anos Letivos
             </a>
+
+            <a href="{{ route('formulas.index') }}"
+               class="nav-item {{ request()->routeIs('formulas.*') ? 'active' : '' }}">
+                <span class="nav-item-icon"><i class="fas fa-calculator"></i></span>Fórmulas
+            </a>
             @endif
 
             <div class="nav-section-label">Académico</div>

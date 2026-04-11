@@ -40,6 +40,12 @@ class Disciplina extends Model
         return $this->hasMany(Nota::class);
     }
 
+
+    public function avaliacoesDinamicas()
+    {
+        return $this->hasMany(AvaliacaoDinamica::class);
+    }
+
     public function coordenador()
     {
         return $this->belongsTo(User::class, 'coordenador_id');

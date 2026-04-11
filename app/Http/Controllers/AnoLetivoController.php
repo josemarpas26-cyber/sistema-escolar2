@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
+use App\Services\FormulaAvaliacaoCloneService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -39,7 +40,9 @@ class AnoLetivoController extends Controller
                 ->with('error', 'O ano letivo atual ainda não foi encerrado! Encerre-o antes de criar um novo.');
         }
 
-        return view('anos-letivos.create');
+        $anosParaHerdar = AnoLetivo::where('id', '!=', optional($anoAtivo)->id)->orderByDesc('id')->get();
+
+        return view('anos-letivos.create', compact('anosParaHerdar'));
     }
 
     /**
@@ -59,6 +62,8 @@ class AnoLetivoController extends Controller
             'nome' => 'required|string|max:20|unique:anos_letivos,nome',
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after:data_inicio',
+            'herdar_configuracoes' => 'nullable|boolean',
+            'ano_origem_id' => 'nullable|required_if:herdar_configuracoes,1|exists:anos_letivos,id',
         ]);
 
 
@@ -81,10 +86,17 @@ class AnoLetivoController extends Controller
 
         // Criar novo ano ativo
         $ano = AnoLetivo::create([
-            ...$validated,
+            'nome' => $validated['nome'],
+            'data_inicio' => $validated['data_inicio'],
+            'data_fim' => $validated['data_fim'],
             'ativo' => true,
             'encerrado' => false,
         ]);
+
+        if ((bool) ($validated['herdar_configuracoes'] ?? false)) {
+            $origem = AnoLetivo::findOrFail($validated['ano_origem_id']);
+            app(FormulaAvaliacaoCloneService::class)->clonar($origem, $ano, auth()->id());
+        }
 
         return redirect()
             ->route('anos-letivos.show', $ano)
@@ -135,6 +147,8 @@ public function show(AnoLetivo $anoLetivo)
             'nome' => 'required|string|max:20|unique:anos_letivos,nome,' . $anoLetivo->id,
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after:data_inicio',
+            'herdar_configuracoes' => 'nullable|boolean',
+            'ano_origem_id' => 'nullable|required_if:herdar_configuracoes,1|exists:anos_letivos,id',
         ]);
 
         $anoLetivo->update($validated);
