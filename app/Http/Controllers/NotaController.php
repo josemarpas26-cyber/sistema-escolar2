@@ -11,6 +11,7 @@ use App\Models\NotaLog;
 use App\Models\Turma;
 use App\Models\User;
 use App\Notifications\PautaDesbloqueadaNotification;
+use App\Services\EstadoMatriculaService;
 use App\Services\EstatisticasAcademicasService;
 use App\Services\NotaService;
 use Illuminate\Notifications\DatabaseNotification;
@@ -51,7 +52,8 @@ class NotaController extends Controller
 
     public function __construct(
         private readonly NotaService $notaService,
-        private readonly EstatisticasAcademicasService $estatisticasAcademicas
+        private readonly EstatisticasAcademicasService $estatisticasAcademicas,
+        private readonly EstadoMatriculaService $estadoMatriculaService
     ) {}
 
     // -------------------------------------------------------------------------
@@ -570,6 +572,7 @@ class NotaController extends Controller
         $this->notaService->recalcularNota($nota);
         \App\Observers\NotaObserver::$suprimirLogs = false;
         $nota->save();
+        $this->estadoMatriculaService->sincronizarAlunoNaTurma($nota->turma_id, $nota->aluno_id);
 
         return redirect()
             ->route('notas.index', [
@@ -783,6 +786,11 @@ class NotaController extends Controller
 
         $escopoAluno = $alunoId ? ' para o aluno selecionado' : '';
         $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
+        if ($alunoId) {
+            $this->estadoMatriculaService->sincronizarAlunoNaTurma($turma->id, (int) $alunoId);
+        } else {
+            $this->estadoMatriculaService->sincronizarTurma($turma->id);
+        }
 
         return back()->with('success', $labelCampo && $trimestre
             ? "Bloqueio de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
@@ -954,6 +962,11 @@ class NotaController extends Controller
         );
 
         $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
+        if ($alunoId) {
+            $this->estadoMatriculaService->sincronizarAlunoNaTurma($turma->id, (int) $alunoId);
+        } else {
+            $this->estadoMatriculaService->sincronizarTurma($turma->id);
+        }
 
         return back()->with('success', $labelCampo && $trimestre
             ? "Reabertura de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."

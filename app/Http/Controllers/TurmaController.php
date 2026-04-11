@@ -344,12 +344,17 @@ class TurmaController extends Controller
     {
         $this->checkPermission('turmas.edit');
 
-        // Atualizar status ao invés de deletar (manter histórico)
-        $turma->alunos()->updateExistingPivot($aluno->id, [
-            'status' => 'transferido',
-        ]);
+        return $this->atualizarStatusAluno($turma, $aluno, 'transferido', 'Aluno removido da turma!');
+    }
 
-        return back()->with('success', 'Aluno removido da turma!');
+    /**
+     * Marcar aluno como desistente
+     */
+    public function marcarDesistente(Turma $turma, User $aluno)
+    {
+        $this->checkPermission('turmas.edit');
+
+        return $this->atualizarStatusAluno($turma, $aluno, 'desistente', 'Aluno marcado como desistente!');
     }
 
     /**
@@ -630,5 +635,33 @@ class TurmaController extends Controller
                 'success',
                 "Turma promovida para {$novaClasse}ª classe. " . implode(' ', $partes)
             );
+    }
+
+    private function atualizarStatusAluno(Turma $turma, User $aluno, string $status, string $mensagemSucesso)
+    {
+        $statusPermitidos = ['transferido', 'desistente'];
+
+        if (! in_array($status, $statusPermitidos, true)) {
+            return back()->with('error', 'Status de matrícula inválido.');
+        }
+
+        $pivot = DB::table('turma_aluno')
+            ->where('turma_id', $turma->id)
+            ->where('aluno_id', $aluno->id)
+            ->first();
+
+        if (! $pivot) {
+            return back()->with('error', 'O aluno não está vinculado a esta turma.');
+        }
+
+        if (in_array($pivot->status, ['transferido', 'desistente'], true)) {
+            return back()->with('warning', 'O aluno já se encontra inativo nesta turma.');
+        }
+
+        $turma->alunos()->updateExistingPivot($aluno->id, [
+            'status' => $status,
+        ]);
+
+        return back()->with('success', $mensagemSucesso);
     }
 }
