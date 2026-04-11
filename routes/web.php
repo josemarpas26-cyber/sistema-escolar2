@@ -51,6 +51,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('turmas.matricular-aluno');
     Route::delete('turmas/{turma}/alunos/{aluno}', [TurmaController::class, 'removerAluno'])
         ->name('turmas.remover-aluno');
+    Route::patch('turmas/{turma}/alunos/{aluno}/desistente', [TurmaController::class, 'marcarDesistente'])
+        ->name('turmas.marcar-desistente');
     Route::post('turmas/{turma}/atribuir-professor', [TurmaController::class, 'atribuirProfessor'])
         ->name('turmas.atribuir-professor');
     Route::delete('turmas/{turma}/atribuicoes/{atribuicao}', [TurmaController::class, 'removerProfessor'])

@@ -134,6 +134,14 @@
                                                 <i class="fas fa-user-minus"></i>
                                             </button>
                                         </form>
+                                        <form method="POST" action="{{ route('turmas.marcar-desistente', [$turma, $aluno]) }}" class="inline ml-3">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-yellow-600 hover:text-yellow-800"
+                                                    onclick="return confirm('Deseja marcar este aluno como desistente?')">
+                                                <i class="fas fa-user-slash"></i>
+                                            </button>
+                                        </form>
                                     @endif
 
                                     </td>
