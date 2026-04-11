@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\AvaliacaoContinua;
+use App\Models\ConfiguracaoAvaliacao;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -12,6 +13,8 @@ class Nota extends Model
     use HasFactory;
 
     public const SENTINELA_AUSENCIA = -1.0;
+
+    private static array $configuracaoCache = [];
 
     protected $fillable = [
         'aluno_id',
@@ -75,16 +78,17 @@ class Nota extends Model
         return $this->hasMany(AvaliacaoContinua::class)->orderBy('trimestre')->orderBy('data_avaliacao')->orderBy('id');
     }
 
-    public function recalcular(): void
+    public function recalcular(?ConfiguracaoAvaliacao $configuracaoAvaliacao = null): void
     {
         $this->assertRelacoesCarregadas();
 
         $classe = (int) $this->turma->classe;
+        $configuracaoAvaliacao ??= $this->resolveConfiguracaoAvaliacao();
 
-        $this->calcularMediasTrimestre1e2();
+        $this->calcularMediasTrimestre1e2($configuracaoAvaliacao);
 
         match ($classe) {
-            10, 11, 12 => $this->calcularTrimestre3($classe),
+            10, 11, 12 => $this->calcularTrimestre3($classe, $configuracaoAvaliacao),
             default => $this->limparCamposFinais(),
         };
     }
@@ -107,21 +111,12 @@ class Nota extends Model
         }
     }
 
-    private function calcularMediasTrimestre1e2(): void
+    private function calcularMediasTrimestre1e2(ConfiguracaoAvaliacao $configuracaoAvaliacao): void
     {
-        $this->limparTrimestresNaoAplicaveis();
+        $this->limparTrimestresNaoAplicaveis($configuracaoAvaliacao);
 
-        $this->mt1 = $this->calcularMediaComSentinela([
-            $this->mac1,
-            $this->pp1,
-            $this->pt1,
-        ], 3);
-
-        $this->mt2 = $this->calcularMediaComSentinela([
-            $this->mac2,
-            $this->pp2,
-            $this->pt2,
-        ], 3);
+        $this->mt1 = $this->calcularMediaDinamica(1, $configuracaoAvaliacao);
+        $this->mt2 = $this->calcularMediaDinamica(2, $configuracaoAvaliacao);
 
         if (! $this->trimestreEstaDisponivel(2)) {
             $this->mft2 = null;
@@ -142,33 +137,57 @@ class Nota extends Model
             : null;
     }
 
-    private function calcularTrimestre3(int $classe): void
+    private function calcularTrimestre3(int $classe, ConfiguracaoAvaliacao $configuracaoAvaliacao): void
     {
-        $this->mt3 = $this->calcularMediaComSentinela([
-            $this->mac3,
-            $this->pp3,
-        ], 2);
+        $this->mt3 = $this->calcularMediaDinamica(3, $configuracaoAvaliacao);
 
         $this->cf = $this->calcularClassificacaoFinalComRegraEspecial();
 
+        $pesoPg = (float) ($configuracaoAvaliacao->peso_pg ?? 40);
+        $pesoCf = 100 - $pesoPg;
+
         $this->ca = $this->cf !== null && $this->pg !== null
-            ? round((0.6 * $this->cf) + (0.4 * $this->pg), 2)
+            ? round((($pesoCf / 100) * $this->cf) + (($pesoPg / 100) * $this->pg), 2)
             : null;
 
         $this->atualizarCfd($classe);
     }
 
-    private function calcularMediaComSentinela(array $campos, int $divisor): ?float
+    private function calcularMediaDinamica(int $periodo, ConfiguracaoAvaliacao $configuracaoAvaliacao): ?float
     {
-        if (collect($campos)->contains(fn ($valor) => $valor === null)) {
+        $provas = $configuracaoAvaliacao->provas
+            ->where('periodo', $periodo)
+            ->where('ativo', true)
+            ->values();
+
+        if ($provas->isEmpty()) {
             return null;
         }
 
-        if (collect($campos)->every(fn ($valor) => (float) $valor === self::SENTINELA_AUSENCIA)) {
-            return null;
+        $somaPonderada = 0.0;
+        $somaPesos = 0.0;
+
+        foreach ($provas as $prova) {
+            $codigo = $prova->codigo;
+
+            if (! array_key_exists($codigo, $this->attributes)) {
+                continue;
+            }
+
+            $valor = $this->{$codigo};
+
+            if ($valor === null || (float) $valor === self::SENTINELA_AUSENCIA) {
+                continue;
+            }
+
+            $peso = (float) $prova->peso;
+            $somaPonderada += ((float) $valor) * $peso;
+            $somaPesos += $peso;
         }
 
-        return round(array_sum($campos) / $divisor, 2);
+        return $somaPesos > 0
+            ? round($somaPonderada / $somaPesos, 2)
+            : null;
     }
 
     private function calcularClassificacaoFinalComRegraEspecial(): ?float
@@ -184,19 +203,15 @@ class Nota extends Model
             : null;
     }
 
-    private function limparTrimestresNaoAplicaveis(): void
+    private function limparTrimestresNaoAplicaveis(ConfiguracaoAvaliacao $configuracaoAvaliacao): void
     {
         if (! $this->trimestreEstaDisponivel(1)) {
-            $this->mac1 = null;
-            $this->pp1 = null;
-            $this->pt1 = null;
+            $this->limparCamposDasProvasDoPeriodo($configuracaoAvaliacao, 1);
             $this->mt1 = null;
         }
 
         if (! $this->trimestreEstaDisponivel(2)) {
-            $this->mac2 = null;
-            $this->pp2 = null;
-            $this->pt2 = null;
+            $this->limparCamposDasProvasDoPeriodo($configuracaoAvaliacao, 2);
             $this->mt2 = null;
             $this->mft2 = null;
         }
@@ -256,6 +271,52 @@ class Nota extends Model
         return $inicioAno->copy()->addDays(($trimestre - 1) * $duracaoTrimestre);
     }
 
+    private function limparCamposDasProvasDoPeriodo(ConfiguracaoAvaliacao $configuracaoAvaliacao, int $periodo): void
+    {
+        $codigos = $configuracaoAvaliacao->provas
+            ->where('periodo', $periodo)
+            ->pluck('codigo')
+            ->filter(fn (string $codigo) => array_key_exists($codigo, $this->attributes));
+
+        foreach ($codigos as $codigo) {
+            $this->{$codigo} = null;
+        }
+    }
+
+    private function resolveConfiguracaoAvaliacao(): ConfiguracaoAvaliacao
+    {
+        if (isset(self::$configuracaoCache[$this->ano_letivo_id])) {
+            return self::$configuracaoCache[$this->ano_letivo_id];
+        }
+
+        $configuracao = ConfiguracaoAvaliacao::with('provas')
+            ->where('ano_letivo_id', $this->ano_letivo_id)
+            ->first();
+
+        if (! $configuracao) {
+            $padrao = ConfiguracaoAvaliacao::estruturaPadrao();
+
+            $configuracao = new ConfiguracaoAvaliacao([
+                'ano_letivo_id' => $this->ano_letivo_id,
+                'peso_pg' => $padrao['peso_pg'],
+                'nota_minima_aprovacao' => $padrao['nota_minima_aprovacao'],
+            ]);
+
+            $provas = collect($padrao['provas'])
+                ->flatMap(fn (array $provas, int $periodo) => collect($provas)->map(fn (array $prova) => new ProvaAvaliacao([
+                    ...$prova,
+                    'periodo' => $periodo,
+                ])))
+                ->values();
+
+            $configuracao->setRelation('provas', $provas);
+        }
+
+        self::$configuracaoCache[$this->ano_letivo_id] = $configuracao;
+
+        return $configuracao;
+    }
+
     private function atualizarCfd(int $classeAtual): void
     {
         $this->cfd = null;
@@ -308,7 +369,9 @@ class Nota extends Model
 
     public function isAprovado(): bool
     {
-        return $this->cfd !== null && $this->cfd >= 10;
+        $notaMinima = (float) ($this->resolveConfiguracaoAvaliacao()->nota_minima_aprovacao ?? 10);
+
+        return $this->cfd !== null && $this->cfd >= $notaMinima;
     }
 
     public function getStatusFinalAttribute(): string
@@ -317,6 +380,8 @@ class Nota extends Model
             return 'Em andamento';
         }
 
-        return $this->cfd >= 10 ? 'Aprovado' : 'Reprovado';
+        $notaMinima = (float) ($this->resolveConfiguracaoAvaliacao()->nota_minima_aprovacao ?? 10);
+
+        return $this->cfd >= $notaMinima ? 'Aprovado' : 'Reprovado';
     }
 }

@@ -723,7 +723,7 @@ class RelatorioController extends Controller
             $anoLetivoAtivo
         );
 
-        $anoLetivo = AnoLetivo::find($anoLetivoId);
+        $anoLetivo = AnoLetivo::with('configuracaoAvaliacao.provas')->find($anoLetivoId);
 
         $notasQuery = Nota::where('turma_id', $turma->id)
             ->where('ano_letivo_id', $anoLetivoId)
@@ -788,24 +788,24 @@ class RelatorioController extends Controller
 
     private function configuracaoNotasBoletimMassa(string $trimestre): array
     {
-        return match ($trimestre) {
-            '1' => [
-                ['key' => 'mt1', 'label' => 'MT1'],
-            ],
-            '2' => [
-                ['key' => 'mt1', 'label' => 'MT1'],
-                ['key' => 'mt2', 'label' => 'MT2'],
-                ['key' => 'mft2', 'label' => 'MFT2'],
-            ],
-            '3' => [
-                ['key' => 'mt1', 'label' => 'MT1'],
-                ['key' => 'mt2', 'label' => 'MT2'],
-                ['key' => 'mt3', 'label' => 'MT3'],
-            ],
-            default => [
-                ['key' => 'cfd', 'label' => 'CFD'],
-            ],
-        };
+        $turmaId = request('turma_id');
+        $turma = $turmaId ? Turma::with('anoLetivo.configuracaoAvaliacao.provas')->find($turmaId) : null;
+        $config = $turma?->anoLetivo?->configuracaoAvaliacao;
+
+        if (! $config || ! in_array($trimestre, ['1', '2', '3'], true)) {
+            return [['key' => 'cfd', 'label' => 'CFD']];
+        }
+
+        return $config->provas
+            ->where('periodo', (int) $trimestre)
+            ->where('ativo', true)
+            ->sortBy('ordem')
+            ->map(fn ($prova) => [
+                'key' => $prova->codigo,
+                'label' => strtoupper($prova->codigo),
+            ])
+            ->values()
+            ->all();
     }
 
     private function labelPeriodoBoletimMassa(string $trimestre): string

@@ -186,37 +186,41 @@
         $notasIndex[$nota->aluno_id][$nota->disciplina_id] = $nota;
     }
 
-    $colsDisciplina = match($trimestre) {
-        '1'     => [
-            ['campo' => 'mac1', 'label' => 'MAC', 'tipo' => 'normal'],
-            ['campo' => 'pp1',  'label' => 'PP',  'tipo' => 'normal'],
-            ['campo' => 'pt1',  'label' => 'PT',  'tipo' => 'normal'],
-            ['campo' => 'mt1',  'label' => 'MT1', 'tipo' => 'mt'],
-        ],
-        '2'     => [
-            ['campo' => 'mac2', 'label' => 'MAC', 'tipo' => 'normal'],
-            ['campo' => 'pp2',  'label' => 'PP',  'tipo' => 'normal'],
-            ['campo' => 'pt2',  'label' => 'PT',  'tipo' => 'normal'],
-            ['campo' => 'mt2',  'label' => 'MT2', 'tipo' => 'mt'],
-            ['campo' => 'mft2', 'label' => 'MFT', 'tipo' => 'mt'],
-        ],
-        '3'     => [
-            ['campo' => 'mac3', 'label' => 'MAC', 'tipo' => 'normal'],
-            ['campo' => 'pp3',  'label' => 'PP',  'tipo' => 'normal'],
-            ['campo' => 'mt3',  'label' => 'MT3', 'tipo' => 'mt'],
-            ['campo' => 'cf',   'label' => 'CF',  'tipo' => 'mt'],
-            ['campo' => 'pg',   'label' => 'PG',  'tipo' => 'normal'],
-            ['campo' => 'ca',   'label' => 'CA',  'tipo' => 'ca'],
-        ],
-        default => [
+    $configAvaliacao = $anoLetivo?->configuracaoAvaliacao ?? $turma->anoLetivo?->configuracaoAvaliacao;
+    $colsDisciplina = [];
+
+    if (in_array($trimestre, ['1','2','3'], true) && $configAvaliacao) {
+        $colsDisciplina = $configAvaliacao->provas
+            ->where('periodo', (int) $trimestre)
+            ->where('ativo', true)
+            ->sortBy('ordem')
+            ->map(fn($prova) => ['campo' => $prova->codigo, 'label' => strtoupper($prova->codigo), 'tipo' => 'normal'])
+            ->values()
+            ->all();
+
+        $colsDisciplina[] = ['campo' => 'mt'.$trimestre, 'label' => 'MT'.$trimestre, 'tipo' => 'mt'];
+
+        if ($trimestre === '2') {
+            $colsDisciplina[] = ['campo' => 'mft2', 'label' => 'MFT2', 'tipo' => 'mt'];
+        }
+
+        if ($trimestre === '3') {
+            $colsDisciplina[] = ['campo' => 'cf', 'label' => 'CF', 'tipo' => 'mt'];
+            $colsDisciplina[] = ['campo' => 'pg', 'label' => 'PG', 'tipo' => 'normal'];
+            $colsDisciplina[] = ['campo' => 'ca', 'label' => 'CA', 'tipo' => 'ca'];
+        }
+    }
+
+    if (empty($colsDisciplina)) {
+        $colsDisciplina = [
             ['campo' => 'mt1', 'label' => 'MT1', 'tipo' => 'mt'],
             ['campo' => 'mt2', 'label' => 'MT2', 'tipo' => 'mt'],
             ['campo' => 'mt3', 'label' => 'MT3', 'tipo' => 'mt'],
             ['campo' => 'pg',  'label' => 'PG',  'tipo' => 'normal'],
             ['campo' => 'ca',  'label' => 'CA',  'tipo' => 'ca'],
             ['campo' => 'cfd', 'label' => 'CFD', 'tipo' => 'cfd'],
-        ],
-    };
+        ];
+    }
 
     $numCols   = count($colsDisciplina);
     $campoMT   = match($trimestre) { '1' => 'mt1', '2' => 'mt2', '3' => 'mt3', default => 'cfd' };
@@ -280,10 +284,7 @@
 <div class="legenda">
     <strong>Legenda:</strong>
     @if(!$isFinal)
-        MAC = Média de Avaliações Contínuas &nbsp;|&nbsp; PP = Prova do Professor &nbsp;|&nbsp;
-        @if($trimestre == '1') PT = Prova Trimestral &nbsp;|&nbsp; MT1 = Média 1º Trim @endif
-        @if($trimestre == '2') PT = Prova Trimestral &nbsp;|&nbsp; MT2 = Média 2º Trim &nbsp;|&nbsp; MFT = Média Final até T2 @endif
-        @if($trimestre == '3') MT3 = Média 3º Trim &nbsp;|&nbsp; CF = Classificação Final &nbsp;|&nbsp; PG = Prova Global &nbsp;|&nbsp; CA = Classificação Anual @endif
+        Provas configuradas dinamicamente para o período selecionado &nbsp;|&nbsp; MT = Média Trimestral
     @else
         MT1/MT2/MT3 = Médias Trimestrais &nbsp;|&nbsp; PG = Prova Global &nbsp;|&nbsp; CA = Classif. Anual &nbsp;|&nbsp; CFD = Classif. Final Disciplina &nbsp;|&nbsp; ✓ Aprovado ≥ 10
     @endif

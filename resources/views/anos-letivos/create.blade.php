@@ -61,23 +61,9 @@
                     </div>
                 </div>
 
-                <!-- Status -->
-                <div>
-                    <label class="flex items-center">
-                        <input type="checkbox" name="ativo" value="1" checked 
-                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
-                        <span class="ml-2 text-sm font-medium text-gray-700">
-                            Ativar este ano letivo
-                        </span>
-                    </label>
-                    <p class="text-xs text-gray-500 ml-6 mt-1">
-                        Se marcado, este ano será definido como o ano letivo ativo
-                    </p>
-                </div>
 
             </div>
 
-            <!-- Ações -->
             <div class="mt-6 flex justify-end space-x-3">
                 <a href="{{ route('anos-letivos.index') }}" class="btn btn-outline">
                     <i class="fas fa-times mr-2"></i>
@@ -90,6 +76,8 @@
             </div>
 
         </x-card>
+
+        @include('anos-letivos.partials._configuracao_avaliacao')
     </div>
 
 </form>

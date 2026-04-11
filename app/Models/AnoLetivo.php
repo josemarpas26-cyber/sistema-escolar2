@@ -41,6 +41,11 @@ class AnoLetivo extends Model
         return $this->hasMany(ProfessorTurmaDisciplina::class);
     }
 
+    public function configuracaoAvaliacao()
+    {
+        return $this->hasOne(ConfiguracaoAvaliacao::class);
+    }
+
     // Scope para pegar o ano letivo ativo
     public function scopeAtivo($query)
     {
