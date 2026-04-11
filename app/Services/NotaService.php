@@ -16,7 +16,7 @@ class NotaService
      * Relações que o model Nota exige para recalcular().
      * Centralizado aqui para não divergir entre chamadas.
      */
-    private const RELACOES_RECALCULO = ['aluno.turmas', 'anoLetivo', 'turma.curso', 'disciplina', 'turma'];
+    private const RELACOES_RECALCULO = ['aluno.turmas', 'anoLetivo.configuracaoAvaliacao.provas', 'turma.curso', 'disciplina', 'turma'];
 
     public function criarNotasParaTurma(Turma $turma, Disciplina $disciplina): int
     {

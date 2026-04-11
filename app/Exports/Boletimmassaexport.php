@@ -77,6 +77,8 @@ public function __construct(
     ?? config('app.caminho_logo') 
     ?? public_path('images/logo1.png'); // 🔹 Logo configurável
 
+    $this->turma->loadMissing('anoLetivo.configuracaoAvaliacao.provas');
+
     $this->alunos = $turma->alunos()
         ->wherePivot('status', 'matriculado')
         ->orderBy('name')
@@ -392,34 +394,35 @@ private function colunas(string $colInicio): array
 
 private function getConfiguracaoNotas(): array
 {
-    return match ($this->trimestre) {
-        '1' => [['key' => 0, 'label' => 'MT1']],
-        '2' => [
-            ['key' => 0, 'label' => 'MT1'],
-            ['key' => 1, 'label' => 'MT2'],
-            ['key' => 2, 'label' => 'MFT2'],
-        ],
-        '3' => [
-            ['key' => 0, 'label' => 'MT1'],
-            ['key' => 1, 'label' => 'MT2'],
-            ['key' => 2, 'label' => 'MT3'],
-        ],
-        default => [['key' => 2, 'label' => 'CFD']],
-    };
+    $config = $this->turma->anoLetivo?->configuracaoAvaliacao;
+
+    if (! $config || ! in_array($this->trimestre, ['1', '2', '3'], true)) {
+        return [['key' => 'cfd', 'label' => 'CFD']];
+    }
+
+    return $config->provas
+        ->where('periodo', (int) $this->trimestre)
+        ->where('ativo', true)
+        ->sortBy('ordem')
+        ->map(fn ($prova) => [
+            'key' => $prova->codigo,
+            'label' => strtoupper($prova->codigo),
+        ])
+        ->values()
+        ->all();
 }
 
 private function valoresPeriodo(Nota $nota): array
 {
     $fmt = fn ($v) => $v !== null ? number_format((float) $v, 2, ',', '') : '';
-    return [
-        0 => $fmt($nota->mt1),
-        1 => $fmt($nota->mt2),
-        2 => match ($this->trimestre) {
-            '2' => $fmt($nota->mft2),
-            '3' => $fmt($nota->mt3),
-            default => $fmt($nota->cfd),
-        },
-    ];
+    $valores = [];
+
+    foreach ($this->getConfiguracaoNotas() as $config) {
+        $chave = $config['key'];
+        $valores[$chave] = $fmt($nota->{$chave} ?? null);
+    }
+
+    return $valores;
 }
 
 private function labelPeriodo(): string

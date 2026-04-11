@@ -178,6 +178,42 @@
 
     </div>
 
+
+    @if($anoLetivo->configuracaoAvaliacao)
+    <x-card title="Configuração de Avaliação" icon="fas fa-sliders-h">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+            <div><span class="text-gray-600">Peso da PG:</span> <strong>{{ number_format($anoLetivo->configuracaoAvaliacao->peso_pg, 2, ',', '.') }}%</strong></div>
+            <div><span class="text-gray-600">Nota mínima:</span> <strong>{{ number_format($anoLetivo->configuracaoAvaliacao->nota_minima_aprovacao, 2, ',', '.') }}</strong></div>
+        </div>
+        @foreach([1,2,3] as $periodo)
+            @php
+                $provas = $anoLetivo->configuracaoAvaliacao->provas->where('periodo', $periodo)->sortBy('ordem');
+                $somaAtivas = (float) $provas->where('ativo', true)->sum('peso');
+            @endphp
+            <div class="mb-4">
+                <h4 class="font-semibold mb-2">{{ $periodo }}º Trimestre</h4>
+                <table class="min-w-full text-sm border">
+                    <thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left">Prova</th><th class="px-3 py-2 text-left">Código</th><th class="px-3 py-2 text-right">Peso</th><th class="px-3 py-2 text-right">Peso Normalizado</th><th class="px-3 py-2 text-center">Status</th></tr></thead>
+                    <tbody>
+                        @foreach($provas as $prova)
+                            @php
+                                $pesoNormalizado = $prova->ativo && $somaAtivas > 0 ? ((float) $prova->peso / $somaAtivas) * 100 : 0;
+                            @endphp
+                            <tr class="border-t">
+                                <td class="px-3 py-2">{{ $prova->nome }}</td>
+                                <td class="px-3 py-2"><code>{{ $prova->codigo }}</code></td>
+                                <td class="px-3 py-2 text-right">{{ number_format($prova->peso, 4, ',', '.') }}</td>
+                                <td class="px-3 py-2 text-right">{{ number_format($pesoNormalizado, 2, ',', '.') }}%</td>
+                                <td class="px-3 py-2 text-center">{!! $prova->ativo ? '<span class="text-green-600 font-semibold">Ativa</span>' : '<span class="text-gray-500">Inativa</span>' !!}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endforeach
+    </x-card>
+    @endif
+
 </div>
 
 @endsection

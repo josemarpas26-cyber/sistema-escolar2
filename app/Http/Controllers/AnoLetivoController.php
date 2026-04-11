@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
+use App\Models\ConfiguracaoAvaliacao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class AnoLetivoController extends Controller
 {
-    /**
-     * Listar anos letivos
-     */
     public function index()
     {
         $this->checkPermission('anos.create');
@@ -22,36 +22,29 @@ class AnoLetivoController extends Controller
         return view('anos-letivos.index', compact('anosLetivos'));
     }
 
-
-    /**
-     * Formulário de criação
-     */
     public function create()
     {
         $this->checkPermission('anos.create');
 
-        // Verificar se há ano ativo não encerrado
         $anoAtivo = AnoLetivo::ativo()->first();
-        
-        if ($anoAtivo && !$anoAtivo->encerrado) {
+
+        if ($anoAtivo && ! $anoAtivo->encerrado) {
             return redirect()
                 ->route('anos-letivos.index')
                 ->with('error', 'O ano letivo atual ainda não foi encerrado! Encerre-o antes de criar um novo.');
         }
 
-        return view('anos-letivos.create');
+        $configuracaoPadrao = $this->configuracaoInicial();
+
+        return view('anos-letivos.create', compact('configuracaoPadrao'));
     }
 
-    /**
-     * Salvar novo ano letivo
-     */
     public function store(Request $request)
     {
         $this->checkPermission('anos.create');
 
-        // Verificar novamente
         $anoAtivo = AnoLetivo::ativo()->first();
-        if ($anoAtivo && !$anoAtivo->encerrado) {
+        if ($anoAtivo && ! $anoAtivo->encerrado) {
             return back()->with('error', 'O ano letivo atual ainda não foi encerrado!');
         }
 
@@ -59,16 +52,21 @@ class AnoLetivoController extends Controller
             'nome' => 'required|string|max:20|unique:anos_letivos,nome',
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after:data_inicio',
+            'peso_pg' => 'required|numeric|gt:0|lt:100',
+            'nota_minima_aprovacao' => 'required|numeric|min:0|max:20',
+            'provas' => 'required|array',
+            'provas.*' => 'required|array',
+            'provas.*.*.nome' => 'required|string|max:120',
+            'provas.*.*.codigo' => ['required', 'regex:/^[a-z][a-z0-9_]*$/'],
+            'provas.*.*.peso' => 'required|numeric|gt:0',
+            'provas.*.*.ativo' => 'nullable|boolean',
         ]);
 
-
-        // Extrair anos do nome (ex: 2024/2025)
         [$anoInicio, $anoFim] = explode('/', $validated['nome']);
 
         $dataInicio = \Carbon\Carbon::parse($validated['data_inicio']);
         $dataFim = \Carbon\Carbon::parse($validated['data_fim']);
 
-        // Validar se pertencem ao intervalo correto
         if ($dataInicio->year != $anoInicio || $dataFim->year != $anoFim) {
             return back()->withInput()->with(
                 'error',
@@ -76,47 +74,66 @@ class AnoLetivoController extends Controller
             );
         }
 
-        // Desativar todos os anos anteriores
-        AnoLetivo::query()->update(['ativo' => false]);
+        $this->validarConfiguracaoAvaliacao($validated['provas']);
 
-        // Criar novo ano ativo
-        $ano = AnoLetivo::create([
-            ...$validated,
-            'ativo' => true,
-            'encerrado' => false,
-        ]);
+        $ano = DB::transaction(function () use ($validated) {
+            AnoLetivo::query()->update(['ativo' => false]);
+
+            $ano = AnoLetivo::create([
+                'nome' => $validated['nome'],
+                'data_inicio' => $validated['data_inicio'],
+                'data_fim' => $validated['data_fim'],
+                'ativo' => true,
+                'encerrado' => false,
+            ]);
+
+            $configuracao = ConfiguracaoAvaliacao::create([
+                'ano_letivo_id' => $ano->id,
+                'peso_pg' => $validated['peso_pg'],
+                'nota_minima_aprovacao' => $validated['nota_minima_aprovacao'],
+            ]);
+
+            foreach ($validated['provas'] as $periodo => $provas) {
+                foreach (array_values($provas) as $index => $prova) {
+                    $configuracao->provas()->create([
+                        'periodo' => (int) $periodo,
+                        'nome' => $prova['nome'],
+                        'codigo' => $prova['codigo'],
+                        'peso' => $prova['peso'],
+                        'ativo' => (bool) ($prova['ativo'] ?? false),
+                        'ordem' => $index + 1,
+                    ]);
+                }
+            }
+
+            return $ano;
+        });
 
         return redirect()
             ->route('anos-letivos.show', $ano)
             ->with('success', 'Ano letivo criado com sucesso!');
     }
 
-    /**
-     * Exibir ano letivo
-     */
-public function show(AnoLetivo $anoLetivo)
-{
-    $this->checkPermission('anos.create');
+    public function show(AnoLetivo $anoLetivo)
+    {
+        $this->checkPermission('anos.create');
 
-    $anoLetivo->load(['turmas.curso']);
+        $anoLetivo->load(['turmas.curso', 'configuracaoAvaliacao.provas']);
 
-    $turmaIds = $anoLetivo->turmas->pluck('id');
+        $turmaIds = $anoLetivo->turmas->pluck('id');
 
-    $stats = [
-        'total_turmas' => $anoLetivo->turmas->count(),
-        'total_alunos' => DB::table('turma_aluno')
-            ->whereIn('turma_id', $turmaIds)
-            ->where('status', 'matriculado')
-            ->count(),
-        'total_notas'  => $anoLetivo->notas()->count(),
-    ];
+        $stats = [
+            'total_turmas' => $anoLetivo->turmas->count(),
+            'total_alunos' => DB::table('turma_aluno')
+                ->whereIn('turma_id', $turmaIds)
+                ->where('status', 'matriculado')
+                ->count(),
+            'total_notas'  => $anoLetivo->notas()->count(),
+        ];
 
-    return view('anos-letivos.show', compact('anoLetivo', 'stats'));
-}
+        return view('anos-letivos.show', compact('anoLetivo', 'stats'));
+    }
 
-    /**
-     * Formulário de edição
-     */
     public function edit(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.create');
@@ -124,9 +141,6 @@ public function show(AnoLetivo $anoLetivo)
         return view('anos-letivos.edit', compact('anoLetivo'));
     }
 
-    /**
-     * Atualizar ano letivo
-     */
     public function update(Request $request, AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.create');
@@ -144,9 +158,6 @@ public function show(AnoLetivo $anoLetivo)
             ->with('success', 'Ano letivo atualizado com sucesso!');
     }
 
-    /**
-     * Encerrar ano letivo
-     */
     public function encerrar(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.encerrar');
@@ -155,16 +166,6 @@ public function show(AnoLetivo $anoLetivo)
             return back()->with('error', 'Este ano letivo já está encerrado!');
         }
 
-        /* 🔒 Impedir encerramento antes da data de fim (checagem barata primeiro)
-        if (now()->startOfDay()->lt($anoLetivo->data_fim->startOfDay())) {
-            return back()->with('error',
-                'Não é possível encerrar o ano letivo antes de '
-                . $anoLetivo->data_fim->format('d/m/Y') . '.'
-            );
-        }
-            */
-
-        // ── QUERY 1, 2, 3: Eager-load (turmas + pivot disciplinas + pivot alunos)
         $anoLetivo->load([
             'turmas.disciplinas',
             'turmas.alunos' => fn($q) => $q->wherePivot('status', 'matriculado'),
@@ -172,8 +173,6 @@ public function show(AnoLetivo $anoLetivo)
 
         $turmaIds = $anoLetivo->turmas->pluck('id');
 
-        // ── QUERY 4: Uma única query agrupada para TODAS as notas
-        // Filtrar notas apenas de alunos matriculados
         $notasPorTurma = \App\Models\Nota::where('ano_letivo_id', $anoLetivo->id)
             ->whereIn('turma_id', $turmaIds)
             ->whereNotNull('cfd')
@@ -184,18 +183,16 @@ public function show(AnoLetivo $anoLetivo)
                     ->whereColumn('turma_aluno.turma_id', 'notas.turma_id')
                     ->where('turma_aluno.status', 'matriculado');
             })
-            
             ->groupBy('turma_id')
             ->select('turma_id', DB::raw('COUNT(*) as total'))
             ->pluck('total', 'turma_id');
 
-        // ── LOOP: Zero queries (tudo já está em memória)
         foreach ($anoLetivo->turmas as $turma) {
-            $totalAlunos      = $turma->alunos->count();       // ← Collection (sem parênteses)
-            $totalDisciplinas = $turma->disciplinas->count();   // ← Collection (sem parênteses)
+            $totalAlunos      = $turma->alunos->count();
+            $totalDisciplinas = $turma->disciplinas->count();
             $totalEsperado    = $totalAlunos * $totalDisciplinas;
 
-            $totalNotasLancadas = $notasPorTurma[$turma->id] ?? 0;  // ← lookup O(1)
+            $totalNotasLancadas = $notasPorTurma[$turma->id] ?? 0;
 
             if ($totalNotasLancadas < $totalEsperado) {
                 return back()->with(
@@ -205,7 +202,6 @@ public function show(AnoLetivo $anoLetivo)
             }
         }
 
-        // ── QUERY 5: Update final
         $anoLetivo->update([
             'encerrado' => true,
             'ativo'     => false,
@@ -214,30 +210,21 @@ public function show(AnoLetivo $anoLetivo)
         return back()->with('success', 'Ano letivo encerrado com sucesso!');
     }
 
-
-    /**
-     * Reativar ano letivo
-     */
-
     public function reativar(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.create');
 
-        if ($anoLetivo->ativo && !$anoLetivo->encerrado) {
+        if ($anoLetivo->ativo && ! $anoLetivo->encerrado) {
             return back()->with('error', 'Este ano letivo já está ativo!');
         }
 
         DB::transaction(function () use ($anoLetivo) {
-
-            // Lock em todos os anos letivos
             AnoLetivo::lockForUpdate()->get();
 
-            // Desativa todos
             AnoLetivo::query()->update([
                 'ativo' => false,
             ]);
 
-            // Reativa o escolhido
             $anoLetivo->update([
                 'ativo' => true,
                 'encerrado' => false,
@@ -247,14 +234,10 @@ public function show(AnoLetivo $anoLetivo)
         return back()->with('success', 'Ano letivo ativado com sucesso!');
     }
 
-    /**
-     * Deletar ano letivo
-     */
     public function destroy(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.create');
 
-        // Verificar se há turmas associadas
         if ($anoLetivo->turmas()->count() > 0) {
             return back()->with('error', 'Não é possível deletar um ano letivo com turmas associadas!');
         }
@@ -264,5 +247,66 @@ public function show(AnoLetivo $anoLetivo)
         return redirect()
             ->route('anos-letivos.index')
             ->with('success', 'Ano letivo deletado com sucesso!');
+    }
+
+    private function configuracaoInicial(): array
+    {
+        $ultimoAno = AnoLetivo::with('configuracaoAvaliacao.provas')->latest('id')->first();
+
+        if ($ultimoAno?->configuracaoAvaliacao) {
+            $config = $ultimoAno->configuracaoAvaliacao;
+
+            $provasPorPeriodo = [1 => [], 2 => [], 3 => []];
+            foreach ($config->provas as $prova) {
+                $provasPorPeriodo[$prova->periodo][] = [
+                    'nome' => $prova->nome,
+                    'codigo' => $prova->codigo,
+                    'peso' => (float) $prova->peso,
+                    'ativo' => (bool) $prova->ativo,
+                ];
+            }
+
+            return [
+                'peso_pg' => (float) $config->peso_pg,
+                'nota_minima_aprovacao' => (float) $config->nota_minima_aprovacao,
+                'provas' => $provasPorPeriodo,
+            ];
+        }
+
+        return ConfiguracaoAvaliacao::estruturaPadrao();
+    }
+
+    private function validarConfiguracaoAvaliacao(array $provasPorPeriodo): void
+    {
+        $colunasNota = Schema::getColumnListing('notas');
+        $codigos = [];
+
+        foreach ([1, 2, 3] as $periodo) {
+            $provas = collect($provasPorPeriodo[$periodo] ?? []);
+            $ativas = $provas->filter(fn (array $prova) => (bool) ($prova['ativo'] ?? false));
+
+            if ($ativas->isEmpty()) {
+                throw ValidationException::withMessages([
+                    "provas.$periodo" => "O período {$periodo} deve ter pelo menos uma prova ativa.",
+                ]);
+            }
+
+            foreach ($provas as $index => $prova) {
+                $codigo = $prova['codigo'] ?? null;
+                if (! in_array($codigo, $colunasNota, true)) {
+                    throw ValidationException::withMessages([
+                        "provas.$periodo.$index.codigo" => "O código '{$codigo}' não existe na tabela de notas.",
+                    ]);
+                }
+
+                if (in_array($codigo, $codigos, true)) {
+                    throw ValidationException::withMessages([
+                        "provas.$periodo.$index.codigo" => "Código de prova duplicado: {$codigo}.",
+                    ]);
+                }
+
+                $codigos[] = $codigo;
+            }
+        }
     }
 }
