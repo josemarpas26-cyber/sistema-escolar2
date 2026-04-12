@@ -90,6 +90,58 @@
         </div>
     </div>
 
+    @if($podeFinalizarNotas || $podeReabrirNotas)
+        <div class="nr-card nr-mb">
+            <div class="nr-card-head">
+                <i class="fas fa-layer-group nr-head-icon"></i>
+                <span>Ações em massa por ano letivo</span>
+            </div>
+            <div class="nr-card-body">
+                <div style="display:flex;flex-wrap:wrap;gap:10px">
+                    @if($podeFinalizarNotas)
+                        <form method="POST" action="{{ route('notas.finalizar') }}" onsubmit="return confirm('Deseja finalizar todas as turmas do ano letivo ativo?')">
+                            @csrf
+                            <button type="submit" class="nr-btn nr-btn-primary">
+                                <i class="fas fa-lock"></i> Finalizar todas as turmas
+                            </button>
+                        </form>
+                    @endif
+
+                    @if($podeReabrirNotas)
+                        <form method="POST" action="{{ route('notas.reabrir') }}" onsubmit="return confirm('Deseja reabrir todas as turmas do ano letivo ativo?')">
+                            @csrf
+                            <button type="submit" class="nr-btn nr-btn-ghost">
+                                <i class="fas fa-lock-open"></i> Reabrir todas as turmas
+                            </button>
+                        </form>
+                    @endif
+
+                    @if($turmaSelecionada)
+                        @if($podeFinalizarNotas)
+                            <form method="POST" action="{{ route('notas.finalizar') }}" onsubmit="return confirm('Deseja finalizar todas as pautas da turma selecionada?')">
+                                @csrf
+                                <input type="hidden" name="turma_id" value="{{ $turmaSelecionada->id }}">
+                                <button type="submit" class="nr-btn nr-btn-primary">
+                                    <i class="fas fa-user-lock"></i> Finalizar turma selecionada
+                                </button>
+                            </form>
+                        @endif
+
+                        @if($podeReabrirNotas)
+                            <form method="POST" action="{{ route('notas.reabrir') }}" onsubmit="return confirm('Deseja reabrir todas as pautas da turma selecionada?')">
+                                @csrf
+                                <input type="hidden" name="turma_id" value="{{ $turmaSelecionada->id }}">
+                                <button type="submit" class="nr-btn nr-btn-ghost">
+                                    <i class="fas fa-user-edit"></i> Reabrir turma selecionada
+                                </button>
+                            </form>
+                        @endif
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if($turmaSelecionada)
 
         {{-- ██ CABEÇALHO DA SELEÇÃO ██ --}}
