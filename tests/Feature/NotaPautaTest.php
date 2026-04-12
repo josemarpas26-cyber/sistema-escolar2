@@ -481,6 +481,138 @@ class NotaPautaTest extends TestCase
         $this->assertNull($nota->mt1);
     }
 
+    public function test_ca_10_fica_somente_leitura_quando_aluno_ja_tem_turma_da_classe_anterior(): void
+    {
+        $adminRole = $this->createRoleWithPermissions('admin', ['notas.editar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $admin = User::factory()->create(['role_id' => $adminRole->id]);
+        $aluno = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        $anoAnterior = AnoLetivo::create([
+            'nome' => '2024/2025',
+            'data_inicio' => '2024-09-01',
+            'data_fim' => '2025-07-31',
+            'ativo' => false,
+            'encerrado' => true,
+        ]);
+
+        $anoAtual = AnoLetivo::create([
+            'nome' => '2025/2026',
+            'data_inicio' => '2025-09-01',
+            'data_fim' => '2026-07-31',
+            'ativo' => true,
+            'encerrado' => false,
+        ]);
+
+        $coordenador = User::factory()->create();
+
+        $curso = Curso::create([
+            'nome' => 'Curso Teste',
+            'codigo' => 'CT1',
+            'coordenador_id' => $coordenador->id,
+            'ativo' => true,
+        ]);
+
+        $turma10Anterior = Turma::create([
+            'nome' => 'A',
+            'classe' => '10',
+            'curso_id' => $curso->id,
+            'ano_letivo_id' => $anoAnterior->id,
+            'coordenador_turma_id' => $coordenador->id,
+            'capacidade' => 40,
+            'ativo' => true,
+        ]);
+
+        $turma11Atual = Turma::create([
+            'nome' => 'A',
+            'classe' => '11',
+            'curso_id' => $curso->id,
+            'ano_letivo_id' => $anoAtual->id,
+            'coordenador_turma_id' => $coordenador->id,
+            'capacidade' => 40,
+            'ativo' => true,
+        ]);
+
+        $aluno->turmas()->attach($turma10Anterior->id, [
+            'data_matricula' => '2024-09-10',
+            'status' => 'concluido',
+        ]);
+
+        $disciplina = Disciplina::create([
+            'nome' => 'Matematica',
+            'codigo' => 'MAT2',
+            'descricao' => 'Disciplina de teste',
+            'leciona_10' => true,
+            'leciona_11' => true,
+            'leciona_12' => true,
+            'disciplina_terminal' => false,
+            'ativo' => true,
+        ]);
+
+        $nota = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma11Atual->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoAtual->id,
+            'status' => 'em_lancamento',
+            'ca_10' => 13.0,
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->put(route('notas.update', $nota), [
+                'ca_10' => 17.5,
+            ])
+            ->assertSessionHasErrors('ca_10');
+
+        $nota->refresh();
+        $this->assertSame(13.0, (float) $nota->ca_10);
+    }
+
+    public function test_secretaria_pode_atualizar_pauta_e_carregar_alunos_sem_notas_lancadas(): void
+    {
+        $adminRole = $this->createRoleWithPermissions('admin', ['notas.editar', 'notas.view_all']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $admin = User::factory()->create(['role_id' => $adminRole->id]);
+        $aluno1 = User::factory()->create(['role_id' => $alunoRole->id]);
+        $aluno2 = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
+
+        $turma->alunos()->attach($aluno1->id, [
+            'data_matricula' => '2025-09-02',
+            'status' => 'matriculado',
+        ]);
+
+        $turma->alunos()->attach($aluno2->id, [
+            'data_matricula' => '2025-09-03',
+            'status' => 'matriculado',
+        ]);
+
+        $this->assertSame(0, Nota::count());
+
+        $this
+            ->actingAs($admin)
+            ->post(route('notas.inicializar-pauta'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ])
+            ->assertRedirect(route('notas.index', [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ]));
+
+        $this->assertSame(2, Nota::count());
+        $this->assertDatabaseHas('notas', [
+            'aluno_id' => $aluno1->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+    }
+
     private function createEstruturaAcademica(array $overrides = []): array
     {
         $anoLetivo = AnoLetivo::create([

@@ -1746,16 +1746,6 @@
               </div>
               <div class="np-toolbar-right">
                 <div class="np-kbd-hint"><span class="np-kbd">Tab</span><span>entre campos</span></div>
-                @if($turma->classe != '10')
-                <form method="POST" action="{{ route('notas.importar-cas') }}" style="display:inline">
-                  @csrf
-                  <input type="hidden" name="turma_id" value="{{ $turma->id }}">
-                  <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
-                  <button type="submit" class="np-btn np-btn-ghost" {{ $t3AllLocked ? 'disabled' : '' }}>
-                    <i class="fas fa-download np-btn-ico"></i> Importar CAs
-                  </button>
-                </form>
-                @endif
                 <button type="submit" class="np-btn np-btn-success"
                         :class="{ 'np-btn-loading': saving }"
                         :disabled="{{ $t3AllLocked ? 'true' : 'false' }} || saving">
