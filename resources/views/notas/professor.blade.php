@@ -1323,19 +1323,7 @@
         Pauta completa
       </div>
       @endif
-      @if($turma->classe != '10')
-      <form method="POST" action="{{ route('notas.importar-cas') }}" style="display:inline">
-        @csrf
-        <input type="hidden" name="turma_id" value="{{ $turma->id }}">
-        <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
-        <button
-          type="submit"
-          class="np-btn np-btn-outline"
-          title="Importa CA da classe anterior (nota interna e, se faltar, histórico acadêmico).">
-          <i class="fas fa-download np-btn-ico"></i> Importar CAs
-        </button>
-      </form>
-      @endif
+
     </div>
   </div>
   @endif
