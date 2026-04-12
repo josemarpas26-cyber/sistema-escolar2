@@ -1751,7 +1751,11 @@
                   @csrf
                   <input type="hidden" name="turma_id" value="{{ $turma->id }}">
                   <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
-                  <button type="submit" class="np-btn np-btn-ghost" {{ $t3AllLocked ? 'disabled' : '' }}>
+                  <button
+                    type="submit"
+                    class="np-btn np-btn-ghost"
+                    title="Importa CA da classe anterior (nota interna e, se faltar, histórico acadêmico)."
+                    {{ $t3AllLocked ? 'disabled' : '' }}>
                     <i class="fas fa-download np-btn-ico"></i> Importar CAs
                   </button>
                 </form>
