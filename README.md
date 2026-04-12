@@ -64,3 +64,25 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Backup automático da base de dados
+
+Foi adicionado o comando `php artisan backup:database`, com agendamento diário pelo Laravel Scheduler.
+
+- **Horário padrão:** `02:00` (configurável via `DB_BACKUP_SCHEDULE` no `.env`).
+- **Retenção padrão:** 14 dias (configurável via `DB_BACKUP_RETENTION_DAYS`).
+- **Destino dos ficheiros:** `storage/app/backups/database`.
+
+### Ativar execução automática no servidor
+
+Garanta que o cron do sistema executa o scheduler do Laravel a cada minuto:
+
+```bash
+* * * * * cd /caminho/do/projeto && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Também pode testar manualmente:
+
+```bash
+php artisan backup:database
+```
