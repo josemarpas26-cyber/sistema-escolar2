@@ -498,7 +498,9 @@ class NotaController extends Controller
 
         $nota->load(['aluno.turmas', 'anoLetivo', 'turma', 'disciplina']);
 
-        return view('notas.edit', compact('nota'));
+        $camposCaSomenteLeitura = $this->resolverCamposCaSomenteLeitura($nota);
+
+        return view('notas.edit', compact('nota', 'camposCaSomenteLeitura'));
     }
 
     public function update(Request $request, Nota $nota)
@@ -532,6 +534,21 @@ class NotaController extends Controller
 
         // 🔍 Detectar quais campos estão sendo alterados
         $nota->loadMissing(['aluno.turmas', 'anoLetivo']);
+
+        $camposCaSomenteLeitura = $this->resolverCamposCaSomenteLeitura($nota);
+        $mensagensCamposBloqueados = [];
+
+        foreach ($camposCaSomenteLeitura as $campo => $somenteLeitura) {
+            if (! $somenteLeitura || ! $request->has($campo)) {
+                continue;
+            }
+
+            $mensagensCamposBloqueados[$campo] = 'Este campo é somente leitura porque o aluno já tem turma associada na classe anterior.';
+        }
+
+        if (! empty($mensagensCamposBloqueados)) {
+            throw ValidationException::withMessages($mensagensCamposBloqueados);
+        }
 
         $camposAlterados = array_keys(array_filter(
             $validated,
@@ -1443,6 +1460,25 @@ class NotaController extends Controller
         }
 
         return now();
+    }
+
+    private function resolverCamposCaSomenteLeitura(Nota $nota): array
+    {
+        $classeAtual = (int) $nota->turma->classe;
+
+        return [
+            'ca_10' => $classeAtual >= 11 && $this->alunoTemTurmaDaClasseAnterior($nota, 10),
+            'ca_11' => $classeAtual >= 12 && $this->alunoTemTurmaDaClasseAnterior($nota, 11),
+        ];
+    }
+
+    private function alunoTemTurmaDaClasseAnterior(Nota $nota, int $classeAnterior): bool
+    {
+        return $nota->aluno
+            ->turmas()
+            ->where('classe', (string) $classeAnterior)
+            ->where('ano_letivo_id', '<', $nota->ano_letivo_id)
+            ->exists();
     }
 
 }
