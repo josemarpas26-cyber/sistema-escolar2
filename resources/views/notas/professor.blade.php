@@ -1323,6 +1323,7 @@
         Pauta completa
       </div>
       @endif
+
     </div>
   </div>
   @endif
