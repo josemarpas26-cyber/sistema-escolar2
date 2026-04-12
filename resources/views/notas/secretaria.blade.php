@@ -114,6 +114,14 @@
             </div>
             @if($disciplinaSelecionada)
                 <div class="nr-sel-actions">
+                    <form method="POST" action="{{ route('notas.inicializar-pauta') }}">
+                        @csrf
+                        <input type="hidden" name="turma_id" value="{{ $turmaSelecionada->id }}">
+                        <input type="hidden" name="disciplina_id" value="{{ $disciplinaSelecionada->id }}">
+                        <button type="submit" class="nr-btn nr-btn-primary" title="Atualiza a pauta com todos os alunos matriculados, mesmo sem notas lançadas">
+                            <i class="fas fa-sync-alt"></i> Atualizar alunos da turma
+                        </button>
+                    </form>
                     <a href="{{ route('notas.avaliacoes-continuas.index', ['turma_id' => $turmaSelecionada->id, 'disciplina_id' => $disciplinaSelecionada->id]) }}"
                        class="nr-btn nr-btn-ghost">
                         <i class="fas fa-list-ol"></i> Avaliações Contínuas

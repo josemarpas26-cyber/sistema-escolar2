@@ -133,36 +133,47 @@
                 </div>
             </div>
 
-            <!-- Classificações Anteriores (se aplicável) -->
-            @if($nota->turma->classe > 10)
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        </x-card>
+
+        <!-- Classificações Anuais (destaque para transferência) -->
+        @if($nota->turma->classe > 10)
+        <x-card title="Classificações Anuais (CA)" icon="fas fa-star" class="mb-6 border-2 border-blue-200">
+            <div class="mb-4 rounded-lg bg-blue-50 border border-blue-100 p-3 text-sm text-blue-800">
+                <i class="fas fa-info-circle mr-1"></i>
+                Este bloco é usado pela administração/secretaria para lançar CAs anteriores de alunos transferidos.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 @if($nota->turma->classe >= 11)
                 <div>
-                    <label class="label">CA da 10ª</label>
-                    <input type="number" name="ca_10" value="{{ old('ca_10', $nota->ca_10) }}" 
-                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ ($somenteLeitura || $camposCaSomenteLeitura['ca_10']) ? 'disabled' : '' }}>
+                    <label class="label">CA da 10ª <span class="text-blue-700 font-semibold">(Destaque)</span></label>
+                    <input type="number" name="ca_10" value="{{ old('ca_10', $nota->ca_10) }}"
+                           step="0.01" min="-1" max="20" class="input border-blue-300 focus:ring-blue-400"
+                           onblur="formatNota(this)" {{ ($somenteLeitura || $camposCaSomenteLeitura['ca_10']) ? 'disabled' : '' }}>
                     @if($camposCaSomenteLeitura['ca_10'])
                         <p class="text-xs text-gray-500 mt-1">Somente leitura: aluno já associado a turma da 10ª no ano anterior.</p>
                     @else
-                        <p class="text-xs text-gray-500 mt-1">Use para aluno transferido quando faltar histórico interno da 10ª. Alterações ficam auditadas nos logs.</p>
+                        <p class="text-xs text-gray-500 mt-1">Preencher manualmente para transferido sem histórico interno da 10ª. Alterações ficam auditadas nos logs.</p>
                     @endif
                 </div>
                 @endif
+
                 @if($nota->turma->classe == 12)
                 <div>
-                    <label class="label">CA da 11ª</label>
-                    <input type="number" name="ca_11" value="{{ old('ca_11', $nota->ca_11) }}" 
-                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ ($somenteLeitura || $camposCaSomenteLeitura['ca_11']) ? 'disabled' : '' }}>
+                    <label class="label">CA da 11ª <span class="text-blue-700 font-semibold">(Destaque)</span></label>
+                    <input type="number" name="ca_11" value="{{ old('ca_11', $nota->ca_11) }}"
+                           step="0.01" min="-1" max="20" class="input border-blue-300 focus:ring-blue-400"
+                           onblur="formatNota(this)" {{ ($somenteLeitura || $camposCaSomenteLeitura['ca_11']) ? 'disabled' : '' }}>
                     @if($camposCaSomenteLeitura['ca_11'])
                         <p class="text-xs text-gray-500 mt-1">Somente leitura: aluno já associado a turma da 11ª no ano anterior.</p>
                     @else
-                        <p class="text-xs text-gray-500 mt-1">Use para aluno transferido quando faltar histórico interno da 11ª. Alterações ficam auditadas nos logs.</p>
+                        <p class="text-xs text-gray-500 mt-1">Preencher manualmente para transferido sem histórico interno da 11ª. Alterações ficam auditadas nos logs.</p>
                     @endif
                 </div>
                 @endif
             </div>
-            @endif
         </x-card>
+        @endif
 
         <!-- Classificações Finais -->
         <x-card title="Classificações Finais" icon="fas fa-check-circle" class="mb-6">

@@ -57,7 +57,6 @@ class NotaService
             ->orderByDesc('id')
             ->first();
 
-            
         if ($notaAnterior?->ca !== null) {
             return (float) $notaAnterior->ca;
         }

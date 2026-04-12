@@ -570,6 +570,49 @@ class NotaPautaTest extends TestCase
         $this->assertSame(13.0, (float) $nota->ca_10);
     }
 
+    public function test_secretaria_pode_atualizar_pauta_e_carregar_alunos_sem_notas_lancadas(): void
+    {
+        $adminRole = $this->createRoleWithPermissions('admin', ['notas.editar', 'notas.view_all']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $admin = User::factory()->create(['role_id' => $adminRole->id]);
+        $aluno1 = User::factory()->create(['role_id' => $alunoRole->id]);
+        $aluno2 = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
+
+        $turma->alunos()->attach($aluno1->id, [
+            'data_matricula' => '2025-09-02',
+            'status' => 'matriculado',
+        ]);
+
+        $turma->alunos()->attach($aluno2->id, [
+            'data_matricula' => '2025-09-03',
+            'status' => 'matriculado',
+        ]);
+
+        $this->assertSame(0, Nota::count());
+
+        $this
+            ->actingAs($admin)
+            ->post(route('notas.inicializar-pauta'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ])
+            ->assertRedirect(route('notas.index', [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ]));
+
+        $this->assertSame(2, Nota::count());
+        $this->assertDatabaseHas('notas', [
+            'aluno_id' => $aluno1->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+    }
+
     private function createEstruturaAcademica(array $overrides = []): array
     {
         $anoLetivo = AnoLetivo::create([
