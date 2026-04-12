@@ -677,8 +677,8 @@ class NotaController extends Controller
         $this->checkPermission('notas.editar');
 
         $validated = $request->validate([
-            'turma_id' => 'required|exists:turmas,id',
-            'disciplina_id' => 'required|exists:disciplinas,id',
+            'turma_id' => 'nullable|exists:turmas,id',
+            'disciplina_id' => 'nullable|exists:disciplinas,id',
             'motivo' => 'nullable|string|max:500',
             'trimestre' => 'nullable|in:1,2,3',
             'campo' => 'nullable|in:pp,pt,pg',
@@ -691,11 +691,20 @@ class NotaController extends Controller
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turma = Turma::findOrFail($validated['turma_id']);
-        $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
+        $turmaId = $validated['turma_id'] ?? null;
+        $disciplinaId = $validated['disciplina_id'] ?? null;
+        $turma = $turmaId ? Turma::findOrFail($turmaId) : null;
 
-        if ($turma->ano_letivo_id !== $anoLetivo->id) {
+        if ($turma && $turma->ano_letivo_id !== $anoLetivo->id) {
             return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
+        }
+
+        if ($disciplinaId && ! $turma) {
+            return back()->with('error', 'Selecione uma turma para operar uma disciplina especifica.');
+        }
+
+        if ($disciplinaId && $turma && ! $turma->disciplinas()->where('disciplinas.id', $disciplinaId)->exists()) {
+            return back()->with('error', 'A disciplina selecionada nao pertence a turma informada.');
         }
 
         $alunoId = $validated['aluno_id'] ?? null;
@@ -707,7 +716,7 @@ class NotaController extends Controller
             return back()->with('error', 'Campo selecionado não é válido para o trimestre informado.');
         }
 
-        $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
+        $notas = $this->buscarNotasDaPauta($anoLetivo, $turmaId, $disciplinaId, $alunoId);
 
         if ($notas->isEmpty()) {
             return back()->with('error', 'Nenhuma nota encontrada para finalizar neste ano letivo.');
@@ -803,17 +812,14 @@ class NotaController extends Controller
 
         $escopoAluno = $alunoId ? ' para o aluno selecionado' : '';
         $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
-        if ($alunoId) {
-            $this->estadoMatriculaService->sincronizarAlunoNaTurma($turma->id, (int) $alunoId);
-        } else {
-            $this->estadoMatriculaService->sincronizarTurma($turma->id);
-        }
+        $this->sincronizarEstadoMatriculaAposOperacao($notas, $alunoId);
+        $escopoOperacao = $turmaId ? ' da turma selecionada' : ' de todas as turmas do ano letivo';
 
         return back()->with('success', $labelCampo && $trimestre
-            ? "Bloqueio de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
+            ? "Bloqueio de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
             : ($trimestre
-            ? "Bloqueio do {$trimestre}o trimestre{$escopoAluno} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
-            : "Finalizacao geral{$escopoAluno} concluida: {$finalizadas} notas finalizadas e {$jaFinalizadas} ja estavam finalizadas."));
+            ? "Bloqueio do {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
+            : "Finalizacao geral{$escopoAluno}{$escopoOperacao} concluida: {$finalizadas} notas finalizadas e {$jaFinalizadas} ja estavam finalizadas."));
     }
 
     public function reabrir(Request $request)
@@ -821,8 +827,8 @@ class NotaController extends Controller
         $this->checkPermission('notas.reabrir');
 
         $validated = $request->validate([
-            'turma_id' => 'required|exists:turmas,id',
-            'disciplina_id' => 'required|exists:disciplinas,id',
+            'turma_id' => 'nullable|exists:turmas,id',
+            'disciplina_id' => 'nullable|exists:disciplinas,id',
             'motivo' => 'nullable|string|max:500',
             'trimestre' => 'nullable|in:1,2,3',
             'campo' => 'nullable|in:pp,pt,pg',
@@ -835,11 +841,21 @@ class NotaController extends Controller
             return $this->redirectSemAnoLetivoAtivo();
         }
 
-        $turma = Turma::findOrFail($validated['turma_id']);
-        $disciplina = Disciplina::findOrFail($validated['disciplina_id']);
+        $turmaId = $validated['turma_id'] ?? null;
+        $disciplinaId = $validated['disciplina_id'] ?? null;
+        $turma = $turmaId ? Turma::findOrFail($turmaId) : null;
+        $disciplina = $disciplinaId ? Disciplina::findOrFail($disciplinaId) : null;
 
-        if ($turma->ano_letivo_id !== $anoLetivo->id) {
+        if ($turma && $turma->ano_letivo_id !== $anoLetivo->id) {
             return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
+        }
+
+        if ($disciplinaId && ! $turma) {
+            return back()->with('error', 'Selecione uma turma para operar uma disciplina especifica.');
+        }
+
+        if ($disciplinaId && $turma && ! $turma->disciplinas()->where('disciplinas.id', $disciplinaId)->exists()) {
+            return back()->with('error', 'A disciplina selecionada nao pertence a turma informada.');
         }
 
         $alunoId = $validated['aluno_id'] ?? null;
@@ -851,7 +867,7 @@ class NotaController extends Controller
             return back()->with('error', 'Campo selecionado não é válido para o trimestre informado.');
         }
 
-        $notas = $this->buscarNotasDaPauta($turma, $disciplina, $alunoId);
+        $notas = $this->buscarNotasDaPauta($anoLetivo, $turmaId, $disciplinaId, $alunoId);
 
         if ($notas->isEmpty()) {
             return back()->with('error', 'Nenhuma nota encontrada para reabrir neste ano letivo.');
@@ -968,28 +984,27 @@ class NotaController extends Controller
         });
 
         $escopoAluno = $alunoId ? ' para o aluno selecionado' : '';
-        $this->notificarProfessoresSobreReabertura(
-            $turma,
-            $disciplina,
-            $validated['trimestre'] ?? null,
-            $validated['campo'] ?? null,
-            $validated['motivo'] ?? null,
-            $validated['aluno_id'] ?? null,
-            $reabertas
-        );
-
-        $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
-        if ($alunoId) {
-            $this->estadoMatriculaService->sincronizarAlunoNaTurma($turma->id, (int) $alunoId);
-        } else {
-            $this->estadoMatriculaService->sincronizarTurma($turma->id);
+        if ($turma && $disciplina) {
+            $this->notificarProfessoresSobreReabertura(
+                $turma,
+                $disciplina,
+                $validated['trimestre'] ?? null,
+                $validated['campo'] ?? null,
+                $validated['motivo'] ?? null,
+                $validated['aluno_id'] ?? null,
+                $reabertas
+            );
         }
 
+        $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
+        $this->sincronizarEstadoMatriculaAposOperacao($notas, $alunoId);
+        $escopoOperacao = $turmaId ? ' da turma selecionada' : ' de todas as turmas do ano letivo';
+
         return back()->with('success', $labelCampo && $trimestre
-            ? "Reabertura de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
+            ? "Reabertura de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
             : ($trimestre
-            ? "Reabertura do {$trimestre}o trimestre{$escopoAluno} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
-            : "Reabertura geral{$escopoAluno} concluida: {$reabertas} notas reabertas e {$jaAbertas} ja estavam em lancamento."));
+            ? "Reabertura do {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
+            : "Reabertura geral{$escopoAluno}{$escopoOperacao} concluida: {$reabertas} notas reabertas e {$jaAbertas} ja estavam em lancamento."));
     }
 
 
@@ -1171,13 +1186,27 @@ class NotaController extends Controller
             ->with('error', 'Nenhum ano letivo ativo encontrado. Entre em contacto com a administracao.');
     }
 
-    private function buscarNotasDaPauta(Turma $turma, Disciplina $disciplina, ?int $alunoId = null)
+    private function buscarNotasDaPauta(AnoLetivo $anoLetivo, ?int $turmaId = null, ?int $disciplinaId = null, ?int $alunoId = null)
     {
-        return Nota::where('turma_id', $turma->id)
-            ->where('disciplina_id', $disciplina->id)
-            ->where('ano_letivo_id', $turma->ano_letivo_id)
+        return Nota::query()
+            ->where('ano_letivo_id', $anoLetivo->id)
+            ->when($turmaId, fn ($query, $id) => $query->where('turma_id', $id))
+            ->when($disciplinaId, fn ($query, $id) => $query->where('disciplina_id', $id))
             ->when($alunoId, fn ($query, $id) => $query->where('aluno_id', $id))
             ->get();
+    }
+
+    private function sincronizarEstadoMatriculaAposOperacao($notas, ?int $alunoId = null): void
+    {
+        $turmaIds = $notas->pluck('turma_id')->filter()->unique()->values();
+
+        foreach ($turmaIds as $turmaId) {
+            if ($alunoId) {
+                $this->estadoMatriculaService->sincronizarAlunoNaTurma((int) $turmaId, (int) $alunoId);
+            } else {
+                $this->estadoMatriculaService->sincronizarTurma((int) $turmaId);
+            }
+        }
     }
 
     private function mensagemTrimestreNaoAplicavel(Nota $nota, int $trimestre): string
