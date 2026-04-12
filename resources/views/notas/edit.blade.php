@@ -140,7 +140,7 @@
                     <label class="label">CA da 10ª</label>
                     <input type="number" name="ca_10" value="{{ old('ca_10', $nota->ca_10) }}" 
                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
-                    <p class="text-xs text-gray-500 mt-1">Classificação anterior da 10ª classe</p>
+                    <p class="text-xs text-gray-500 mt-1">Use para aluno transferido quando faltar histórico interno da 10ª. Alterações ficam auditadas nos logs.</p>
                 </div>
                 @endif
                 @if($nota->turma->classe == 12)
@@ -148,7 +148,7 @@
                     <label class="label">CA da 11ª</label>
                     <input type="number" name="ca_11" value="{{ old('ca_11', $nota->ca_11) }}" 
                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
-                    <p class="text-xs text-gray-500 mt-1">Classificação anterior da 11ª classe</p>
+                    <p class="text-xs text-gray-500 mt-1">Use para aluno transferido quando faltar histórico interno da 11ª. Alterações ficam auditadas nos logs.</p>
                 </div>
                 @endif
             </div>
