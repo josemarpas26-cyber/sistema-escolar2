@@ -8,6 +8,7 @@
     $podeReabrirNota = auth()->user()?->hasPermission('notas.reabrir') ?? false;
     $somenteLeitura = $notaFinalizada && !$podeReabrirNota;
     $bloquearMacDireta = auth()->user()?->isAdmin() || auth()->user()?->isSecretaria();
+    $camposCaSomenteLeitura = $camposCaSomenteLeitura ?? ['ca_10' => false, 'ca_11' => false];
 @endphp
 
 <div class="max-w-4xl mx-auto">
@@ -139,16 +140,24 @@
                 <div>
                     <label class="label">CA da 10ª</label>
                     <input type="number" name="ca_10" value="{{ old('ca_10', $nota->ca_10) }}" 
-                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
-                    <p class="text-xs text-gray-500 mt-1">Classificação anterior da 10ª classe</p>
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ ($somenteLeitura || $camposCaSomenteLeitura['ca_10']) ? 'disabled' : '' }}>
+                    @if($camposCaSomenteLeitura['ca_10'])
+                        <p class="text-xs text-gray-500 mt-1">Somente leitura: aluno já associado a turma da 10ª no ano anterior.</p>
+                    @else
+                        <p class="text-xs text-gray-500 mt-1">Use para aluno transferido quando faltar histórico interno da 10ª. Alterações ficam auditadas nos logs.</p>
+                    @endif
                 </div>
                 @endif
                 @if($nota->turma->classe == 12)
                 <div>
                     <label class="label">CA da 11ª</label>
                     <input type="number" name="ca_11" value="{{ old('ca_11', $nota->ca_11) }}" 
-                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
-                    <p class="text-xs text-gray-500 mt-1">Classificação anterior da 11ª classe</p>
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ ($somenteLeitura || $camposCaSomenteLeitura['ca_11']) ? 'disabled' : '' }}>
+                    @if($camposCaSomenteLeitura['ca_11'])
+                        <p class="text-xs text-gray-500 mt-1">Somente leitura: aluno já associado a turma da 11ª no ano anterior.</p>
+                    @else
+                        <p class="text-xs text-gray-500 mt-1">Use para aluno transferido quando faltar histórico interno da 11ª. Alterações ficam auditadas nos logs.</p>
+                    @endif
                 </div>
                 @endif
             </div>

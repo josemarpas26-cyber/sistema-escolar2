@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AnoLetivo;
 use App\Models\Disciplina;
+use App\Models\HistoricoAcademico;
 use App\Models\Nota;
 use App\Models\Turma;
 use App\Models\User;
@@ -52,9 +53,27 @@ class NotaService
             ->where('disciplina_id', $disciplina->id)
             ->whereHas('turma', fn ($query) => $query->where('classe', $classeBuscada))
             ->whereNotNull('ca')
+            ->orderByDesc('ano_letivo_id')
+            ->orderByDesc('id')
             ->first();
 
-        return $notaAnterior?->ca;
+        if ($notaAnterior?->ca !== null) {
+            return (float) $notaAnterior->ca;
+        }
+
+        $historico = HistoricoAcademico::query()
+            ->where('aluno_id', $aluno->id)
+            ->where('disciplina_id', $disciplina->id)
+            ->where('classe', (string) $classeBuscada)
+            ->whereNotNull('classificacao_final')
+            ->orderByDesc('data_conclusao')
+            ->orderByDesc('ano_letivo_id')
+            ->orderByDesc('id')
+            ->first();
+
+        return $historico?->classificacao_final !== null
+            ? (float) $historico->classificacao_final
+            : null;
     }
 
     public function recalcularNota(Nota $nota, bool $preencherCAsAnteriores = true): void
