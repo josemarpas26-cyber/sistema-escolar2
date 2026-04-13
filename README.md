@@ -286,58 +286,58 @@ Os professores podem acumular funções de:
 
 siga/
 ├── app/
-│   ├── Exports/                    # Classes de exportação Excel (Boletim, Pauta, Logs)
-│   │   └── Sheets/                 # Folhas individuais para exportações multi-sheet
-│   ├── Http/
-│   │   ├── Controllers/            # Controllers principais
-│   │   │   └── Auth/               # Controllers de autenticação
-│   │   ├── Middleware/             # Middlewares (permissões, ano letivo, etc.)
-│   │   └── Requests/               # Form Requests de validação
-│   ├── Models/                     # Modelos Eloquent
-│   │   ├── User.php                # Utilizador (aluno, professor, admin, etc.)
-│   │   ├── Nota.php                # Notas com cálculo automático de médias
-│   │   ├── Turma.php               # Turmas escolares
-│   │   ├── Disciplina.php          # Disciplinas
-│   │   ├── Curso.php               # Cursos
-│   │   ├── AnoLetivo.php           # Anos letivos
-│   │   ├── NotaLog.php             # Auditoria de alterações de notas
-│   │   └── ...
-│   ├── Notifications/              # Notificações (ex: pauta desbloqueada)
-│   ├── Observers/                  # Observers Eloquent (NotaObserver)
-│   ├── Policies/                   # Políticas de autorização
-│   ├── Providers/                  # Service Providers
-│   └── Services/                   # Serviços de negócio
-│       ├── NotaService.php         # Lógica de cálculo e importação de notas
-│       ├── EstatisticasAcademicasService.php
-│       ├── EstadoMatriculaService.php
-│       └── PautaGeralTemplateExporter.php
+│ ├── Exports/ # Classes de exportação Excel (Boletim, Pauta, Logs)
+│ │ └── Sheets/ # Folhas individuais para exportações multi-sheet
+│ ├── Http/
+│ │ ├── Controllers/ # Controllers principais
+│ │ │ └── Auth/ # Controllers de autenticação
+│ │ ├── Middleware/ # Middlewares (permissões, ano letivo, etc.)
+│ │ └── Requests/ # Form Requests de validação
+│ ├── Models/ # Modelos Eloquent
+│ │ ├── User.php # Utilizador (aluno, professor, admin, etc.)
+│ │ ├── Nota.php # Notas com cálculo automático de médias
+│ │ ├── Turma.php # Turmas escolares
+│ │ ├── Disciplina.php # Disciplinas
+│ │ ├── Curso.php # Cursos
+│ │ ├── AnoLetivo.php # Anos letivos
+│ │ ├── NotaLog.php # Auditoria de alterações de notas
+│ │ └── ...
+│ ├── Notifications/ # Notificações (ex: pauta desbloqueada)
+│ ├── Observers/ # Observers Eloquent (NotaObserver)
+│ ├── Policies/ # Políticas de autorização
+│ ├── Providers/ # Service Providers
+│ └── Services/ # Serviços de negócio
+│ ├── NotaService.php # Lógica de cálculo e importação de notas
+│ ├── EstatisticasAcademicasService.php
+│ ├── EstadoMatriculaService.php
+│ └── PautaGeralTemplateExporter.php
 ├── database/
-│   ├── migrations/                 # Migrações da base de dados
-│   └── seeders/                    # Seeders (papéis, permissões, admin)
+│ ├── migrations/ # Migrações da base de dados
+│ └── seeders/ # Seeders (papéis, permissões, admin)
 ├── public/
-│   └── images/                     # Logo e imagens estáticas
+│ └── images/ # Logo e imagens estáticas
 ├── resources/
-│   ├── css/app.css                 # Estilos globais com tokens CSS
-│   ├── js/app.js                   # Alpine.js e lógica de UI
-│   ├── templates/                  # Templates Excel para pautas
-│   └── views/
-│       ├── layouts/                # Layouts principal e de autenticação
-│       ├── components/             # Componentes Blade reutilizáveis
-│       ├── dashboard/              # Dashboards por papel
-│       ├── notas/                  # Vistas de lançamento de notas
-│       ├── relatorios/             # Relatórios e PDFs
-│       │   └── pdf/                # Templates PDF (boletim, pauta, histórico)
-│       ├── turmas/                 # Gestão de turmas
-│       ├── users/                  # Gestão de utilizadores
-│       └── ...
+│ ├── css/app.css # Estilos globais com tokens CSS
+│ ├── js/app.js # Alpine.js e lógica de UI
+│ ├── templates/ # Templates Excel para pautas
+│ └── views/
+│ ├── layouts/ # Layouts principal e de autenticação
+│ ├── components/ # Componentes Blade reutilizáveis
+│ ├── dashboard/ # Dashboards por papel
+│ ├── notas/ # Vistas de lançamento de notas
+│ ├── relatorios/ # Relatórios e PDFs
+│ │ └── pdf/ # Templates PDF (boletim, pauta, histórico)
+│ ├── turmas/ # Gestão de turmas
+│ ├── users/ # Gestão de utilizadores
+│ └── ...
 ├── routes/
-│   ├── web.php                     # Rotas web principais
-│   ├── auth.php                    # Rotas de autenticação
-│   └── console.php                 # Comandos agendados (backup DB)
+│ ├── web.php # Rotas web principais
+│ ├── auth.php # Rotas de autenticação
+│ └── console.php # Comandos agendados (backup DB)
 └── storage/
 └── app/
-└── backups/database/       # Backups automáticos da base de dados
-
+└── backups/
+└── database/ # Backups automáticos da base de dados
 ---
 
 ## 🗺️ Rotas Principais
