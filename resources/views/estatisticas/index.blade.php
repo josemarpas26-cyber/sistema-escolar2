@@ -336,7 +336,7 @@
                     <i class="fas fa-user-graduate mr-1"></i> Aluno
                 </label>
                 <select name="aluno_id" class="est-select">
-                    <option value="">Todos os alunos</option>
+                    <option value="">Selecione um aluno</option>
                     @foreach($filtros['alunos'] as $aluno)
                         <option value="{{ $aluno->id }}" @selected($filtroAlunoId === $aluno->id)>
                             {{ $aluno->name }}
