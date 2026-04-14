@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Role;
 use App\Models\ActivityLog;
+use App\Models\Role;
+use App\Models\Turma;
+use App\Models\User;
+use App\Notifications\CredenciaisAcessoNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use App\Models\Turma;
 
 class UserController extends Controller
 {
@@ -90,8 +91,8 @@ class UserController extends Controller
         $selectedRole = Role::find($request->input('role_id'));
         $isAluno      = optional($selectedRole)->name === 'aluno';
  
-        $shouldGeneratePassword = $request->boolean('auto_password')
-            || optional($selectedRole)->name === 'professor';
+        $autoPasswordRequested = $request->boolean('auto_password');
+        $shouldGeneratePassword = $autoPasswordRequested;
  
         $passwordRules = $shouldGeneratePassword
             ? ['nullable']
@@ -125,7 +126,9 @@ class UserController extends Controller
         // Senha automática
         $generatedPassword = null;
         if ($shouldGeneratePassword) {
-            $generatedPassword    = Str::password(12);
+            $generatedPassword = $isAluno
+                ? (string) $validated['numero_processo']
+                : Str::password(12);
             $validated['password'] = $generatedPassword;
         }
  
@@ -147,10 +150,18 @@ class UserController extends Controller
         if ($user->email) {
             $user->sendEmailVerificationNotification();
         }
+
+        if (! $isAluno && $autoPasswordRequested && $generatedPassword && $user->email) {
+            $user->notify(new CredenciaisAcessoNotification($generatedPassword));
+        }
  
         $successMessage = 'Utilizador criado com sucesso!';
         if ($generatedPassword) {
-            $successMessage .= " Senha provisória gerada: {$generatedPassword}";
+            $successMessage .= $isAluno
+                ? ' Senha provisória definida com o número de processo do aluno.'
+                : ($autoPasswordRequested
+                    ? ' Senha provisória enviada para o email do utilizador.'
+                    : " Senha provisória gerada: {$generatedPassword}");
         }
  
         return redirect()
