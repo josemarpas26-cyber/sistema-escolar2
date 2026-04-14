@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AnoLetivo;
 use App\Models\Disciplina;
 use App\Models\Turma;
+use App\Models\User;
 use App\Services\EstatisticasAcademicasService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -24,13 +25,14 @@ class EstatisticasController extends Controller
         }
 
         $user = auth()->user();
-        $secoes = $this->estatisticasAcademicas->construirSecoes($user, $anoLetivo);
+        $alunoFiltroId = $request->integer('aluno_id') ?: null;
+        $secoes = $this->estatisticasAcademicas->construirSecoes($user, $anoLetivo, $alunoFiltroId);
 
         if ($secoes->isEmpty()) {
             abort(403, 'Perfil sem acesso a estatisticas.');
         }
 
-        $filtros = $this->construirFiltrosDisponiveis($user, $anoLetivo, $secoes);
+        $filtros = $this->construirFiltrosDisponiveis($user, $anoLetivo, $secoes, $alunoFiltroId);
 
         $turmaFiltroId = $request->integer('turma_id') ?: null;
         $disciplinaFiltroId = $request->integer('disciplina_id') ?: null;
@@ -58,12 +60,13 @@ class EstatisticasController extends Controller
             'filtros' => $filtros,
             'filtroTurmaId' => $turmaFiltroId,
             'filtroDisciplinaId' => $disciplinaFiltroId,
+            'filtroAlunoId' => $alunoFiltroId,
             'filtroTrimestre' => $trimestre,
             'filtroSecaoTipo' => $secaoTipo,
         ]);
     }
 
-    private function construirFiltrosDisponiveis($user, $anoLetivo, $secoes): array
+    private function construirFiltrosDisponiveis($user, $anoLetivo, $secoes, ?int $alunoId = null): array
     {
         $turmaIds = collect();
         $disciplinaIds = collect();
@@ -119,7 +122,23 @@ class EstatisticasController extends Controller
             ->orderBy('nome')
             ->get();
 
-        return compact('turmas', 'disciplinas');
+        $alunos = User::query()
+            ->select('users.id', 'users.name')
+            ->whereHas('role', fn ($query) => $query->where('name', 'aluno'))
+            ->when($alunoId, fn ($query) => $query->where('users.id', $alunoId), function ($query) use ($anoLetivo, $turmaIds, $disciplinaIds) {
+                $query->whereIn('users.id', function ($subQuery) use ($anoLetivo, $turmaIds, $disciplinaIds) {
+                    $subQuery->select('aluno_id')
+                        ->from('notas')
+                        ->where('ano_letivo_id', $anoLetivo->id)
+                        ->whereIn('turma_id', $turmaIds->unique()->values())
+                        ->whereIn('disciplina_id', $disciplinaIds->unique()->values())
+                        ->distinct();
+                });
+            })
+            ->orderBy('users.name')
+            ->get();
+
+        return compact('turmas', 'disciplinas', 'alunos');
     }
 
     private function aplicarFiltrosNasSecoes($secoes, ?int $turmaId, ?int $disciplinaId, string $trimestre)
