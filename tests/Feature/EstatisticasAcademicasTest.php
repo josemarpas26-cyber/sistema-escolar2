@@ -177,6 +177,57 @@ class EstatisticasAcademicasTest extends TestCase
         $response->assertSeeText('Preenchimento');
     }
 
+    public function test_estatisticas_permitem_filtrar_por_aluno(): void
+    {
+        $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $professor = User::factory()->create(['role_id' => $professorRole->id]);
+        $alunoAprovado = User::factory()->create(['role_id' => $alunoRole->id, 'name' => 'Aluno Aprovado']);
+        $alunoReprovado = User::factory()->create(['role_id' => $alunoRole->id, 'name' => 'Aluno Reprovado']);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
+
+        $turma->alunos()->attach([$alunoAprovado->id, $alunoReprovado->id], [
+            'data_matricula' => '2025-09-02',
+            'status' => 'matriculado',
+        ]);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $professor->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        Nota::create([
+            'aluno_id' => $alunoAprovado->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'mt1' => 16,
+            'status' => 'em_lancamento',
+        ]);
+
+        Nota::create([
+            'aluno_id' => $alunoReprovado->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'mt1' => 8,
+            'status' => 'em_lancamento',
+        ]);
+
+        $response = $this
+            ->actingAs($professor)
+            ->get(route('estatisticas.index', ['aluno_id' => $alunoAprovado->id]));
+
+        $response->assertOk();
+        $response->assertSeeText('Aluno Aprovado');
+        $response->assertSeeText('100%');
+        $response->assertDontSeeText('Aluno Reprovado');
+    }
+
     private function createEstruturaAcademica(array $overrides = []): array
     {
         $anoLetivo = AnoLetivo::create([

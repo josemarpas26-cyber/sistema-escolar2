@@ -12,16 +12,16 @@ use Illuminate\Support\Collection;
 
 class EstatisticasAcademicasService
 {
-    public function construirSecoes(User $user, AnoLetivo $anoLetivo): Collection
+    public function construirSecoes(User $user, AnoLetivo $anoLetivo, ?int $alunoId = null): Collection
     {
         $secoes = collect();
 
         if ($user->isProfessor()) {
             $secoesProfessor = [
-                $this->construirSecaoProfessor($user, $anoLetivo),
-                $this->construirSecaoCoordenacaoTurma($user, $anoLetivo),
-                $this->construirSecaoCoordenacaoCurso($user, $anoLetivo),
-                $this->construirSecaoCoordenacaoDisciplina($user, $anoLetivo),
+                $this->construirSecaoProfessor($user, $anoLetivo, $alunoId),
+                $this->construirSecaoCoordenacaoTurma($user, $anoLetivo, $alunoId),
+                $this->construirSecaoCoordenacaoCurso($user, $anoLetivo, $alunoId),
+                $this->construirSecaoCoordenacaoDisciplina($user, $anoLetivo, $alunoId),
             ];
 
             foreach ($secoesProfessor as $secao) {
@@ -32,7 +32,7 @@ class EstatisticasAcademicasService
         }
 
         if ($user->isAdmin() || $user->isSecretaria()) {
-            $secaoAdministrativa = $this->construirSecaoAdministrativa($anoLetivo);
+            $secaoAdministrativa = $this->construirSecaoAdministrativa($anoLetivo, $alunoId);
 
             if ($secaoAdministrativa !== null) {
                 $secoes->push($secaoAdministrativa);
@@ -58,7 +58,7 @@ class EstatisticasAcademicasService
         ];
     }
 
-    private function construirSecaoProfessor(User $professor, AnoLetivo $anoLetivo): ?array
+    private function construirSecaoProfessor(User $professor, AnoLetivo $anoLetivo, ?int $alunoId = null): ?array
     {
         $atribuicoes = $professor->atribuicoes()
             ->where('ano_letivo_id', $anoLetivo->id)
@@ -72,7 +72,7 @@ class EstatisticasAcademicasService
             return null;
         }
 
-        $notasPorAtribuicao = $this->buscarNotasProfessor($professor, $anoLetivo->id)
+        $notasPorAtribuicao = $this->buscarNotasProfessor($professor, $anoLetivo->id, $alunoId)
             ->groupBy(fn ($nota) => $nota->turma_id.'-'.$nota->disciplina_id);
 
         $itens = $atribuicoes->map(function ($atrib) use ($notasPorAtribuicao) {
@@ -98,7 +98,7 @@ class EstatisticasAcademicasService
         ];
     }
 
-    private function construirSecaoCoordenacaoTurma(User $professor, AnoLetivo $anoLetivo): ?array
+    private function construirSecaoCoordenacaoTurma(User $professor, AnoLetivo $anoLetivo, ?int $alunoId = null): ?array
     {
         $turmas = Turma::query()
             ->where('coordenador_turma_id', $professor->id)
@@ -115,7 +115,8 @@ class EstatisticasAcademicasService
         $notasPorTurma = $this->buscarNotasPorEscopo(
             $turmas->flatMap(fn ($turma) => $turma->disciplinas->pluck('id'))->unique()->all(),
             $turmas->pluck('id')->all(),
-            $anoLetivo->id
+            $anoLetivo->id,
+            $alunoId
         )->groupBy('turma_id');
 
         $itens = $turmas->map(function (Turma $turma) use ($notasPorTurma) {
@@ -143,7 +144,7 @@ class EstatisticasAcademicasService
         ];
     }
 
-    private function construirSecaoCoordenacaoCurso(User $professor, AnoLetivo $anoLetivo): ?array
+    private function construirSecaoCoordenacaoCurso(User $professor, AnoLetivo $anoLetivo, ?int $alunoId = null): ?array
     {
         $cursos = Curso::query()
             ->where('coordenador_id', $professor->id)
@@ -160,7 +161,7 @@ class EstatisticasAcademicasService
             return null;
         }
 
-        $itens = $cursos->map(function (Curso $curso) use ($anoLetivo) {
+        $itens = $cursos->map(function (Curso $curso) use ($anoLetivo, $alunoId) {
             $turmas = $curso->turmas;
 
             if ($turmas->isEmpty()) {
@@ -181,7 +182,7 @@ class EstatisticasAcademicasService
 
             $turmaIds = $turmas->pluck('id')->all();
 
-            $notas = $this->buscarNotasPorEscopo($disciplinaIds, $turmaIds, $anoLetivo->id);
+            $notas = $this->buscarNotasPorEscopo($disciplinaIds, $turmaIds, $anoLetivo->id, $alunoId);
 
             $estatisticas = $this->calcularEstatisticasPorDisciplina($notas);
 
@@ -215,7 +216,7 @@ class EstatisticasAcademicasService
         ];
     }
 
-    private function construirSecaoCoordenacaoDisciplina(User $professor, AnoLetivo $anoLetivo): ?array
+    private function construirSecaoCoordenacaoDisciplina(User $professor, AnoLetivo $anoLetivo, ?int $alunoId = null): ?array
     {
         $disciplinas = Disciplina::query()
             ->where('coordenador_id', $professor->id)
@@ -232,7 +233,7 @@ class EstatisticasAcademicasService
             return null;
         }
 
-        $itens = $disciplinas->map(function (Disciplina $disciplina) use ($anoLetivo) {
+        $itens = $disciplinas->map(function (Disciplina $disciplina) use ($anoLetivo, $alunoId) {
             $turmas = $disciplina->turmas
                 ->sortBy(fn (Turma $turma) => $this->ordemTurma($turma))
                 ->values();
@@ -240,7 +241,8 @@ class EstatisticasAcademicasService
             $notas = $this->buscarNotasPorEscopo(
                 [$disciplina->id],
                 $turmas->pluck('id')->all(),
-                $anoLetivo->id
+                $anoLetivo->id,
+                $alunoId
             );
 
             $notasPorTurma = $notas->groupBy('turma_id');
@@ -276,7 +278,7 @@ class EstatisticasAcademicasService
         ];
     }
 
-    private function construirSecaoAdministrativa(AnoLetivo $anoLetivo): ?array
+    private function construirSecaoAdministrativa(AnoLetivo $anoLetivo, ?int $alunoId = null): ?array
     {
         $turmas = Turma::query()
             ->where('ano_letivo_id', $anoLetivo->id)
@@ -292,7 +294,8 @@ class EstatisticasAcademicasService
         $notasPorTurma = $this->buscarNotasPorEscopo(
             Disciplina::ativos()->pluck('id')->all(),
             $turmas->pluck('id')->all(),
-            $anoLetivo->id
+            $anoLetivo->id,
+            $alunoId
         )->groupBy('turma_id');
 
         $itens = $turmas->map(function (Turma $turma) use ($notasPorTurma) {
@@ -320,7 +323,7 @@ class EstatisticasAcademicasService
         ];
     }
 
-    private function buscarNotasProfessor(User $professor, int $anoLetivoId): Collection
+    private function buscarNotasProfessor(User $professor, int $anoLetivoId, ?int $alunoId = null): Collection
     {
         return Nota::query()
             ->select('notas.*')
@@ -331,12 +334,13 @@ class EstatisticasAcademicasService
                     ->where('atribuicoes.ano_letivo_id', $anoLetivoId);
             })
             ->where('notas.ano_letivo_id', $anoLetivoId)
+            ->when($alunoId, fn ($query) => $query->where('notas.aluno_id', $alunoId))
             ->with($this->notaRelations())
             ->distinct()
             ->get();
     }
 
-    private function buscarNotasPorEscopo(array $disciplinaIds, array $turmaIds, int $anoLetivoId): Collection
+    private function buscarNotasPorEscopo(array $disciplinaIds, array $turmaIds, int $anoLetivoId, ?int $alunoId = null): Collection
     {
         if (empty($disciplinaIds) || empty($turmaIds)) {
             return collect();
@@ -346,6 +350,7 @@ class EstatisticasAcademicasService
             ->whereIn('disciplina_id', array_values(array_unique($disciplinaIds)))
             ->whereIn('turma_id', array_values(array_unique($turmaIds)))
             ->where('ano_letivo_id', $anoLetivoId)
+            ->when($alunoId, fn ($query) => $query->where('aluno_id', $alunoId))
             ->with($this->notaRelations())
             ->get();
     }

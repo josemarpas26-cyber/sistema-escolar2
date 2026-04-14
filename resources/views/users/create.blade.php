@@ -213,6 +213,9 @@
                                            {{ old('auto_password', true) ? 'checked' : '' }}>
                                     Gerar palavra-passe aleatória automaticamente
                                 </label>
+                                <p x-show="isAluno" x-cloak class="text-xs text-blue-600 mt-2">
+                                    Para alunos, ao gerar senha automaticamente será usado o número de processo.
+                                </p>
                                 @error('password')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror

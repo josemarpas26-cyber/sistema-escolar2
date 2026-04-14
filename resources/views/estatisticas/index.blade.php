@@ -33,11 +33,11 @@
 }
 .est-filter-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr) auto;
+    grid-template-columns: repeat(6, 1fr) auto;
     gap: 10px;
     align-items: end;
 }
-@media (max-width: 1100px) { .est-filter-grid { grid-template-columns: repeat(3,1fr) auto; } }
+@media (max-width: 1100px) { .est-filter-grid { grid-template-columns: repeat(4,1fr) auto; } }
 @media (max-width: 700px)  { .est-filter-grid { grid-template-columns: 1fr auto; } }
 
 .est-field { display: flex; flex-direction: column; gap: 4px; }
@@ -330,6 +330,21 @@
                 </select>
             </div>
 
+            {{-- Aluno --}}
+            <div class="est-field">
+                <label class="est-label">
+                    <i class="fas fa-user-graduate mr-1"></i> Aluno
+                </label>
+                <select name="aluno_id" class="est-select">
+                    <option value="">Todos os alunos</option>
+                    @foreach($filtros['alunos'] as $aluno)
+                        <option value="{{ $aluno->id }}" @selected($filtroAlunoId === $aluno->id)>
+                            {{ $aluno->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
             {{-- Botões --}}
             <div class="est-field" style="flex-direction:row; gap:6px; align-items:flex-end;">
                 <button type="submit" class="est-btn est-btn-primary">
@@ -343,7 +358,7 @@
         </div>
 
         {{-- Indicadores de filtros activos --}}
-        @if($filtroTurmaId || $filtroDisciplinaId || $filtroTrimestre !== 'todos' || $filtroSecaoTipo)
+        @if($filtroTurmaId || $filtroDisciplinaId || $filtroAlunoId || $filtroTrimestre !== 'todos' || $filtroSecaoTipo)
         <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
             <span style="font-size:.7rem; color:#64748b; font-weight:600;">Filtros ativos:</span>
 
@@ -365,6 +380,13 @@
                 <span class="est-chip est-chip-blue">
                     <i class="fas fa-book mr-1"></i>
                     {{ $d?->nome ?? "Disc. #{$filtroDisciplinaId}" }}
+                </span>
+            @endif
+            @if($filtroAlunoId)
+                @php $a = $filtros['alunos']->firstWhere('id', $filtroAlunoId); @endphp
+                <span class="est-chip est-chip-blue">
+                    <i class="fas fa-user-graduate mr-1"></i>
+                    {{ $a?->name ?? "Aluno #{$filtroAlunoId}" }}
                 </span>
             @endif
             @if($filtroTrimestre !== 'todos')
