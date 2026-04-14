@@ -46,7 +46,8 @@
                         </div>
                     </td>
                     <td style="padding:14px 16px;">
-                        <span style="font-size:13px;color:var(--text-secondary);">{{ $turma->curso->nome }}</span>
+                        <div style="font-size:13px;color:var(--text-secondary);">{{ $turma->curso->nome }}</div>
+                        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">Area: {{ $turma->area_formacao_nome ?? '-' }}</div>
                     </td>
                     <td style="padding:14px 16px;text-align:center;">
                         <x-badge type="primary">{{ $turma->classe }}ª</x-badge>

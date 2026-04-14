@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AreaFormacao;
 use App\Models\Curso;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -16,13 +17,13 @@ class CursoController extends Controller
     {
         $this->checkPermission('cursos.view');
 
-        $query = Curso::with('coordenador')->withCount('turmas');
+        $query = Curso::with(['coordenador', 'areaFormacao'])->withCount('turmas');
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nome', 'like', "%{$search}%")
-                  ->orWhere('codigo', 'like', "%{$search}%");
+                    ->orWhere('codigo', 'like', "%{$search}%");
             });
         }
 
@@ -36,16 +37,16 @@ class CursoController extends Controller
     }
 
     /**
-     * Formulário de criação
+     * Formulario de criacao
      */
     public function create()
     {
         $this->checkPermission('cursos.create');
 
-        // Apenas professores podem ser coordenadores
-        $professores = User::professores()->ativos()->get();
+        $professores = User::professores()->ativos()->orderBy('name')->get();
+        $areasFormacao = AreaFormacao::ativos()->orderBy('nome')->get();
 
-        return view('cursos.create', compact('professores'));
+        return view('cursos.create', compact('professores', 'areasFormacao'));
     }
 
     /**
@@ -66,6 +67,7 @@ class CursoController extends Controller
                 Rule::unique('cursos', 'codigo'),
             ],
             'descricao' => 'nullable|string',
+            'area_formacao_id' => 'required|exists:areas_formacao,id',
             'coordenador_id' => [
                 'nullable',
                 'exists:users,id',
@@ -74,12 +76,13 @@ class CursoController extends Controller
                 }),
             ],
             'ativo' => 'boolean',
-                    ], [
-            'codigo.required' => 'O código do curso é obrigatório.',
-            'codigo.min' => 'O código deve ter pelo menos 2 letras.',
-            'codigo.max' => 'O código não pode ter mais de 10 letras.',
-            'codigo.regex' => 'O código deve conter apenas letras de A a Z.',
-            'codigo.unique' => 'Este código já está a ser usado por outro curso.',
+        ], [
+            'codigo.required' => 'O codigo do curso e obrigatorio.',
+            'codigo.min' => 'O codigo deve ter pelo menos 2 letras.',
+            'codigo.max' => 'O codigo nao pode ter mais de 10 letras.',
+            'codigo.regex' => 'O codigo deve conter apenas letras de A a Z.',
+            'codigo.unique' => 'Este codigo ja esta a ser usado por outro curso.',
+            'area_formacao_id.required' => 'Selecione a area de formacao do curso.',
         ]);
 
         $validated['codigo'] = strtoupper(trim($validated['codigo']));
@@ -98,23 +101,25 @@ class CursoController extends Controller
         $this->checkPermission('cursos.view');
 
         $curso->load([
+            'areaFormacao',
             'coordenador',
-            'turmas' => fn($q) => $q->with(['anoLetivo', 'alunos'])->latest(),
-        ]);
+            'turmas' => fn ($q) => $q->with(['anoLetivo', 'alunos'])->latest(),
+        ])->loadCount('turmas');
 
         return view('cursos.show', compact('curso'));
     }
 
     /**
-     * Formulário de edição
+     * Formulario de edicao
      */
     public function edit(Curso $curso)
     {
         $this->checkPermission('cursos.edit');
 
-        $professores = User::professores()->ativos()->get();
+        $professores = User::professores()->ativos()->orderBy('name')->get();
+        $areasFormacao = AreaFormacao::ativos()->orderBy('nome')->get();
 
-        return view('cursos.edit', compact('curso', 'professores'));
+        return view('cursos.edit', compact('curso', 'professores', 'areasFormacao'));
     }
 
     /**
@@ -126,7 +131,7 @@ class CursoController extends Controller
 
         $validated = $request->validate([
             'nome' => 'required|string|max:255',
-             'codigo' => [
+            'codigo' => [
                 'required',
                 'string',
                 'min:2',
@@ -135,6 +140,7 @@ class CursoController extends Controller
                 Rule::unique('cursos', 'codigo')->ignore($curso->id),
             ],
             'descricao' => 'nullable|string',
+            'area_formacao_id' => 'required|exists:areas_formacao,id',
             'coordenador_id' => [
                 'nullable',
                 'exists:users,id',
@@ -145,12 +151,13 @@ class CursoController extends Controller
                     }),
             ],
             'ativo' => 'boolean',
-                    ], [
-            'codigo.required' => 'O código do curso é obrigatório.',
-            'codigo.min' => 'O código deve ter pelo menos 2 letras.',
-            'codigo.max' => 'O código não pode ter mais de 10 letras.',
-            'codigo.regex' => 'O código deve conter apenas letras de A a Z.',
-            'codigo.unique' => 'Este código já está a ser usado por outro curso.',
+        ], [
+            'codigo.required' => 'O codigo do curso e obrigatorio.',
+            'codigo.min' => 'O codigo deve ter pelo menos 2 letras.',
+            'codigo.max' => 'O codigo nao pode ter mais de 10 letras.',
+            'codigo.regex' => 'O codigo deve conter apenas letras de A a Z.',
+            'codigo.unique' => 'Este codigo ja esta a ser usado por outro curso.',
+            'area_formacao_id.required' => 'Selecione a area de formacao do curso.',
         ]);
 
         $validated['codigo'] = strtoupper(trim($validated['codigo']));
@@ -168,9 +175,8 @@ class CursoController extends Controller
     {
         $this->checkPermission('cursos.delete');
 
-        // Verificar se há turmas associadas
         if ($curso->turmas()->count() > 0) {
-            return back()->with('error', 'Não é possível deletar um curso com turmas associadas!');
+            return back()->with('error', 'Nao e possivel deletar um curso com turmas associadas!');
         }
 
         $curso->delete();
@@ -187,10 +193,10 @@ class CursoController extends Controller
     {
         $this->checkPermission('cursos.edit');
 
-        $curso->update(['ativo' => !$curso->ativo]);
+        $curso->update(['ativo' => ! $curso->ativo]);
 
         $status = $curso->ativo ? 'ativado' : 'desativado';
-        
+
         return back()->with('success', "Curso {$status} com sucesso!");
     }
 }

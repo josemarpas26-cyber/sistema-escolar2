@@ -41,6 +41,11 @@ class Turma extends Model
         return $this->belongsTo(User::class, 'coordenador_turma_id');
     }
 
+    public function getAreaFormacaoNomeAttribute(): ?string
+    {
+        return $this->curso?->areaFormacao?->nome;
+    }
+
     public function alunos()
     {
         return $this->belongsToMany(User::class, 'turma_aluno', 'turma_id', 'aluno_id')

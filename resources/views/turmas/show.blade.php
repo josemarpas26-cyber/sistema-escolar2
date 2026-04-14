@@ -306,6 +306,10 @@
                     <p class="font-semibold text-gray-900">{{ $turma->curso->nome }}</p>
                 </div>
                 <div>
+                    <span class="text-gray-600">Area de Formacao:</span>
+                    <p class="font-semibold text-gray-900">{{ $turma->area_formacao_nome ?? '-' }}</p>
+                </div>
+                <div>
                     <span class="text-gray-600">Classe:</span>
                     <p class="font-semibold text-gray-900">{{ $turma->classe }}ª Classe</p>
                 </div>

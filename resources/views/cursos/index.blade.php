@@ -11,12 +11,13 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Codigo</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Area de Formacao</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coordenador</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Turmas</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acoes</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -24,6 +25,7 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4"><span class="font-mono font-bold">{{ $curso->codigo }}</span></td>
                     <td class="px-6 py-4 font-semibold">{{ $curso->nome }}</td>
+                    <td class="px-6 py-4">{{ $curso->areaFormacao?->nome ?? '-' }}</td>
                     <td class="px-6 py-4">{{ $curso->coordenador?->name ?? '-' }}</td>
                     <td class="px-6 py-4">{{ $curso->turmas_count }}</td>
                     <td class="px-6 py-4">
@@ -34,15 +36,11 @@
                     <td class="px-6 py-4 text-right space-x-2">
                         <a href="{{ route('cursos.show', $curso) }}" class="text-primary-600"><i class="fas fa-eye"></i></a>
                         <a href="{{ route('cursos.edit', $curso) }}" class="text-blue-600"><i class="fas fa-edit"></i></a>
-
-                    {{-- Botão deletar --}}
-                     <form action="{{ route('cursos.destroy', $curso) }}" method="POST" class="inline-block" onsubmit="return confirm('Tem a certeza de que deseja eliminar este curso?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="text-red-600"><i class="fas fa-trash-alt"></i></button>
-                    </form>
-                </td>
-
+                        <form action="{{ route('cursos.destroy', $curso) }}" method="POST" class="inline-block" onsubmit="return confirm('Tem a certeza de que deseja eliminar este curso?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600"><i class="fas fa-trash-alt"></i></button>
+                        </form>
                     </td>
                 </tr>
                 @endforeach

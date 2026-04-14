@@ -77,7 +77,8 @@ public function __construct(
     ?? config('app.caminho_logo') 
     ?? public_path('images/logo1.png'); // 🔹 Logo configurável
 
-    $this->turma->loadMissing('anoLetivo.configuracaoAvaliacao.provas');
+    $this->turma->loadMissing(['anoLetivo.configuracaoAvaliacao.provas', 'curso.areaFormacao', 'coordenador']);
+    $this->areaFormacao = $areaFormacao ?? $this->turma->area_formacao_nome ?? $this->areaFormacao;
 
     $this->alunos = $turma->alunos()
         ->wherePivot('status', 'matriculado')
@@ -195,7 +196,7 @@ private function escreverBoletim(
         $this->nomeEscola, ['bold' => true, 'size' => 8, 'align' => 'center']);
 
     $this->linha($sheet, $linhaInicio + self::OFF_AREA, $cols['inicio'], $cols['fim'],
-        strtoupper($this->areaFormacao), ['size' => 8, 'align' => 'center']);
+        $this->areaFormacao ? 'AREA DE FORMACAO DE '.strtoupper($this->areaFormacao) : '', ['size' => 8, 'align' => 'center']);
 
     $this->linha($sheet, $linhaInicio + self::OFF_CURSO, $cols['inicio'], $cols['fim'],
         'CURSO DE '.strtoupper($curso), ['bold' => true, 'size' => 8, 'align' => 'center']);
@@ -256,7 +257,7 @@ private function escreverBoletim(
     $rowDirN = $linhaInicio + self::OFF_DIRETOR_N;
 
     $this->celula($sheet, $cols['inicio'] . $rowDirL, 'O DIRECTOR DE TURMA: ', ['size' => 8]);
-    $diretor = $this->turma->coordenadorTurma?->name ?? '';
+    $diretor = $this->turma->coordenador?->name ?? '';
     $this->celula($sheet, $cols['inicio'] . $rowDirN, $diretor, ['size' => 11]);
 
     // ── Bordas externas do boletim ────────────────────────────────────────

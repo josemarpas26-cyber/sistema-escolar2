@@ -13,6 +13,7 @@ class Curso extends Model
         'nome',
         'codigo',
         'descricao',
+        'area_formacao_id',
         'coordenador_id',
         'ativo',
     ];
@@ -24,6 +25,11 @@ class Curso extends Model
     public function coordenador()
     {
         return $this->belongsTo(User::class, 'coordenador_id');
+    }
+
+    public function areaFormacao()
+    {
+        return $this->belongsTo(AreaFormacao::class, 'area_formacao_id');
     }
 
     public function turmas()

@@ -7,8 +7,14 @@
 <form method="POST" action="{{ route('turmas.update', $turma) }}"
       x-data="{
         nome: '{{ old('nome', strtoupper($turma->nome ?? '')) }}',
+        areaFormacao: '',
+        atualizarCurso(el) {
+          const opt = el.options[el.selectedIndex];
+          this.areaFormacao = opt?.dataset?.area ?? '';
+        },
         gerarNomeCompleto() {}
-      }">
+      }"
+      x-init="atualizarCurso($el.querySelector('[name=\'curso_id\']'))">
     @csrf
     @method('PUT')
 
@@ -83,13 +89,17 @@
 
                     <div>
                         <label class="label">Curso *</label>
-                        <select name="curso_id" class="input" required>
+                        <select name="curso_id" class="input" required x-on:change="atualizarCurso($el)">
                             @foreach($cursos as $curso)
-                                     <option value="{{ $curso->id }}" {{ old('curso_id', $turma->curso_id) == $curso->id ? 'selected' : '' }}>
+                                     <option value="{{ $curso->id }}" data-area="{{ $curso->areaFormacao?->nome ?? '' }}" {{ old('curso_id', $turma->curso_id) == $curso->id ? 'selected' : '' }}>
                                 {{ $curso->nome }}
                             </option>
                             @endforeach
                         </select>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Area herdada do curso:
+                            <span class="font-semibold text-slate-700" x-text="areaFormacao || 'Selecione um curso'"></span>
+                        </p>
                     </div>
 
                     <div>

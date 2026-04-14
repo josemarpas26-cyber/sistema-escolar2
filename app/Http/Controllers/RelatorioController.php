@@ -27,7 +27,7 @@ class RelatorioController extends Controller
         $anoLetivoSelecionadoId = $request->integer('ano_letivo_id') ?: $anoLetivoAtivo?->id;
 
         $anosLetivos = AnoLetivo::orderByDesc('id')->get();
-        $turmas = Turma::with(['curso', 'anoLetivo'])
+        $turmas = Turma::with(['curso.areaFormacao', 'anoLetivo'])
             ->when($anoLetivoSelecionadoId, fn ($q) => $q->where('ano_letivo_id', $anoLetivoSelecionadoId))
             ->orderBy('classe')
             ->get();
@@ -103,7 +103,7 @@ class RelatorioController extends Controller
                         ->values();
                 }
             }
-            $turmas = Turma::with(['curso', 'anoLetivo'])
+            $turmas = Turma::with(['curso.areaFormacao', 'anoLetivo'])
                 ->whereIn('id', $turmaIdsPermitidas)
                 ->orderBy('classe')
                 ->get();
@@ -839,7 +839,7 @@ class RelatorioController extends Controller
         ]);
 
         $turma = Turma::with([
-            'curso',
+            'curso.areaFormacao',
             'anoLetivo',
             'coordenador',
             'alunos' => fn ($q) => $q->wherePivot('status', 'matriculado')->orderBy('name'),

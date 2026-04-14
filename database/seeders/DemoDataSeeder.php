@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\AvaliacaoContinua;
+use App\Models\AreaFormacao;
 use App\Models\Role;
 use App\Models\AnoLetivo;
 use App\Models\Curso;
@@ -168,6 +169,20 @@ class DemoDataSeeder extends Seeder
             ['nome' => 'Ciências Humanas',                'coordenador_id' => $professores[6]->id, 'ativo' => true]
         );
         $this->command->info('✅ 3 cursos criados (CFB, CEJ, CH)');
+
+        $areaCiencias = AreaFormacao::firstOrCreate(
+            ['nome' => 'Ciencias'],
+            [
+                'descricao' => 'Cursos da area de ciencias gerais.',
+                'ativo' => true,
+            ]
+        );
+
+        foreach ([$cfb, $cej, $ch] as $curso) {
+            if (! $curso->area_formacao_id) {
+                $curso->update(['area_formacao_id' => $areaCiencias->id]);
+            }
+        }
 
         // =============================================
         // 4. DISCIPLINAS

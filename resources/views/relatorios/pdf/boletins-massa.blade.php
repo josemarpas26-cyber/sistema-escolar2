@@ -34,6 +34,9 @@
 @php
     $alunos = $turma->alunos->values();
     $chunks = $alunos->chunk(2);
+    $tituloArea = $turma->area_formacao_nome
+        ? 'AREA DE FORMACAO DE ' . \Illuminate\Support\Str::upper($turma->area_formacao_nome)
+        : '';
 @endphp
 
 @foreach($chunks as $dupla)
@@ -49,13 +52,13 @@
                     <div class="logo">
                         <img src="{{ public_path('images/logo1.png') }}" alt="Logo">
                     </div>
-                    <div class="school">{{ config('app.nome_escola', 'INST. POLITÉCN. INDUSTRIAL Nº 8050 LDA - NOVA VIDA - KILAMBA KIAXI') }}</div>
-                    <div class="area">{{ strtoupper(config('app.area_formacao', 'ÁREA DE FORMAÇÃO DE INFORMÁTICA')) }}</div>
-                    <div class="curso">CURSO DE {{ strtoupper($turma->curso?->nome ?? 'CURSO') }}</div>
+                    <div class="school">{{ config('app.nome_escola', 'INST. POLITECN. INDUSTRIAL N 8050 LDA - NOVA VIDA - KILAMBA KIAXI') }}</div>
+                    <div class="area">{{ $tituloArea }}</div>
+                    <div class="curso">CURSO DE {{ \Illuminate\Support\Str::upper($turma->curso?->nome ?? 'CURSO') }}</div>
                     <div class="titulo">BOLETIM DE NOTAS</div>
-                    <div class="periodo">ANO LECTIVO: {{ $turma->anoLetivo?->nome }} — {{ $periodoLabel }}</div>
+                    <div class="periodo">ANO LECTIVO: {{ $turma->anoLetivo?->nome }} - {{ $periodoLabel }}</div>
                     <div class="aluno">{{ $aluno->name }}</div>
-                    <div class="meta">{{ $turma->classe }}.ª CLASSE &nbsp; Nº {{ $numeroOrdem }} &nbsp; TURMA: {{ $turma->nome }} &nbsp; SALA Nº {{ $turma->sala ?? '—' }}</div>
+                    <div class="meta">{{ $turma->classe }}.a CLASSE &nbsp; N.o {{ $numeroOrdem }} &nbsp; TURMA: {{ $turma->nome }} &nbsp; SALA N.o {{ $turma->sala ?? '-' }}</div>
 
                     <table>
                         <thead>
@@ -82,7 +85,7 @@
 
                     <div class="diretor">
                         <div class="label">O DIRECTOR DE TURMA:</div>
-                        <div class="nome-diretor">{{ $turma->coordenadorTurma?->name ?? '' }}</div>
+                        <div class="nome-diretor">{{ $turma->coordenador?->name ?? '' }}</div>
                     </div>
                 </div>
             </div>

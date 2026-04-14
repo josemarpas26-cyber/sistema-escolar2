@@ -10,6 +10,7 @@
         classeNome: '',
         classeNum: '{{ preg_replace('/[^0-9]/', '', old('classe', '')) }}',
         codigoCurso: '',
+        areaFormacao: '',
         turno: '{{ old('turno', '') }}',
         capacidade: '{{ old('capacidade', 30) }}',
         nomeCompleto: '',
@@ -28,6 +29,7 @@
         atualizarCurso(el) {
           const opt = el.options[el.selectedIndex];
           this.codigoCurso = opt?.dataset?.codigo ?? '';
+          this.areaFormacao = opt?.dataset?.area ?? '';
           this.gerarNomeCompleto();
         },
         atualizarClasse(el) {
@@ -125,11 +127,15 @@
                             <select name="curso_id" class="input" required x-on:change="atualizarCurso($el)">
                             <option value="">Selecione...</option>
                             @foreach($cursos as $curso)
-                            <option value="{{ $curso->id }}" data-codigo="{{ strtoupper($curso->codigo ?? '') }}" {{ old('curso_id') == $curso->id ? 'selected' : '' }}>
+                            <option value="{{ $curso->id }}" data-codigo="{{ strtoupper($curso->codigo ?? '') }}" data-area="{{ $curso->areaFormacao?->nome ?? '' }}" {{ old('curso_id') == $curso->id ? 'selected' : '' }}>
                                 {{ $curso->nome }}
                             </option>
                             @endforeach
                         </select>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Area herdada do curso:
+                            <span class="font-semibold text-slate-700" x-text="areaFormacao || 'Selecione um curso'"></span>
+                        </p>
                         @error('curso_id')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror

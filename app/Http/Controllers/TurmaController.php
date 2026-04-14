@@ -22,7 +22,7 @@ class TurmaController extends Controller
     {
         $this->checkPermission('turmas.view');
 
-        $query = Turma::with(['curso', 'anoLetivo', 'coordenador'])
+        $query = Turma::with(['curso.areaFormacao', 'anoLetivo', 'coordenador'])
             ->withCount('alunos');
 
         // Filtros
@@ -49,7 +49,7 @@ class TurmaController extends Controller
         $turmas = $query->paginate(15);
 
         // Para os filtros
-        $cursos = Curso::ativos()->get();
+        $cursos = Curso::ativos()->with('areaFormacao')->orderBy('nome')->get();
         $anosLetivos = AnoLetivo::orderBy('nome', 'desc')->get();
 
         return view('turmas.index', compact('turmas', 'cursos', 'anosLetivos'));
@@ -70,7 +70,7 @@ class TurmaController extends Controller
             ->with('error', 'Não existe ano letivo ativo. Ative ou crie um antes de criar turmas.');
     }
 
-    $cursos = Curso::ativos()->get();
+    $cursos = Curso::ativos()->with('areaFormacao')->orderBy('nome')->get();
     $professores = User::professores()->ativos()->get();
     $disciplinas = Disciplina::ativos()->get();
     $anosLetivos = AnoLetivo::orderByDesc('created_at')->get(); 
@@ -168,7 +168,7 @@ class TurmaController extends Controller
         $this->checkPermission('turmas.view');
 
         $turma->load([
-            'curso',
+            'curso.areaFormacao',
             'anoLetivo',
             'coordenador',
             'disciplinas',
@@ -200,7 +200,7 @@ class TurmaController extends Controller
     {
         $this->checkPermission('turmas.edit');
 
-        $cursos = Curso::ativos()->get();
+        $cursos = Curso::ativos()->with('areaFormacao')->orderBy('nome')->get();
         $anosLetivos = AnoLetivo::all();
         $professores = User::professores()->ativos()->get();
         $disciplinas = Disciplina::ativos()->get();
