@@ -135,8 +135,9 @@
                             </div>
                             <input type="email"
                                    name="email"
+                                   id="email"
                                    value="{{ old('email') }}"
-                                   class="input pl-10"
+                                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('email') border-red-400 bg-red-50 @enderror"
                                    :required="!isAluno"
                                    placeholder="utilizador@escola.ao">
                         </div>
