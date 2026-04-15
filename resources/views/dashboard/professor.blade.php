@@ -112,11 +112,6 @@
             <span class="font-medium text-gray-700">Minhas Turmas</span>
         </a>
 
-        <a href="{{ route('users.show', auth()->id()) }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all">
-            <i class="fas fa-user text-2xl text-purple-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Meu Perfil</span>
-        </a>
-
     </div>
 </div>
 
