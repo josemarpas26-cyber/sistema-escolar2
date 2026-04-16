@@ -153,6 +153,75 @@ class NotaPautaTest extends TestCase
         $this->assertEquals(16.20, (float) $nota->cfd);
     }
 
+    public function test_aluno_do_segundo_trimestre_ignora_mt1_no_calculo_de_cf_e_cfd(): void
+    {
+        $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $professor = User::factory()->create(['role_id' => $professorRole->id]);
+        $aluno = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica([
+            'classe' => '10',
+            'disciplina' => [
+                'leciona_10' => true,
+                'leciona_11' => true,
+                'leciona_12' => true,
+            ],
+        ]);
+
+        $turma->alunos()->attach($aluno->id, [
+            'data_matricula' => '2026-01-15',
+            'status' => 'matriculado',
+        ]);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $professor->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        $nota = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'mac1' => 5,
+            'pp1' => 5,
+            'pt1' => 5,
+            'mt1' => 5,
+            'mac2' => 15,
+            'pp2' => 15,
+            'pt2' => 15,
+            'status' => 'em_lancamento',
+        ]);
+
+        $this
+            ->actingAs($professor)
+            ->post(route('notas.lancarTrimestre', 3), [
+                'notas' => [
+                    [
+                        'id' => $nota->id,
+                        'mac3' => 14,
+                        'pp3' => 16,
+                        'pg' => 18,
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $nota->refresh();
+
+        $this->assertNull($nota->mac1);
+        $this->assertNull($nota->pp1);
+        $this->assertNull($nota->pt1);
+        $this->assertNull($nota->mt1);
+        $this->assertEquals(15.00, (float) $nota->mft2);
+        $this->assertEquals(15.00, (float) $nota->cf);
+        $this->assertEquals(16.20, (float) $nota->cfd);
+    }
+
     public function test_matricula_regular_nao_ignora_primeiro_trimestre_automaticamente(): void
     {
         $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);

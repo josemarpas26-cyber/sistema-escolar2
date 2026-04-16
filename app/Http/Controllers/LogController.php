@@ -213,11 +213,16 @@ class LogController extends Controller
             $query->where('disciplina_id', $request->disciplina_id);
         }
 
-        if ($request->filled('aluno')) {
-            $query->where('acao_global', false)
-                ->whereHas('aluno', function ($alunoQuery) use ($request) {
-                    $alunoQuery->where('name', 'like', '%'.$request->aluno.'%');
+        if ($request->filled('utilizador')) {
+            $termoUtilizador = $request->utilizador;
+
+            $query->where(function (Builder $subQuery) use ($termoUtilizador) {
+                $subQuery->whereHas('usuario', function ($usuarioQuery) use ($termoUtilizador) {
+                    $usuarioQuery->where('name', 'like', '%'.$termoUtilizador.'%');
+                })->orWhereHas('aluno', function ($alunoQuery) use ($termoUtilizador) {
+                    $alunoQuery->where('name', 'like', '%'.$termoUtilizador.'%');
                 });
+            });
         }
 
         if ($request->filled('turma')) {
@@ -243,7 +248,14 @@ class LogController extends Controller
         }
 
         if ($request->filled('acao')) {
-            $query->where('acao', $request->acao);
+            $acoesFiltro = match ($request->acao) {
+                'criacao' => ['criacao', 'avaliacao_continua_criada'],
+                'edicao' => ['edicao', 'avaliacao_continua_editada'],
+                'exclusao' => ['exclusao', 'avaliacao_continua_removida'],
+                default => [$request->acao],
+            };
+
+            $query->whereIn('acao', $acoesFiltro);
         }
 
         if ($request->filled('trimestre')) {
@@ -264,7 +276,7 @@ class LogController extends Controller
     private function resumoFiltros(Request $request): array
     {
         return collect([
-            'Aluno' => $request->input('aluno'),
+            'Utilizador' => $request->input('utilizador'),
             'Turma' => $request->input('turma'),
             'Curso' => $request->input('curso'),
             'Disciplina' => $request->input('disciplina'),
