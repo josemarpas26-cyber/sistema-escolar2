@@ -10,6 +10,11 @@
 @endsection
 
 @section('content')
+@php
+    $formatNota = function ($valor, $fallback = 'Sem dado') {
+        return $valor !== null ? number_format((float) $valor, 2) : $fallback;
+    };
+@endphp
 
 @if($turmaAtual)
 
@@ -122,59 +127,6 @@
                             @endif
                         </td>
                     </tr>
-                    <tr class="bg-gray-50/60">
-                        <td class="px-6 pb-4 pt-0 text-xs text-gray-600" colspan="11">
-                            @php
-                                $av1 = $nota->avaliacoesContinuas->where('trimestre', 1);
-                                $av2 = $nota->avaliacoesContinuas->where('trimestre', 2);
-                                $av3 = $nota->avaliacoesContinuas->where('trimestre', 3);
-                                $blocosTrimestres = [
-                                    1 => ['items' => $av1, 'media' => $nota->mac1],
-                                    2 => ['items' => $av2, 'media' => $nota->mac2],
-                                    3 => ['items' => $av3, 'media' => $nota->mac3],
-                                ];
-
-                            @endphp
-                            <div class="font-semibold text-gray-700 mb-2">Avaliações contínuas por trimestre</div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                @foreach($blocosTrimestres as $trimestre => $bloco)
-                                    @php
-                                        $media = $bloco['media'];
-                                        $mediaClass = $media === null
-                                            ? 'bg-gray-100 text-gray-500'
-                                            : ($media >= 10 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
-                                    @endphp
-                                    <div class="rounded-lg border border-gray-200 bg-white p-3">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="font-semibold text-gray-800">{{ $trimestre }}º Trimestre</span>
-                                            <span class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold {{ $mediaClass }}">
-                                                Média: {{ $media !== null ? number_format($media, 2) : '—' }}
-                                            </span>
-                                        </div>
-
-                                        @if($bloco['items']->isEmpty())
-                                            <p class="text-gray-400">Sem avaliações lançadas.</p>
-                                        @else
-                                            <ul class="space-y-1.5">
-                                                @foreach($bloco['items'] as $avaliacao)
-                                                    @php
-                                                        $notaClass = $avaliacao->valor >= 10 ? 'text-green-600' : 'text-red-600';
-                                                    @endphp
-                                                    <li class="flex items-center justify-between gap-2 border-b border-gray-100 pb-1 last:border-0 last:pb-0">
-                                                        <span class="truncate text-gray-700">{{ $avaliacao->descricao }}</span>
-                                                        <span class="shrink-0 {{ $notaClass }} font-semibold">{{ number_format($avaliacao->valor, 2) }}</span>
-                                                        <span class="shrink-0 text-gray-500">
-                                                            {{ optional($avaliacao->data_avaliacao)->format('d/m/Y') ?? 's/ data' }}
-                                                        </span>
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        </td>
-                    </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -185,6 +137,89 @@
             <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-4"></i>
             <p class="text-gray-500 text-lg mb-2">Nenhuma nota disponível</p>
             <p class="text-gray-400 text-sm">As notas serão exibidas aqui quando forem lançadas pelos professores</p>
+        </div>
+        @endif
+    </x-card>
+
+    <x-card title="Avaliações completas por disciplina" icon="fas fa-clipboard-list" class="mt-6">
+        @if($disciplinasDetalhadas->isEmpty())
+        <div class="text-center py-12">
+            <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 text-lg mb-2">Sem disciplinas no ano letivo atual</p>
+        </div>
+        @else
+        <div class="space-y-4">
+            @foreach($disciplinasDetalhadas as $item)
+            @php
+                $nota = $item['nota'];
+                $statusClasse = 'background:var(--warn-bg); color:var(--warn-tx); border:1px solid var(--warn-bd);';
+
+                if ($nota?->cfd !== null) {
+                    $statusClasse = $nota->isAprovado()
+                        ? 'background:var(--ok-bg); color:var(--ok-tx); border:1px solid var(--ok-bd);'
+                        : 'background:var(--err-bg); color:var(--err-tx); border:1px solid var(--err-bd);';
+                }
+            @endphp
+            <details class="rounded-2xl overflow-hidden" style="border:1px solid var(--border); background:var(--surface);" @if($loop->first) open @endif>
+                <summary class="p-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between" style="background:linear-gradient(180deg,var(--surface),var(--surface-sunken));">
+                    <div>
+                        <h3 class="text-lg font-bold" style="color:var(--tx-1);">{{ $item['disciplina']->nome }} - {{ $item['disciplina']->codigo }}</h3>
+                        <p class="mt-2 text-sm" style="color:var(--tx-3);">
+                            Professor: {{ $item['professor']?->name ?? 'Nao associado' }}
+                            · Coordenador: {{ $item['coordenador']?->name ?? 'Nao definido' }}
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="inline-flex rounded-full px-3 py-2 text-sm font-extrabold" style="background:var(--info-bg); color:var(--info-tx); border:1px solid var(--info-bd);">
+                            {{ $item['indicador']['label'] }}: {{ $item['indicador']['valor'] !== null ? number_format($item['indicador']['valor'], 2) : '--' }}
+                        </span>
+                        <span class="inline-flex rounded-full px-3 py-2 text-sm font-extrabold" style="{{ $statusClasse }}">
+                            @if($nota?->cfd !== null)
+                                {{ $nota->isAprovado() ? 'Aprovado' : 'Reprovado' }}
+                            @elseif($nota)
+                                Em andamento
+                            @else
+                                Sem lancamento
+                            @endif
+                        </span>
+                    </div>
+                </summary>
+
+                <div class="p-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
+                    @foreach([
+                        ['titulo' => '1o Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(1) : true, 'campos' => [['label' => 'MAC1', 'valor' => $nota?->mac1], ['label' => 'PP1', 'valor' => $nota?->pp1], ['label' => 'PT1', 'valor' => $nota?->pt1], ['label' => 'MT1', 'valor' => $nota?->mt1]]],
+                        ['titulo' => '2o Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(2) : true, 'campos' => [['label' => 'MAC2', 'valor' => $nota?->mac2], ['label' => 'PP2', 'valor' => $nota?->pp2], ['label' => 'PT2', 'valor' => $nota?->pt2], ['label' => 'MT2', 'valor' => $nota?->mt2], ['label' => 'MFT2', 'valor' => $nota?->mft2]]],
+                        ['titulo' => '3o Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(3) : true, 'campos' => [['label' => 'MAC3', 'valor' => $nota?->mac3], ['label' => 'PP3', 'valor' => $nota?->pp3], ['label' => 'PG', 'valor' => $nota?->pg], ['label' => 'MT3', 'valor' => $nota?->mt3]]],
+                        ['titulo' => 'Fecho final', 'disponivel' => true, 'campos' => [['label' => 'CF', 'valor' => $nota?->cf], ['label' => 'CA', 'valor' => $nota?->ca], ['label' => 'CFD', 'valor' => $nota?->cfd], ['label' => 'Estado', 'valor' => $nota?->status_final]]],
+                    ] as $bloco)
+                    <section class="rounded-2xl overflow-hidden" style="background:var(--surface-sunken); border:1px solid var(--border);">
+                        <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+                            <h4 class="font-bold" style="color:var(--tx-1);">{{ $bloco['titulo'] }}</h4>
+                            <span class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">
+                                {{ !$bloco['disponivel'] ? 'Nao aplicavel' : (!$nota ? 'Sem lancamento' : 'Dados completos') }}
+                            </span>
+                        </div>
+                        <div class="p-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+                            @foreach($bloco['campos'] as $campo)
+                            <div class="rounded-xl p-3" style="background:var(--surface); border:1px solid var(--border);">
+                                <div class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">{{ $campo['label'] }}</div>
+                                <div class="mt-2 text-base font-extrabold" style="color:{{ $campo['valor'] === null ? 'var(--tx-4)' : 'var(--tx-1)' }};">
+                                    @if(!$bloco['disponivel'] && $campo['label'] !== 'Estado')
+                                        Nao aplicavel
+                                    @elseif($campo['label'] === 'Estado')
+                                        {{ $campo['valor'] ?? ($nota ? 'Em andamento' : 'Sem lancamento') }}
+                                    @else
+                                        {{ $formatNota($campo['valor']) }}
+                                    @endif
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </section>
+                    @endforeach
+                </div>
+            </details>
+            @endforeach
         </div>
         @endif
     </x-card>
