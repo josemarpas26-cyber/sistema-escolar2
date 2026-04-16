@@ -1409,8 +1409,7 @@ class NotaController extends Controller
         return back()->with('success', 'Avaliação contínua registada com sucesso.');
     }
 
-
-   public function adicionarAvaliacoesContinuasEmLote(Request $request)
+    public function adicionarAvaliacoesContinuasEmLote(Request $request)
     {
         $user = auth()->user();
         $podeComoProfessor = $user->isProfessor()
@@ -1529,8 +1528,6 @@ class NotaController extends Controller
             "Lançamento em lote concluído: {$registadas} avaliação(ões) registada(s), {$ignoradas} ignorada(s) e {$erros} com erro."
         );
     }
-
-
 
     public function removerAvaliacaoContinua(AvaliacaoContinua $avaliacao)
     {

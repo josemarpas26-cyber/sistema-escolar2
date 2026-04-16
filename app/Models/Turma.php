@@ -76,6 +76,11 @@ class Turma extends Model
         return $this->hasMany(Nota::class);
     }
 
+    public function eventosCalendario()
+    {
+        return $this->hasMany(CalendarioEvento::class);
+    }
+
     public function scopeAtivos($query)
     {
         return $query->where('ativo', true);

@@ -92,7 +92,6 @@
             </a>
         </div>
     </div>
-
     <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
             <thead class="bg-slate-50">

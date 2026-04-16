@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnoLetivoController;
 use App\Http\Controllers\CursoController;
+use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaController;
 use App\Http\Controllers\LogController;
@@ -138,6 +139,15 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('estatisticas', [\App\Http\Controllers\EstatisticasController::class, 'index'])
         ->name('estatisticas.index');
+
+    Route::get('calendario', [CalendarioController::class, 'index'])
+        ->name('calendario.index');
+    Route::post('calendario/eventos', [CalendarioController::class, 'store'])
+        ->name('calendario.eventos.store');
+    Route::put('calendario/eventos/{evento}', [CalendarioController::class, 'update'])
+        ->name('calendario.eventos.update');
+    Route::delete('calendario/eventos/{evento}', [CalendarioController::class, 'destroy'])
+        ->name('calendario.eventos.destroy');
 
     Route::get('/relatorios/boletins-massa', [RelatorioController::class, 'boletimMassa'])
      ->name('relatorios.boletins-massa');
