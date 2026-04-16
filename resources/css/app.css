@@ -151,6 +151,8 @@ body {
     text-rendering: optimizeLegibility;
 }
 
+
+
 body,
 button,
 input,
@@ -619,6 +621,15 @@ select.form-input {
     color: var(--ib-ok-tx);
 }
 
+/* Garantir tamanho mínimo legível fora de PDFs */
+body :not(.pdf-only) {
+    min-font-size: 0; /* reset */
+}
+
+/* Corrigir labels e badges mínimos */
+.badge { font-size: clamp(11px, 1.1vw, 12px); }
+.label { font-size: clamp(11px, 0.75vw, 11.5px); }
+.nav-section-label { font-size: clamp(10px, 0.7vw, 11px); }
 /* ---------------------------------------------------------
    Shared responsiveness
 --------------------------------------------------------- */
@@ -861,6 +872,20 @@ select.form-input {
 .dark .est-t3 {
     background: var(--warn-bg) !important;
     color: var(--warn-tx) !important;
+}
+
+/* Adicionar no final do bloco .dark, substituindo as regras de tabela */
+.dark .siga-table tbody td {
+    background: var(--surface) !important;
+    color: var(--tx-1) !important;
+    border-color: var(--tbl-border) !important;
+}
+.dark .siga-table tbody tr:hover {
+    background: var(--tbl-hover-bg) !important;
+}
+.dark .siga-table thead th {
+    background: var(--tbl-head-bg) !important;
+    color: var(--tbl-head-tx) !important;
 }
 
 @media (max-width: 640px) {
@@ -1405,4 +1430,28 @@ select.form-input {
 .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #475569 rgba(30, 41, 59, 0.5);
+}
+
+/* Transição suave ao alternar dark/light */
+body,
+.card,
+.sidebar,
+.topbar,
+.nav-item,
+.btn,
+.input,
+.form-input,
+.badge {
+    transition:
+        background-color 200ms ease,
+        border-color 200ms ease,
+        color 150ms ease;
+}
+
+/* Excluir elementos que não devem ter transição (performance) */
+.np-nota-input,
+.nr-tbl tbody tr,
+img,
+svg {
+    transition: none;
 }
