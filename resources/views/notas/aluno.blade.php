@@ -139,44 +139,7 @@
                                     3 => ['items' => $av3, 'media' => $nota->mac3],
                                 ];
                             @endphp
-                            <div class="font-semibold text-gray-700 mb-2">Avaliações contínuas por trimestre</div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                @foreach($blocosTrimestres as $trimestre => $bloco)
-                                    @php
-                                        $media = $bloco['media'];
-                                        $mediaClass = $media === null
-                                            ? 'bg-gray-100 text-gray-500'
-                                            : ($media >= 10 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
-                                    @endphp
-                                    <div class="rounded-lg border border-gray-200 bg-white p-3">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="font-semibold text-gray-800">{{ $trimestre }}º Trimestre</span>
-                                            <span class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold {{ $mediaClass }}">
-                                                Média: {{ $media !== null ? number_format($media, 2) : '—' }}
-                                            </span>
-                                        </div>
 
-                                        @if($bloco['items']->isEmpty())
-                                            <p class="text-gray-400">Sem avaliações lançadas.</p>
-                                        @else
-                                            <ul class="space-y-1.5">
-                                                @foreach($bloco['items'] as $avaliacao)
-                                                    @php
-                                                        $notaClass = $avaliacao->valor >= 10 ? 'text-green-600' : 'text-red-600';
-                                                    @endphp
-                                                    <li class="flex items-center justify-between gap-2 border-b border-gray-100 pb-1 last:border-0 last:pb-0">
-                                                        <span class="truncate text-gray-700">{{ $avaliacao->descricao }}</span>
-                                                        <span class="shrink-0 {{ $notaClass }} font-semibold">{{ number_format($avaliacao->valor, 2) }}</span>
-                                                        <span class="shrink-0 text-gray-500">
-                                                            {{ optional($avaliacao->data_avaliacao)->format('d/m/Y') ?? 's/ data' }}
-                                                        </span>
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
                         </td>
                     </tr>
                     @endforeach
@@ -239,9 +202,9 @@
 
                 <div class="p-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
                     @foreach([
-                        ['titulo' => '1o Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(1) : true, 'campos' => [['label' => 'MAC1', 'valor' => $nota?->mac1], ['label' => 'PP1', 'valor' => $nota?->pp1], ['label' => 'PT1', 'valor' => $nota?->pt1], ['label' => 'MT1', 'valor' => $nota?->mt1]]],
-                        ['titulo' => '2o Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(2) : true, 'campos' => [['label' => 'MAC2', 'valor' => $nota?->mac2], ['label' => 'PP2', 'valor' => $nota?->pp2], ['label' => 'PT2', 'valor' => $nota?->pt2], ['label' => 'MT2', 'valor' => $nota?->mt2], ['label' => 'MFT2', 'valor' => $nota?->mft2]]],
-                        ['titulo' => '3o Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(3) : true, 'campos' => [['label' => 'MAC3', 'valor' => $nota?->mac3], ['label' => 'PP3', 'valor' => $nota?->pp3], ['label' => 'PG', 'valor' => $nota?->pg], ['label' => 'MT3', 'valor' => $nota?->mt3]]],
+                        ['titulo' => '1º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(1) : true, 'campos' => [['label' => 'MAC1', 'valor' => $nota?->mac1], ['label' => 'PP1', 'valor' => $nota?->pp1], ['label' => 'PT1', 'valor' => $nota?->pt1], ['label' => 'MT1', 'valor' => $nota?->mt1]]],
+                        ['titulo' => '2º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(2) : true, 'campos' => [['label' => 'MAC2', 'valor' => $nota?->mac2], ['label' => 'PP2', 'valor' => $nota?->pp2], ['label' => 'PT2', 'valor' => $nota?->pt2], ['label' => 'MT2', 'valor' => $nota?->mt2], ['label' => 'MFT2', 'valor' => $nota?->mft2]]],
+                        ['titulo' => '3º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(3) : true, 'campos' => [['label' => 'MAC3', 'valor' => $nota?->mac3], ['label' => 'PP3', 'valor' => $nota?->pp3], ['label' => 'PG', 'valor' => $nota?->pg], ['label' => 'MT3', 'valor' => $nota?->mt3]]],
                         ['titulo' => 'Fecho final', 'disponivel' => true, 'campos' => [['label' => 'CF', 'valor' => $nota?->cf], ['label' => 'CA', 'valor' => $nota?->ca], ['label' => 'CFD', 'valor' => $nota?->cfd], ['label' => 'Estado', 'valor' => $nota?->status_final]]],
                     ] as $bloco)
                     <section class="rounded-2xl overflow-hidden" style="background:var(--surface-sunken); border:1px solid var(--border);">
