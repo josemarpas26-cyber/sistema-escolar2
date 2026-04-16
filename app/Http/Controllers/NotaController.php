@@ -1342,7 +1342,7 @@ class NotaController extends Controller
             'data_avaliacao' => $dataAvaliacao,
         ]);
 
-        $this->registarLogAvaliacaoContinua($nota, 'avaliacao_continua_criada', $trimestre, null, [
+        $this->registarLogAvaliacaoContinua($nota, 'criacao', $trimestre, null, [
             'descricao' => $dados['descricao'],
             'valor' => round((float) $dados['valor'], 2),
             'data_avaliacao' => $dataAvaliacao?->toDateString(),
@@ -1381,7 +1381,7 @@ class NotaController extends Controller
 
         $this->registarLogAvaliacaoContinua(
             $nota,
-            'avaliacao_continua_removida',
+            'exclusao',
             $trimestre,
             $dadosAnteriores,
             null
@@ -1425,7 +1425,7 @@ class NotaController extends Controller
 
         $this->registarLogAvaliacaoContinua(
             $nota,
-            'avaliacao_continua_editada',
+            'edicao',
             $trimestre,
             $dadosAnteriores,
             array_merge(

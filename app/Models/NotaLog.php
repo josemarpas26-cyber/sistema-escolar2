@@ -74,29 +74,41 @@ class NotaLog extends Model
 
     public function getDescricaoAcaoAttribute(): string
     {
+        if ($this->campo_alterado === 'avaliacao_continua') {
+            return match ($this->acao) {
+                'criacao' => 'Criou avaliação',
+                'edicao' => 'Editou avaliação',
+                'exclusao' => 'Removeu avaliação',
+                default => 'Ação desconhecida',
+            };
+        }
+
         return match ($this->acao) {
             'criacao' => 'Criou',
             'edicao' => 'Editou',
             'exclusao' => 'Excluiu',
             'finalizacao' => 'Finalizou',
             'reabertura' => 'Reabriu',
-            'avaliacao_continua_criada' => 'Criou avaliação',
-            'avaliacao_continua_editada' => 'Editou avaliação',
-            'avaliacao_continua_removida' => 'Removeu avaliação',
             default => 'Ação desconhecida',
         };
     }
 
     public function getTipoBadgeAcaoAttribute(): string
     {
+        if ($this->campo_alterado === 'avaliacao_continua') {
+            return match ($this->acao) {
+                'criacao' => 'success',
+                'edicao' => 'info',
+                'exclusao' => 'danger',
+                default => 'info',
+            };
+        }
+
         return match ($this->acao) {
             'criacao' => 'success',
             'exclusao' => 'danger',
             'reabertura' => 'warning',
             'finalizacao' => 'secondary',
-            'avaliacao_continua_criada' => 'success',
-            'avaliacao_continua_editada' => 'info',
-            'avaliacao_continua_removida' => 'danger',
             default => 'info',
         };
     }
