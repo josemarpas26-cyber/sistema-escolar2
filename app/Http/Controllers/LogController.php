@@ -248,7 +248,14 @@ class LogController extends Controller
         }
 
         if ($request->filled('acao')) {
-            $query->where('acao', $request->acao);
+            $acoesFiltro = match ($request->acao) {
+                'criacao' => ['criacao', 'avaliacao_continua_criada'],
+                'edicao' => ['edicao', 'avaliacao_continua_editada'],
+                'exclusao' => ['exclusao', 'avaliacao_continua_removida'],
+                default => [$request->acao],
+            };
+
+            $query->whereIn('acao', $acoesFiltro);
         }
 
         if ($request->filled('trimestre')) {

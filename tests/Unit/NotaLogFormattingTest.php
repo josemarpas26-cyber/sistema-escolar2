@@ -56,4 +56,15 @@ class NotaLogFormattingTest extends TestCase
         $this->assertSame('Editou avaliação', $logEdicao->descricao_acao);
         $this->assertSame('Removeu avaliação', $logExclusao->descricao_acao);
     }
+
+    public function test_descricao_acao_de_avaliacao_continua_legada_nao_fica_como_desconhecida(): void
+    {
+        $logCriacaoLegado = new NotaLog(['acao' => 'avaliacao_continua_criada']);
+        $logEdicaoLegado = new NotaLog(['acao' => 'avaliacao_continua_editada']);
+        $logExclusaoLegado = new NotaLog(['acao' => 'avaliacao_continua_removida']);
+
+        $this->assertSame('Criou avaliação', $logCriacaoLegado->descricao_acao);
+        $this->assertSame('Editou avaliação', $logEdicaoLegado->descricao_acao);
+        $this->assertSame('Removeu avaliação', $logExclusaoLegado->descricao_acao);
+    }
 }

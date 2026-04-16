@@ -74,8 +74,10 @@ class NotaLog extends Model
 
     public function getDescricaoAcaoAttribute(): string
     {
-        if ($this->campo_alterado === 'avaliacao_continua') {
-            return match ($this->acao) {
+        $acaoBase = $this->acaoBase();
+
+        if ($this->campo_alterado === 'avaliacao_continua' || str_starts_with((string) $this->acao, 'avaliacao_continua_')) {
+            return match ($acaoBase) {
                 'criacao' => 'Criou avaliação',
                 'edicao' => 'Editou avaliação',
                 'exclusao' => 'Removeu avaliação',
@@ -83,7 +85,7 @@ class NotaLog extends Model
             };
         }
 
-        return match ($this->acao) {
+        return match ($acaoBase) {
             'criacao' => 'Criou',
             'edicao' => 'Editou',
             'exclusao' => 'Excluiu',
@@ -95,8 +97,10 @@ class NotaLog extends Model
 
     public function getTipoBadgeAcaoAttribute(): string
     {
-        if ($this->campo_alterado === 'avaliacao_continua') {
-            return match ($this->acao) {
+        $acaoBase = $this->acaoBase();
+
+        if ($this->campo_alterado === 'avaliacao_continua' || str_starts_with((string) $this->acao, 'avaliacao_continua_')) {
+            return match ($acaoBase) {
                 'criacao' => 'success',
                 'edicao' => 'info',
                 'exclusao' => 'danger',
@@ -104,7 +108,7 @@ class NotaLog extends Model
             };
         }
 
-        return match ($this->acao) {
+        return match ($acaoBase) {
             'criacao' => 'success',
             'exclusao' => 'danger',
             'reabertura' => 'warning',
@@ -156,11 +160,11 @@ class NotaLog extends Model
 
     public function getResumoAlteracaoAttribute(): string
     {
-        if ($this->acao === 'criacao') {
+        if ($this->acaoBase() === 'criacao') {
             return 'Registo criado';
         }
 
-        if ($this->acao === 'exclusao') {
+        if ($this->acaoBase() === 'exclusao') {
             return 'Registo removido';
         }
 
@@ -233,5 +237,15 @@ class NotaLog extends Model
         }
 
         return "{$descricao} | {$valorAvaliacao} | {$dataFormatada}";
+    }
+
+    private function acaoBase(): string
+    {
+        return match ((string) $this->acao) {
+            'avaliacao_continua_criada' => 'criacao',
+            'avaliacao_continua_editada' => 'edicao',
+            'avaliacao_continua_removida' => 'exclusao',
+            default => (string) $this->acao,
+        };
     }
 }
