@@ -1302,7 +1302,7 @@ class NotaController extends Controller
         $dados = $request->validate([
             'nota_id' => 'required|exists:notas,id',
             'trimestre' => 'required|in:1,2,3',
-            'descricao' => 'required|string|max:120',
+            'descricao' => 'nullable|string|max:120',
             'valor' => 'required|numeric|min:0|max:20',
             'data_avaliacao' => 'nullable|date',
         ]);
@@ -1337,13 +1337,13 @@ class NotaController extends Controller
             'nota_id' => $nota->id,
             'professor_id' => $user->id,
             'trimestre' => $trimestre,
-            'descricao' => $dados['descricao'],
+            'descricao' => trim((string) ($dados['descricao'] ?? '')) ?: 'Avaliação contínua',
             'valor' => round((float) $dados['valor'], 2),
             'data_avaliacao' => $dataAvaliacao,
         ]);
 
         $this->registarLogAvaliacaoContinua($nota, 'criacao', $trimestre, null, [
-            'descricao' => $dados['descricao'],
+            'descricao' => trim((string) ($dados['descricao'] ?? '')) ?: 'Avaliação contínua',
             'valor' => round((float) $dados['valor'], 2),
             'data_avaliacao' => $dataAvaliacao?->toDateString(),
         ]);
@@ -1352,6 +1352,129 @@ class NotaController extends Controller
 
         return back()->with('success', 'Avaliação contínua registada com sucesso.');
     }
+
+
+   public function adicionarAvaliacoesContinuasEmLote(Request $request)
+    {
+        $user = auth()->user();
+        $podeComoProfessor = $user->isProfessor()
+            && ($user->hasPermission('avaliacoes_continuas.create') || $user->hasPermission('notas.lancar'));
+
+        $podeComoAdmin = ($user->isAdmin() || $user->isSecretaria())
+            && $user->hasPermission('avaliacoes_continuas.create');
+
+        if (! $podeComoProfessor && ! $podeComoAdmin) {
+            abort(403, 'Sem permissão para lançar avaliações contínuas.');
+        }
+
+        $dados = $request->validate([
+            'trimestre' => 'required|in:1,2,3',
+            'descricao' => 'nullable|string|max:120',
+            'data_avaliacao' => 'nullable|date',
+            'avaliacoes' => 'required|array|min:1',
+            'avaliacoes.*.nota_id' => 'required|exists:notas,id',
+            'avaliacoes.*.valor' => 'nullable|numeric|min:0|max:20',
+        ]);
+
+        $trimestre = (int) $dados['trimestre'];
+        $descricao = trim((string) ($dados['descricao'] ?? '')) ?: 'Avaliação contínua';
+        $dataAvaliacao = $this->normalizarDataAvaliacao($dados['data_avaliacao'] ?? null);
+
+        $notaIds = collect($dados['avaliacoes'])
+            ->pluck('nota_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $notas = Nota::query()
+            ->with(['turma', 'disciplina', 'aluno.turmas', 'anoLetivo'])
+            ->whereIn('id', $notaIds)
+            ->get()
+            ->keyBy('id');
+
+        $registadas = 0;
+        $ignoradas = 0;
+        $erros = 0;
+
+        DB::transaction(function () use (
+            $dados,
+            $notas,
+            $user,
+            $podeComoProfessor,
+            $trimestre,
+            $descricao,
+            $dataAvaliacao,
+            &$registadas,
+            &$ignoradas,
+            &$erros
+        ) {
+            foreach ($dados['avaliacoes'] as $item) {
+                $valor = $item['valor'] ?? null;
+
+                if ($valor === null || $valor === '') {
+                    $ignoradas++;
+                    continue;
+                }
+
+                $nota = $notas->get((int) $item['nota_id']);
+
+                if (! $nota) {
+                    $erros++;
+                    continue;
+                }
+
+                if ($podeComoProfessor) {
+                    $temAtribuicao = $user->atribuicoes()
+                        ->where('turma_id', $nota->turma_id)
+                        ->where('disciplina_id', $nota->disciplina_id)
+                        ->where('ano_letivo_id', $nota->ano_letivo_id)
+                        ->exists();
+
+                    if (! $temAtribuicao) {
+                        $erros++;
+                        continue;
+                    }
+                }
+
+                if (! $nota->trimestreEstaDisponivel($trimestre) || (bool) $nota->{"bloqueado_t{$trimestre}"}) {
+                    $ignoradas++;
+                    continue;
+                }
+
+                $valorFinal = round((float) $valor, 2);
+
+                AvaliacaoContinua::create([
+                    'nota_id' => $nota->id,
+                    'professor_id' => $user->id,
+                    'trimestre' => $trimestre,
+                    'descricao' => $descricao,
+                    'valor' => $valorFinal,
+                    'data_avaliacao' => $dataAvaliacao,
+                ]);
+
+                $this->registarLogAvaliacaoContinua($nota, 'criacao', $trimestre, null, [
+                    'descricao' => $descricao,
+                    'valor' => $valorFinal,
+                    'data_avaliacao' => $dataAvaliacao?->toDateString(),
+                ]);
+
+                $this->recalcularMacPorAvaliacoes($nota, $trimestre);
+                $registadas++;
+            }
+        });
+
+        if ($registadas === 0 && $erros > 0) {
+            return back()->with('error', 'Não foi possível lançar as avaliações em lote.');
+        }
+
+        return back()->with(
+            'success',
+            "Lançamento em lote concluído: {$registadas} avaliação(ões) registada(s), {$ignoradas} ignorada(s) e {$erros} com erro."
+        );
+    }
+
+
 
     public function removerAvaliacaoContinua(AvaliacaoContinua $avaliacao)
     {
@@ -1402,7 +1525,7 @@ class NotaController extends Controller
         }
 
         $dados = $request->validate([
-            'descricao' => 'required|string|max:120',
+            'descricao' => 'nullable|string|max:120',
             'valor' => 'required|numeric|min:0|max:20',
             'data_avaliacao' => 'nullable|date',
         ]);
@@ -1418,7 +1541,7 @@ class NotaController extends Controller
         $dataAvaliacao = $this->normalizarDataAvaliacao($dados['data_avaliacao'] ?? null, $avaliacao->data_avaliacao);
 
         $avaliacao->update([
-            'descricao' => $dados['descricao'],
+            'descricao' => trim((string) ($dados['descricao'] ?? '')) ?: 'Avaliação contínua',
             'valor' => round((float) $dados['valor'], 2),
             'data_avaliacao' => $dataAvaliacao,
         ]);

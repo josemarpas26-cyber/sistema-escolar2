@@ -89,6 +89,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.avaliacoes-continuas.index');
     Route::post('notas/avaliacoes-continuas', [NotaController::class, 'adicionarAvaliacaoContinua'])
         ->name('notas.avaliacoes-continuas.store');
+    Route::post('notas/avaliacoes-continuas/lote', [NotaController::class, 'adicionarAvaliacoesContinuasEmLote'])
+        ->name('notas.avaliacoes-continuas.store-lote');
     Route::put('notas/avaliacoes-continuas/{avaliacao}', [NotaController::class, 'atualizarAvaliacaoContinua'])
         ->name('notas.avaliacoes-continuas.update');
     Route::delete('notas/avaliacoes-continuas/{avaliacao}', [NotaController::class, 'removerAvaliacaoContinua'])
