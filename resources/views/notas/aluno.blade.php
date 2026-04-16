@@ -128,9 +128,51 @@
                                 $av1 = $nota->avaliacoesContinuas->where('trimestre', 1);
                                 $av2 = $nota->avaliacoesContinuas->where('trimestre', 2);
                                 $av3 = $nota->avaliacoesContinuas->where('trimestre', 3);
+                                $blocosTrimestres = [
+                                    1 => ['items' => $av1, 'media' => $nota->mac1],
+                                    2 => ['items' => $av2, 'media' => $nota->mac2],
+                                    3 => ['items' => $av3, 'media' => $nota->mac3],
+                                ];
+
                             @endphp
-                            <span class="font-semibold text-gray-700">Avaliações contínuas:</span>
-                            T1 ({{ $av1->count() }}), T2 ({{ $av2->count() }}), T3 ({{ $av3->count() }})
+                            <div class="font-semibold text-gray-700 mb-2">Avaliações contínuas por trimestre</div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                @foreach($blocosTrimestres as $trimestre => $bloco)
+                                    @php
+                                        $media = $bloco['media'];
+                                        $mediaClass = $media === null
+                                            ? 'bg-gray-100 text-gray-500'
+                                            : ($media >= 10 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+                                    @endphp
+                                    <div class="rounded-lg border border-gray-200 bg-white p-3">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="font-semibold text-gray-800">{{ $trimestre }}º Trimestre</span>
+                                            <span class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold {{ $mediaClass }}">
+                                                Média: {{ $media !== null ? number_format($media, 2) : '—' }}
+                                            </span>
+                                        </div>
+
+                                        @if($bloco['items']->isEmpty())
+                                            <p class="text-gray-400">Sem avaliações lançadas.</p>
+                                        @else
+                                            <ul class="space-y-1.5">
+                                                @foreach($bloco['items'] as $avaliacao)
+                                                    @php
+                                                        $notaClass = $avaliacao->valor >= 10 ? 'text-green-600' : 'text-red-600';
+                                                    @endphp
+                                                    <li class="flex items-center justify-between gap-2 border-b border-gray-100 pb-1 last:border-0 last:pb-0">
+                                                        <span class="truncate text-gray-700">{{ $avaliacao->descricao }}</span>
+                                                        <span class="shrink-0 {{ $notaClass }} font-semibold">{{ number_format($avaliacao->valor, 2) }}</span>
+                                                        <span class="shrink-0 text-gray-500">
+                                                            {{ optional($avaliacao->data_avaliacao)->format('d/m/Y') ?? 's/ data' }}
+                                                        </span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
                         </td>
                     </tr>
                     @endforeach
