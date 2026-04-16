@@ -193,7 +193,7 @@
 
     <!-- Header -->
     <div class="header">
-        <h1>📋 BOLETIM ESCOLAR</h1>
+        <h1> BOLETIM ESCOLAR</h1>
         <p>
             {{ $turma->curso->nome }} - {{ $turma->classe }}ª Classe
             <span class="trimestre-badge">{{ $trimestreLabel }}</span>
