@@ -60,11 +60,34 @@ class CalendarioController extends Controller
                 ->get();
         }
 
+        $eventosPorDia = $eventos
+            ->groupBy(fn (CalendarioEvento $evento) => $evento->inicio->toDateString());
+
+        $primeiroDiaSemana = $inicioMes->copy()->startOfMonth()->dayOfWeekIso; // 1 = segunda
+        $totalDiasMes = $inicioMes->daysInMonth;
+        $celulasCalendario = collect();
+
+        for ($indice = 1; $indice < $primeiroDiaSemana; $indice++) {
+            $celulasCalendario->push(null);
+        }
+
+        for ($dia = 1; $dia <= $totalDiasMes; $dia++) {
+            $data = $inicioMes->copy()->day($dia);
+            $chaveData = $data->toDateString();
+
+            $celulasCalendario->push([
+                'data' => $data,
+                'eventos' => $eventosPorDia->get($chaveData, collect()),
+            ]);
+        }
+
         return view('calendario.index', [
             'turmas' => $turmas,
             'turmaId' => $turmaId,
             'mesSelecionado' => $mesSelecionado,
             'eventos' => $eventos,
+            'inicioMes' => $inicioMes,
+            'celulasCalendario' => $celulasCalendario,
             'isProfessor' => $user->isProfessor(),
         ]);
     }

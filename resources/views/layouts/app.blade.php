@@ -807,12 +807,7 @@
                class="nav-item {{ request()->routeIs('estatisticas.*') ? 'active' : '' }}">
                 <span class="nav-item-icon"><i class="fas fa-chart-bar"></i></span>Estatísticas
             </a>
-            @if(auth()->user()->isProfessor() || auth()->user()->isAluno())
-            <a href="{{ route('calendario.index') }}"
-               class="nav-item {{ request()->routeIs('calendario.*') ? 'active' : '' }}">
-                <span class="nav-item-icon"><i class="fas fa-calendar-day"></i></span>Calendário
-            </a>
-            @endif
+
 
             @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
             <div class="nav-section-label">Sistema</div>
@@ -838,6 +833,13 @@
             @endif  {{-- fecha isAdmin --}}
             @endif  {{-- fecha isAdmin || isSecretaria --}}
             @endif  {{-- fecha @else de isAluno --}}
+            
+            @if(auth()->user()->isProfessor() || auth()->user()->isAluno())
+            <a href="{{ route('calendario.index') }}"
+               class="nav-item {{ request()->routeIs('calendario.*') ? 'active' : '' }}">
+                <span class="nav-item-icon"><i class="fas fa-calendar-day"></i></span>Calendário
+            </a>
+            @endif
 
         </nav>
 

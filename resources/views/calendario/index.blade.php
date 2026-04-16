@@ -53,6 +53,54 @@
     @elseif($eventos->isEmpty())
         <p class="text-slate-500">Nenhum evento registado para o período selecionado.</p>
     @else
+     <div class="mb-5">
+            <h3 class="text-sm font-semibold text-slate-700 mb-3">
+                Calendário mensal · {{ $inicioMes->translatedFormat('F \d\e Y') }}
+            </h3>
+
+            <div class="grid grid-cols-7 text-xs font-semibold text-slate-500 mb-2">
+                @foreach(['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as $diaSemana)
+                    <div class="px-2 py-1">{{ $diaSemana }}</div>
+                @endforeach
+            </div>
+
+            <div class="grid grid-cols-7 gap-2">
+                @foreach($celulasCalendario as $celula)
+                    @if(is_null($celula))
+                        <div class="min-h-[92px] border border-transparent rounded-lg bg-transparent"></div>
+                    @else
+                        @php
+                            $dataCelula = $celula['data'];
+                            $eventosCelula = $celula['eventos'];
+                            $hoje = $dataCelula->isSameDay(now());
+                        @endphp
+
+                        <div class="min-h-[92px] border rounded-lg p-2 {{ $hoje ? 'border-indigo-400 bg-indigo-50/70' : 'border-slate-200 bg-white' }}">
+                            <div class="text-xs font-semibold {{ $hoje ? 'text-indigo-700' : 'text-slate-700' }}">
+                                {{ $dataCelula->format('d') }}
+                            </div>
+
+                            @if($eventosCelula->isNotEmpty())
+                                <div class="mt-1 space-y-1">
+                                    @foreach($eventosCelula->take(3) as $eventoCelula)
+                                        <div class="text-[11px] rounded px-1.5 py-0.5 bg-indigo-100 text-indigo-700 truncate" title="{{ $eventoCelula->titulo }}">
+                                            {{ $eventoCelula->inicio->format('H:i') }} · {{ $eventoCelula->titulo }}
+                                        </div>
+                                    @endforeach
+
+                                    @if($eventosCelula->count() > 3)
+                                        <div class="text-[11px] text-slate-500">
+                                            +{{ $eventosCelula->count() - 3 }} evento(s)
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+
         <div class="space-y-4">
             @foreach($eventos->groupBy(fn($evento) => $evento->inicio->format('Y-m-d')) as $data => $eventosDoDia)
                 <div class="border border-slate-200 rounded-lg overflow-hidden">
