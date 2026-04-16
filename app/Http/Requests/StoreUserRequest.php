@@ -27,7 +27,7 @@ class StoreUserRequest extends FormRequest
             'foto_perfil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'numero_processo' => 'nullable|string|unique:users,numero_processo',
             'nome_encarregado' => 'nullable|string|max:255',
-            'contacto_encarregado' => 'nullable|string|max:20',
+            'contacto_encarregado' => ['nullable', 'string', 'min:7', 'max:15', 'regex:/^[0-9\s\+\-]+$/'],
             'ativo' => 'boolean',
         ];
     }
@@ -46,9 +46,12 @@ class StoreUserRequest extends FormRequest
             'bi.unique' => 'Este BI já está cadastrado',
             'data_nascimento.before' => 'A data de nascimento deve ser anterior a hoje',
             'genero.in' => 'Gênero inválido',
-            'telefone.regex' => 'O campo telefone deve conter apenas números.',
+            'telefone.regex' => 'O telefone deve conter apenas números.',
             'telefone.min' => 'O telefone deve ter pelo menos 7 dígitos.',
             'telefone.max' => 'O telefone não pode ter mais de 15 dígitos.',
+            'contacto_encarregado.regex' => 'O telefone do encarregado deve conter apenas números.',
+            'contacto_encarregado.min' => 'O telefone do encarregado deve ter pelo menos 7 dígitos.',
+            'contacto_encarregado.max' => 'O telefone do encarregado não pode ter mais de 15 dígitos.',
             'foto_perfil.image' => 'O arquivo deve ser uma imagem',
             'foto_perfil.max' => 'A imagem não pode exceder 2MB',
             'numero_processo.unique' => 'Este número de processo já está cadastrado',

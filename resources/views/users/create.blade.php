@@ -96,12 +96,30 @@
                     <!-- Telefone -->
                     <div>
                         <label class="label">Telefone</label>
-                        <input type="text"
+                        <input type="tel"
                                name="telefone"
+                               id="telefone"
+                               inputmode="numeric"
+                               maxlength="15"
+                               placeholder="923 000 000"
                                value="{{ old('telefone') }}"
-                               class="input"
-                               placeholder="923000000"
-                               maxlength="15">
+                               x-on:input="this.value = this.value.replace(/[^0-9\s\+\-]/g, '');"
+                               x-on:keydown="
+                                   const permitidas = /^[0-9\+\-\s]$/;
+                                   const teclasSistema = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'];
+                                   if (!permitidas.test($event.key) && !teclasSistema.includes($event.key)) {
+                                       $event.preventDefault();
+                                   }
+                               "
+                               x-on:paste="
+                                   $event.preventDefault();
+                                   const texto = ($event.clipboardData || window.clipboardData).getData('text');
+                                   this.value = texto.replace(/[^0-9\s\+\-]/g, '');
+                               "
+                               class="input @error('telefone') border-red-400 bg-red-50 @enderror">
+                        @error('telefone')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Endereço -->
@@ -159,8 +177,9 @@
                             </div>
                             <input type="email"
                                    name="email"
+                                   id="email"
                                    value="{{ old('email') }}"
-                                   class="input pl-10"
+                                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('email') border-red-400 bg-red-50 @enderror"
                                    :required="!isAluno"
                                    placeholder="utilizador@escola.ao">
                         </div>
@@ -293,14 +312,29 @@
                         </div>
 
                         <div>
-                            <label class="label">Contacto do Encarregado *</label>
-                            <input type="text"
+                            <label class="label">Telefone do Encarregado *</label>
+                            <input type="tel"
                                    name="contacto_encarregado"
+                                   id="contacto_encarregado"
+                                   inputmode="numeric"
+                                   maxlength="15"
+                                   placeholder="923 000 000"
                                    value="{{ old('contacto_encarregado') }}"
-                                   class="input"
                                    :required="isAluno"
-                                   placeholder="923000000"
-                                   maxlength="15">
+                                   x-on:input="this.value = this.value.replace(/[^0-9\s\+\-]/g, '');"
+                                   x-on:keydown="
+                                       const permitidas = /^[0-9\+\-\s]$/;
+                                       const teclasSistema = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'];
+                                       if (!permitidas.test($event.key) && !teclasSistema.includes($event.key)) {
+                                           $event.preventDefault();
+                                       }
+                                   "
+                                   x-on:paste="
+                                       $event.preventDefault();
+                                       const texto = ($event.clipboardData || window.clipboardData).getData('text');
+                                       this.value = texto.replace(/[^0-9\s\+\-]/g, '');
+                                   "
+                                   class="input @error('contacto_encarregado') border-red-400 bg-red-50 @enderror">
                             @error('contacto_encarregado')
                             <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
