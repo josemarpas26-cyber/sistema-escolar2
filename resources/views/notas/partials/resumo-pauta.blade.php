@@ -3,7 +3,7 @@
 @endphp
 
 @if($estatisticasPauta)
-<div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+<div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
     <div class="mb-4 flex items-center justify-between gap-3">
         <div>
             <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-700">Resumo da pauta</h3>
@@ -16,19 +16,19 @@
     </div>
 
     <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-lg border border-gray-200 bg-slate-50 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Visao geral</p>
-            <p class="mt-2 text-2xl font-semibold text-slate-800">{{ $estatisticasPauta['geral']['total_notas'] }}</p>
-            <p class="mt-1 text-xs text-gray-500">notas lancadas nos tres trimestres</p>
+        <div class="rounded-lg border border-gray-200 bg-slate-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Visao geral</p>
+            <p class="mt-2 text-2xl font-semibold text-slate-800 dark:text-gray-100">{{ $estatisticasPauta['geral']['total_notas'] }}</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">notas lancadas nos tres trimestres</p>
             <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                <span class="rounded-full bg-green-100 px-2.5 py-1 text-green-700">
+                 <span class="rounded-full bg-green-100 px-2.5 py-1 text-green-800 dark:bg-green-900 dark:text-green-200">
                     {{ $estatisticasPauta['geral']['pct_aprovacao'] }}% aprovacao
                 </span>
                 <span class="rounded-full bg-red-100 px-2.5 py-1 text-red-700">
                     {{ $estatisticasPauta['geral']['pct_reprovacao'] }}% reprovacao
                 </span>
                 @if($estatisticasPauta['geral']['media_geral'] !== null)
-                <span class="rounded-full bg-teal-100 px-2.5 py-1 text-teal-700">
+                    <span class="rounded-full bg-blue-100 px-2.5 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                     Media {{ number_format($estatisticasPauta['geral']['media_geral'], 1) }}
                 </span>
                 @endif
