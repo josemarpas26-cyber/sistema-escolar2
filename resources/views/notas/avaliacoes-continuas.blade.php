@@ -45,9 +45,7 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
             <select name="trimestre" class="form-input" required>
                 <option value="">Trimestre</option>
-                <option value="1">1º Trimestre</option>
-                <option value="2">2º Trimestre</option>
-                <option value="3">3º Trimestre</option>
+                <option value="{{ $trimestreCorrente }}" selected>{{ $trimestreCorrente }}º Trimestre (corrente)</option>
             </select>
             <input type="text" name="descricao" class="form-input" maxlength="120" placeholder="Descrição (opcional)">
             <input type="date" name="data_avaliacao" class="form-input" value="{{ now()->toDateString() }}">
