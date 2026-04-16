@@ -831,9 +831,13 @@
                 @if($deletedCount > 0)
                 <span class="nav-item-count">{{ $deletedCount }}</span>
                 @endif
+                
+                
+                
             </a>
-            @endif
-            @endif
+            @endif  {{-- fecha isAdmin --}}
+            @endif  {{-- fecha isAdmin || isSecretaria --}}
+            @endif  {{-- fecha @else de isAluno --}}
 
         </nav>
 
