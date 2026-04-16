@@ -416,10 +416,10 @@
 
                 <div class="bg-white dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700/50 mb-6 overflow-hidden">
                     {{-- Cabeçalho da disciplina --}}
-                    <div class="flex items-center justify-between px-5 py-3.5 bg-gray-800 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700/50">
+                    <div class="flex items-center justify-between px-5 py-3 bg-gray-800 dark:bg-slate-900 text-white rounded-t-xl">
                         <div class="flex items-center gap-3">
                             <span class="text-xs font-bold text-white uppercase tracking-widest">{{ $disc->nome }}</span>
-                            <span class="text-xs text-slate-300 dark:text-slate-400">{{ $disc->codigo }}</span>
+                             <span class="text-xs text-gray-400">{{ $disc->codigo }}</span>
                         </div>
                         @php
                             $cfds       = $notasDaDisciplina->whereNotNull('cfd');
@@ -428,7 +428,7 @@
                             $reprovDisc = $cfds->filter(fn($n) => !$n->isAprovado())->count();
                         @endphp
                         <div class="flex items-center gap-2 text-xs">
-                            <span class="text-slate-200 dark:text-slate-400">Média:</span>
+                             <span class="text-gray-300">Média:</span>
                             @if($mediaDisc)
                                 <span class="font-bold text-white">{{ number_format($mediaDisc,2) }}</span>
                             @else
@@ -444,18 +444,18 @@
                         <table class="w-full min-w-[900px] border-collapse text-sm">
                             <thead>
                                 {{-- CORRIGIDO: removida a <tr> duplicada e o <th> CFD duplicado --}}
-                                <tr class="bg-slate-800 dark:bg-slate-800 text-slate-300 text-xs uppercase tracking-wider">
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center w-8">Nº</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-left">Aluno</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">MT1</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">MT2</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center font-bold">MFT2</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">MT3</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center bg-blue-900/30 text-blue-400 font-bold">CFD</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">Estado</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">T1/T2/T3</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">PP/PT/PG</th>
-                                    <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-center">Ação</th>
+                                <tr class="bg-gray-100 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-700/50 text-gray-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-500 dark:text-slate-400 w-10">Nº</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-500 dark:text-slate-400">Aluno</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MT1</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MT2</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MFT2</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MT3</th>
+                                    <th class="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20">CFD</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">Estado</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">T1/T2/T3</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">PP/PT/PG</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">Ação</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -478,8 +478,8 @@
                                     $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false));
                                     $pgTotal = ($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false);
                                 @endphp
-                                <tr class="border-b border-gray-100 dark:border-slate-700/30 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-slate-700/30 group @if($loop->even) bg-gray-50/80 dark:bg-slate-800/20 @endif">
-                                    <td class="px-4 py-3 text-sm text-gray-400 dark:text-slate-500 group-hover:text-gray-700 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
+                                 <tr class="border-b border-gray-100 dark:border-slate-700/30 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors duration-150 group @if($loop->even) bg-white dark:bg-transparent @else bg-gray-50/50 dark:bg-slate-800/10 @endif">
+                                    <td class="px-4 py-3 text-xs text-gray-400 dark:text-slate-500 group-hover:text-gray-700 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150">
                                         <a href="{{ route('users.show', $aluno) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">{{ $aluno->name ?? '—' }}</a>
                                         <span class="text-gray-400 dark:text-slate-500 text-xs">{{ $aluno->numero_processo ?? '' }}</span>
