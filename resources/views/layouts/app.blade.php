@@ -17,10 +17,24 @@
     <title>@yield('title', config('app.name', 'SIGA')) — @yield('page-title', 'Dashboard')</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="{{ asset('images/logo1.png') }}">
 
+    <link rel="preload" as="style"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'">
+
+    {{-- JetBrains Mono apenas quando necessário --}}
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+    </noscript>
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -135,8 +149,8 @@
             /* Texto — contraste WCAG AA mínimo 4.5:1 */
             --tx-1: #e6edf3;   /* branco suave — não puro para menos fadiga */
             --tx-2: #c9d1d9;
-            --tx-3: #8b949e;
-            --tx-4: #6e7681;
+            --tx-3: #9ba5b0;
+            --tx-4: #7d8896;
             --tx-5: #484f58;
 
             /* Interação */
@@ -176,8 +190,8 @@
             --badge-blue-bg:  rgba(56,139,253,.15); --badge-blue-tx:  #79c0ff;
             --badge-green-bg: rgba(63,185,80,.13);  --badge-green-tx: #56d364;
             --badge-red-bg:   rgba(248,81,73,.13);  --badge-red-tx:   #f85149;
-            --badge-amber-bg: rgba(227,179,65,.13); --badge-amber-tx: #e3b341;
-            --badge-gray-bg:  #21262d;              --badge-gray-tx:  #8b949e;
+            --badge-amber-bg: rgba(227,179,65,.13); --badge-amber-tx: #2a3140;
+            --badge-gray-bg:  #21262d;              --badge-gray-tx:  #c8d1da;
             --badge-teal-bg:  rgba(0,178,212,.12);  --badge-teal-tx:  #39d353;
 
             /* Ícone botões */
@@ -544,46 +558,121 @@
            OVERLAY
         ═══════════════════════════════════════════════════════ */
         .sidebar-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,.55); z-index: 35;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 35;
             backdrop-filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 250ms ease;
         }
-        .sidebar-overlay.visible { display: block; }
-        @media (min-width: 1024px) { .sidebar-overlay { display: none !important; } }
 
+        .sidebar-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        @media (min-width: 1024px) {
+            .sidebar-overlay { display: none !important; }
+        }
         /* ═══════════════════════════════════════════════════════
            BUTTONS
         ═══════════════════════════════════════════════════════ */
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            height: 36px; padding: 0 16px;
-            border-radius: var(--r-md);
-            font-size: 13px; font-weight: 600;
-            font-family: var(--font-sans);
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: background .15s, border-color .15s, color .15s;
-            white-space: nowrap; text-decoration: none;
-            letter-spacing: .01em;
-        }
-        .btn:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 2px; }
-        .btn:disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 36px;
+        padding: 0 16px;
+        border-radius: var(--r-md);
+        font-size: 13px;
+        font-weight: 600;
+        font-family: var(--font-sans);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: background .15s, border-color .15s, color .15s;
+        white-space: nowrap;
+        text-decoration: none;
+        letter-spacing: .01em;
+    }
 
-        .btn-primary { background: var(--blue-600); color: #fff; border-color: var(--blue-600); }
-        .btn-primary:hover { background: var(--blue-700); border-color: var(--blue-700); }
+    .btn:focus-visible {
+        outline: 2.5px solid var(--blue-500);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    }
 
-        .btn-outline { background: var(--surface); color: var(--tx-3); border-color: var(--border); }
-        .btn-outline:hover { background: var(--hover-bg); color: var(--tx-1); border-color: var(--border-strong); }
+    .dark .btn:focus-visible {
+        outline-color: var(--blue-400);
+        box-shadow: 0 0 0 4px rgba(56, 139, 253, 0.2);
+    }
 
-        .btn-success { background: var(--ok-ico); color: #fff; border-color: var(--ok-ico); }
-        .btn-success:hover { filter: brightness(1.1); }
+    .btn:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
 
-        .btn-danger { background: var(--err-bg); color: var(--err-tx); border-color: var(--err-bd); }
-        .btn-danger:hover { background: var(--err-bd); }
+    .btn-primary {
+        background: var(--blue-600);
+        color: #fff;
+        border-color: var(--blue-600);
+    }
 
-        .btn-warning { background: var(--warn-bg); color: var(--warn-tx); border-color: var(--warn-bd); }
-        .btn-warning:hover { background: var(--warn-bd); }
+    .btn-primary:hover {
+        background: var(--blue-700);
+        border-color: var(--blue-700);
+    }
 
+    .btn-outline {
+        background: var(--surface);
+        color: var(--tx-3);
+        border-color: var(--border);
+    }
+
+    .btn-outline:hover {
+        background: var(--hover-bg);
+        color: var(--tx-1);
+        border-color: var(--border-strong);
+    }
+
+    .btn-success {
+        background: var(--ok-ico);
+        color: #fff;
+        border-color: var(--ok-ico);
+    }
+
+    .btn-success:hover {
+        filter: brightness(1.1);
+    }
+
+    .btn-danger {
+        background: var(--err-bg);
+        color: var(--err-tx);
+        border-color: var(--err-bd);
+    }
+
+    .btn-danger:hover {
+        background: var(--err-bd);
+    }
+
+    .btn-warning {
+        background: var(--warn-bg);
+        color: var(--warn-tx);
+        border-color: var(--warn-bd);
+    }
+
+    .btn-warning:hover {
+        background: var(--warn-bd);
+    }
+
+    .nav-item:focus-visible,
+    .nav-dropdown-trigger:focus-visible,
+    .sidebar-user:focus-visible {
+        outline: 2px solid var(--blue-500);
+        outline-offset: -2px;
+        border-radius: var(--r-md);
+    }
         /* ═══════════════════════════════════════════════════════
            COMPAT — views legadas com classes Tailwind hardcoded
         ═══════════════════════════════════════════════════════ */
@@ -641,6 +730,20 @@
         .dark .text-yellow-600,
         .dark .text-yellow-700,
         .dark .text-yellow-800   { color: var(--warn-tx) !important; }
+
+
+        /* Inputs com classes Tailwind inline (create/edit forms) */
+        .dark input[class*="border-gray"],
+        .dark select[class*="border-gray"],
+        .dark input[class*="pl-10"],
+        .dark input[class*="px-4"] {
+            background-color: var(--inp-bg) !important;
+            border-color: var(--inp-border) !important;
+            color: var(--inp-tx) !important;
+        }
+        .dark input[class*="border-gray"]::placeholder {
+            color: var(--inp-placeholder) !important;
+        }
 
         /* inputs nativos do Tailwind */
         .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
