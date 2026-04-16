@@ -192,14 +192,12 @@ class Nota extends Model
 
     private function calcularClassificacaoFinalComRegraEspecial(): ?float
     {
-        if ($this->trimestreEstaDisponivel(1)) {
-            return $this->mft2 !== null && $this->mt3 !== null
-                ? round(($this->mft2 + $this->mt3) / 2, 2)
-                : null;
+        if (! $this->trimestreEstaDisponivel(1) && $this->mt1 !== null) {
+            $this->mt1 = null;
         }
 
-        return $this->mt2 !== null && $this->mt3 !== null
-            ? round(($this->mt2 + $this->mt3) / 2, 2)
+        return $this->mft2 !== null && $this->mt3 !== null
+            ? round(($this->mft2 + $this->mt3) / 2, 2)
             : null;
     }
 
