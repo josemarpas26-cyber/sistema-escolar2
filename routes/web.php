@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnoLetivoController;
 use App\Http\Controllers\CursoController;
+use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaController;
 use App\Http\Controllers\LogController;
@@ -89,6 +90,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('notas.avaliacoes-continuas.index');
     Route::post('notas/avaliacoes-continuas', [NotaController::class, 'adicionarAvaliacaoContinua'])
         ->name('notas.avaliacoes-continuas.store');
+    Route::post('notas/avaliacoes-continuas/lote', [NotaController::class, 'adicionarAvaliacoesContinuasEmLote'])
+        ->name('notas.avaliacoes-continuas.store-lote');
     Route::put('notas/avaliacoes-continuas/{avaliacao}', [NotaController::class, 'atualizarAvaliacaoContinua'])
         ->name('notas.avaliacoes-continuas.update');
     Route::delete('notas/avaliacoes-continuas/{avaliacao}', [NotaController::class, 'removerAvaliacaoContinua'])
@@ -136,6 +139,15 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('estatisticas', [\App\Http\Controllers\EstatisticasController::class, 'index'])
         ->name('estatisticas.index');
+
+    Route::get('calendario', [CalendarioController::class, 'index'])
+        ->name('calendario.index');
+    Route::post('calendario/eventos', [CalendarioController::class, 'store'])
+        ->name('calendario.eventos.store');
+    Route::put('calendario/eventos/{evento}', [CalendarioController::class, 'update'])
+        ->name('calendario.eventos.update');
+    Route::delete('calendario/eventos/{evento}', [CalendarioController::class, 'destroy'])
+        ->name('calendario.eventos.destroy');
 
     Route::get('/relatorios/boletins-massa', [RelatorioController::class, 'boletimMassa'])
      ->name('relatorios.boletins-massa');

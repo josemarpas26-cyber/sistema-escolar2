@@ -6,6 +6,7 @@
 @php
     $isProfessor = auth()->user()->isProfessor();
     $isAdminArea = auth()->user()->isAdmin() || auth()->user()->isSecretaria();
+    $viewMode = request('view_mode', 'cards');
 @endphp
 
 <x-card class="mb-6" title="Filtro de pauta" icon="fas fa-filter">
@@ -35,10 +36,65 @@
 </x-card>
 
 @if($notas->isNotEmpty())
-<x-card title="Tabela de avaliações contínuas" icon="fas fa-list-ol">
+<x-card class="mb-6" title="Lançamento em lote" icon="fas fa-layer-group">
+    <p class="text-sm text-gray-600 mb-4">
+        Preencha apenas as notas que deseja lançar e clique em <strong>Guardar todas</strong>.
+    </p>
+    <form method="POST" action="{{ route('notas.avaliacoes-continuas.store-lote') }}">
+        @csrf
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+            <select name="trimestre" class="form-input" required>
+                <option value="">Trimestre</option>
+                <option value="1">1º Trimestre</option>
+                <option value="2">2º Trimestre</option>
+                <option value="3">3º Trimestre</option>
+            </select>
+            <input type="text" name="descricao" class="form-input" maxlength="120" placeholder="Descrição (opcional)">
+            <input type="date" name="data_avaliacao" class="form-input" value="{{ now()->toDateString() }}">
+            <button class="btn btn-primary" type="submit">Guardar todas</button>
+        </div>
+        <div class="overflow-x-auto border rounded-lg">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-3 py-2 text-left">Aluno</th>
+                    <th class="px-3 py-2 text-left">Nº Processo</th>
+                    <th class="px-3 py-2 text-left">Nota</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                @foreach($notas as $nota)
+                    <tr>
+                        <td class="px-3 py-2 font-semibold text-slate-800">{{ $nota->aluno->name }}</td>
+                        <td class="px-3 py-2 text-slate-500">{{ $nota->aluno->numero_processo ?? '—' }}</td>
+                        <td class="px-3 py-2">
+                            <input type="hidden" name="avaliacoes[{{ $nota->id }}][nota_id]" value="{{ $nota->id }}">
+                            <input type="number" step="0.01" min="0" max="20" name="avaliacoes[{{ $nota->id }}][valor]" class="form-input max-w-[120px]" placeholder="0-20">
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    </form>
+</x-card>
+
+<x-card title="Avaliações contínuas" icon="fas fa-list-ol">
+    <div class="flex justify-end mb-3">
+        <div class="inline-flex rounded-md border border-slate-300 overflow-hidden text-xs">
+            <a href="{{ route('notas.avaliacoes-continuas.index', ['turma_id' => $turmaId, 'disciplina_id' => $disciplinaId, 'view_mode' => 'cards']) }}"
+               class="px-3 py-2 {{ $viewMode === 'cards' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700' }}">
+                Modo cartões
+            </a>
+            <a href="{{ route('notas.avaliacoes-continuas.index', ['turma_id' => $turmaId, 'disciplina_id' => $disciplinaId, 'view_mode' => 'tabela']) }}"
+               class="px-3 py-2 {{ $viewMode === 'tabela' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700' }}">
+                Modo tabela
+            </a>
+        </div>
+    </div>
     <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
+            <thead class="bg-slate-50">
                 <tr>
                     <th class="px-3 py-2 text-left">Aluno</th>
                     <th class="px-3 py-2 text-left">1º Trimestre</th>
@@ -58,17 +114,54 @@
                     @for($trimestre = 1; $trimestre <= 3; $trimestre++)
                         @php
                             $items = $nota->avaliacoesContinuas->where('trimestre', $trimestre);
+                            $macCampo = "mac{$trimestre}";
+                            $macValor = $nota->{$macCampo};
+                            $macClass = $macValor === null
+                                ? 'bg-slate-100 text-slate-500'
+                                : ($macValor >= 10 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200');
                         @endphp
                         <td class="px-3 py-3 align-top">
+                            @if($viewMode === 'tabela')
+                                <div class="border rounded-lg overflow-hidden">
+                                    <table class="w-full text-xs">
+                                        <thead class="bg-slate-100">
+                                        <tr>
+                                            <th class="text-left px-2 py-1">Descrição</th>
+                                            <th class="text-left px-2 py-1">Nota</th>
+                                            <th class="text-left px-2 py-1">Data</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200">
+                                        @forelse($items as $item)
+                                            @php
+                                                $valorClass = $item->valor >= 10 ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold';
+                                            @endphp
+                                            <tr>
+                                                <td class="px-2 py-1">{{ $item->descricao }}</td>
+                                                <td class="px-2 py-1 {{ $valorClass }}">{{ number_format($item->valor, 2) }}</td>
+                                                <td class="px-2 py-1 text-slate-500">{{ optional($item->data_avaliacao)->format('d/m/Y') ?? '—' }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="3" class="px-2 py-2 text-slate-400">Sem avaliações</td>
+                                            </tr>
+                                        @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
                             <div class="space-y-2">
                                 @forelse($items as $item)
+                                    @php
+                                        $valorClass = $item->valor >= 10 ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold';
+                                    @endphp
                                     <div class="border rounded p-2 text-xs">
                                         @if($isAdminArea)
                                         <form method="POST" action="{{ route('notas.avaliacoes-continuas.update', $item) }}" class="grid grid-cols-12 gap-1">
                                             @csrf
                                             @method('PUT')
-                                            <input name="descricao" value="{{ $item->descricao }}" maxlength="120" class="col-span-5 form-input h-8 text-xs" required>
-                                            <input name="valor" type="number" step="0.01" min="0" max="20" value="{{ $item->valor }}" class="col-span-2 form-input h-8 text-xs" required>
+                                            <input name="descricao" value="{{ $item->descricao }}" maxlength="120" class="col-span-5 form-input h-8 text-xs" placeholder="Descrição (opcional)">
+                                            <input name="valor" type="number" step="0.01" min="0" max="20" value="{{ $item->valor }}" class="col-span-2 form-input h-8 text-xs {{ $valorClass }}" required>
                                             <input name="data_avaliacao" type="date" value="{{ optional($item->data_avaliacao)->format('Y-m-d') }}" class="col-span-3 form-input h-8 text-xs">
                                             <button class="col-span-2 btn btn-outline h-8 text-xs" type="submit">Salvar</button>
                                         </form>
@@ -79,7 +172,7 @@
                                         </form>
                                         @else
                                             <div class="font-medium">{{ $item->descricao }}</div>
-                                            <div>{{ number_format($item->valor, 2) }} valores</div>
+                                            <div class="{{ $valorClass }}">{{ number_format($item->valor, 2) }} valores</div>
                                         @endif
                                     </div>
                                 @empty
@@ -91,20 +184,37 @@
                                         @csrf
                                         <input type="hidden" name="nota_id" value="{{ $nota->id }}">
                                         <input type="hidden" name="trimestre" value="{{ $trimestre }}">
-                                        <input type="text" name="descricao" maxlength="120" required class="col-span-5 form-input h-8 text-xs" placeholder="Descrição">
+                                        <input type="text" name="descricao" maxlength="120" class="col-span-5 form-input h-8 text-xs" placeholder="Descrição (opcional)">
                                         <input type="number" step="0.01" min="0" max="20" name="valor" required class="col-span-2 form-input h-8 text-xs" placeholder="Nota">
                                         <input type="date" name="data_avaliacao" class="col-span-3 form-input h-8 text-xs" value="{{ now()->toDateString() }}">
                                         <button type="submit" class="col-span-2 btn btn-primary h-8 text-xs">+</button>
                                     </form>
                                 @endif
                             </div>
+                            @endif
+                            <div class="mt-2">
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold {{ $macClass }}">
+                                    MAC T{{ $trimestre }}:
+                                    <span class="ml-1">{{ $macValor !== null ? number_format($macValor, 2) : '—' }}</span>
+                                </span>
+                            </div>
                         </td>
                     @endfor
 
                     <td class="px-3 py-3 align-top text-xs text-center">
-                        <div>T1: <strong>{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '—' }}</strong></div>
-                        <div>T2: <strong>{{ $nota->mac2 !== null ? number_format($nota->mac2, 2) : '—' }}</strong></div>
-                        <div>T3: <strong>{{ $nota->mac3 !== null ? number_format($nota->mac3, 2) : '—' }}</strong></div>
+                        @foreach([1,2,3] as $tr)
+                            @php
+                                $mac = $nota->{"mac{$tr}"};
+                                $macResumoClass = $mac === null
+                                    ? 'bg-slate-100 text-slate-500'
+                                    : ($mac >= 10 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200');
+                            @endphp
+                            <div class="mb-1">
+                                <span class="inline-flex items-center px-2 py-1 rounded font-semibold {{ $macResumoClass }}">
+                                    T{{ $tr }}: {{ $mac !== null ? number_format($mac, 2) : '—' }}
+                                </span>
+                            </div>
+                        @endforeach
                     </td>
                 </tr>
             @endforeach

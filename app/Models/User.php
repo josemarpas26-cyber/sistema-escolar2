@@ -82,6 +82,11 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
+    public function eventosCalendario()
+    {
+        return $this->hasMany(CalendarioEvento::class, 'professor_id');
+    }
+
     // Para coordenadores
     public function cursoCoordenado()
     {
