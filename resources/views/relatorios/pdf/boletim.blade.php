@@ -308,9 +308,9 @@
                         @if(!$temNota)
                             Pendente
                         @elseif($aprovadoPeriodo)
-                            ✓ Aprovado
+                            Aprovado
                         @else
-                            ✗ Reprovado
+                            Reprovado
                         @endif
                     </td>
                 </tr>
