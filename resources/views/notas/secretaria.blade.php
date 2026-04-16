@@ -416,10 +416,10 @@
 
                 <div class="bg-white dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700/50 mb-6 overflow-hidden">
                     {{-- Cabeçalho da disciplina --}}
-                    <div class="flex items-center justify-between px-5 py-3 bg-gray-800 dark:bg-slate-900 text-white rounded-t-xl">
+                    <div class="flex items-center justify-between px-5 py-3 bg-white text-gray-800 dark:bg-gray-800 dark:text-white rounded-t-xl">
                         <div class="flex items-center gap-3">
-                            <span class="text-xs font-bold text-white uppercase tracking-widest">{{ $disc->nome }}</span>
-                             <span class="text-xs text-gray-400">{{ $disc->codigo }}</span>
+                            <span class="text-xs font-bold text-gray-800 uppercase tracking-widest dark:text-white">{{ $disc->nome }}</span>
+                             <span class="text-xs text-gray-600 dark:text-gray-300">{{ $disc->codigo }}</span>
                         </div>
                         @php
                             $cfds       = $notasDaDisciplina->whereNotNull('cfd');
@@ -428,14 +428,14 @@
                             $reprovDisc = $cfds->filter(fn($n) => !$n->isAprovado())->count();
                         @endphp
                         <div class="flex items-center gap-2 text-xs">
-                             <span class="text-gray-300">Média:</span>
+                            <span class="text-gray-600 dark:text-gray-300">Média:</span>
                             @if($mediaDisc)
-                                <span class="font-bold text-white">{{ number_format($mediaDisc,2) }}</span>
+                                <span class="font-bold text-gray-800 dark:text-white">{{ number_format($mediaDisc,2) }}</span>
                             @else
-                                <span class="font-bold text-white">—</span>
+                                <span class="font-bold text-gray-800 dark:text-white">—</span>
                             @endif
-                            <span class="nr-badge nr-badge-ok" style="font-size:.63rem;padding:2px 7px;">{{ $aprovDisc }} Apr</span>
-                            <span class="nr-badge nr-badge-fail" style="font-size:.63rem;padding:2px 7px;">{{ $reprovDisc }} Rep</span>
+                            <span class="inline-flex items-center rounded-full border border-green-200 px-2 py-0.5 text-[.63rem] font-bold bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 dark:border-green-700">{{ $aprovDisc }} Apr</span>
+                            <span class="inline-flex items-center rounded-full border border-red-200 px-2 py-0.5 text-[.63rem] font-bold bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 dark:border-red-700">{{ $reprovDisc }} Rep</span>
                         </div>
                     </div>
 
