@@ -80,9 +80,9 @@ class NotaLog extends Model
             'exclusao' => 'Excluiu',
             'finalizacao' => 'Finalizou',
             'reabertura' => 'Reabriu',
-            'avaliacao_continua_criada' => 'Criou avaliação contínua',
-            'avaliacao_continua_editada' => 'Editou avaliação contínua',
-            'avaliacao_continua_removida' => 'Removeu avaliação contínua',
+            'avaliacao_continua_criada' => 'Criou avaliação',
+            'avaliacao_continua_editada' => 'Editou avaliação',
+            'avaliacao_continua_removida' => 'Removeu avaliação',
             default => 'Ação desconhecida',
         };
     }

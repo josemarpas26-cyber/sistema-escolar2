@@ -42,7 +42,7 @@ class NotaObserver
             return;
         }
 
-        $this->registrarLog($nota, 'criacao', 'todas', null, null);
+        $this->registrarLog($nota, 'criacao', 'todos', null, null);
     }
 
     public function updating(Nota $nota): void
@@ -83,7 +83,7 @@ class NotaObserver
             return;
         }
 
-        $this->registrarLog($nota, 'exclusao', 'todas', null, null);
+        $this->registrarLog($nota, 'exclusao', 'todos', null, null);
     }
 
     // ── Internos ─────────────────────────────────────────────────────────────
