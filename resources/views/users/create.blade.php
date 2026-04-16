@@ -122,6 +122,30 @@
             <x-card title="Dados de Acesso" icon="fas fa-key">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+                
+                    <!-- Papel -->
+                    <div class="md:col-span-2">
+                        <label class="label">Papel no Sistema *</label>
+                        <select name="role_id"
+                                class="input"
+                                required
+                                x-model="roleId"
+                                @change="checkIfAluno">
+                            <option value="">Selecione...</option>
+                            @foreach($roles as $role)
+                            <option value="{{ $role->id }}"
+                                    data-role-name="{{ $role->name }}"
+                                    {{ old('role_id') == $role->id ? 'selected' : '' }}>
+                                {{ $role->display_name }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('role_id')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+
                     <!-- Email -->
                     <div class="md:col-span-2">
                         <label class="label">
@@ -149,27 +173,6 @@
                         @enderror
                     </div>
 
-                    <!-- Papel -->
-                    <div class="md:col-span-2">
-                        <label class="label">Papel no Sistema *</label>
-                        <select name="role_id"
-                                class="input"
-                                required
-                                x-model="roleId"
-                                @change="checkIfAluno">
-                            <option value="">Selecione...</option>
-                            @foreach($roles as $role)
-                            <option value="{{ $role->id }}"
-                                    data-role-name="{{ $role->name }}"
-                                    {{ old('role_id') == $role->id ? 'selected' : '' }}>
-                                {{ $role->display_name }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('role_id')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
 
                     <!-- Senha -->
                      <div x-data="{ autoPass: {{ old('auto_password', true) ? 'true' : 'false' }}, mostrarSenha: false, mostrarConfirmar: false }" class="md:col-span-2">
