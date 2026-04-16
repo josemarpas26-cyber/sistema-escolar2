@@ -782,8 +782,8 @@
             <div class="nav-section-label">Académico</div>
 
             @if(auth()->user()->isAluno())
-            <a href="{{ route('relatorios.historico', auth()->user()) }}"
-               class="nav-item {{ request()->routeIs('relatorios.historico') ? 'active' : '' }}">
+            <a href="{{ route('relatorios.meu-historico') }}"
+               class="nav-item {{ request()->routeIs('relatorios.meu-historico') ? 'active' : '' }}">
                 <span class="nav-item-icon"><i class="fas fa-history"></i></span>Meu histórico
             </a>
             <a href="{{ route('notas.avaliacoes-continuas.index') }}"

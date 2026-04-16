@@ -363,6 +363,34 @@ class RelatorioController extends Controller
         return view('relatorios.historico-academico', $dados);
     }
 
+    public function meuHistoricoAluno(Request $request)
+    {
+        $this->checkPermission('relatorios.historico');
+
+        $aluno = auth()->user();
+        if (! $aluno || ! $aluno->isAluno()) {
+            abort(403, 'Esta página é exclusiva para alunos.');
+        }
+
+        $historico = HistoricoAcademico::porAluno($aluno->id)
+            ->with('anoLetivo')
+            ->get();
+
+        $anosComHistorico = $historico
+            ->pluck('anoLetivo.nome')
+            ->filter()
+            ->unique()
+            ->values();
+
+        return view('relatorios.meu-historico', [
+            'aluno' => $aluno,
+            'totalRegistros' => $historico->count(),
+            'anosComHistorico' => $anosComHistorico,
+            'urlDocumento' => route('relatorios.historico', ['aluno' => $aluno]),
+            'urlDocumentoPdf' => route('relatorios.historico', ['aluno' => $aluno, 'formato' => 'pdf']),
+        ]);
+    }
+    
     public function historicoProfessor(Request $request, ?User $professor = null)
     {
         $this->checkPermission('relatorios.historico');

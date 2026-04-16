@@ -114,6 +114,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('relatorios.pauta');
     Route::get('relatorios/historico/{aluno?}', [RelatorioController::class, 'historicoAcademico'])
         ->name('relatorios.historico');
+    Route::get('meu-historico', [RelatorioController::class, 'meuHistoricoAluno'])
+        ->name('relatorios.meu-historico');
     Route::get('relatorios/historico-professor/{professor?}', [RelatorioController::class, 'historicoProfessor'])
         ->name('relatorios.historico-professor');
     Route::get('relatorios/consolidado/{turma}', [RelatorioController::class, 'consolidadoTurma'])
