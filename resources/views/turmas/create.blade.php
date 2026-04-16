@@ -238,8 +238,13 @@
             <x-card title="Preview" icon="fas fa-eye">
                 <div class="space-y-3 text-sm">
                     <div>
-                        <span class="text-xs text-slate-500">Nome Completo:</span>
-                        <p class="font-bold text-slate-800 text-lg tracking-wide" x-text="nomeCompleto || '—'"></p>
+                        <span 
+                         class="font-semibold text-xs tracking-wide"
+                            :class="nomeCompleto ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'">Nome Completo:</span>
+                        <p
+                            class="font-bold text-lg tracking-wide"
+                            :class="nomeCompleto ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'"
+                            x-text="nomeCompleto || '—'"></p>
                     </div>
                     <div>
                         <span class="text-gray-600">Curso:</span>
