@@ -8,6 +8,7 @@ use App\Models\Disciplina;
 use App\Models\DivisaoAritmeticaSolicitacao;
 use App\Models\Nota;
 use App\Models\NotaLog;
+use App\Models\ProfessorTurmaDisciplina;
 use App\Models\Turma;
 use App\Models\User;
 use App\Notifications\PautaDesbloqueadaNotification;
@@ -226,7 +227,7 @@ class NotaController extends Controller
 
         $notas = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
-            ->with(['disciplina', 'turma', 'avaliacoesContinuas'])
+            ->with(['disciplina.coordenador', 'turma', 'avaliacoesContinuas'])
             ->get();
 
         $turmaAtual = $notas->first()?->turma;
@@ -238,12 +239,54 @@ class NotaController extends Controller
         $aprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd >= 10)->count();
         $reprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd < 10)->count();
 
+        $atribuicoesPorDisciplina = $turmaAtual
+            ? ProfessorTurmaDisciplina::query()
+                ->where('turma_id', $turmaAtual->id)
+                ->where('ano_letivo_id', $anoLetivo->id)
+                ->with('professor')
+                ->get()
+                ->keyBy('disciplina_id')
+            : collect();
+
+        $disciplinasDetalhadas = $notas->map(function (Nota $nota) use ($atribuicoesPorDisciplina) {
+            $indicador = null;
+            $label = 'Sem lançamento';
+
+            foreach ([
+                'cfd' => 'CFD',
+                'ca' => 'CA',
+                'cf' => 'CF',
+                'mt3' => 'MT3',
+                'mft2' => 'MFT2',
+                'mt2' => 'MT2',
+                'mt1' => 'MT1',
+            ] as $campo => $titulo) {
+                if ($nota->{$campo} !== null) {
+                    $indicador = (float) $nota->{$campo};
+                    $label = $titulo;
+                    break;
+                }
+            }
+
+            return [
+                'disciplina' => $nota->disciplina,
+                'nota' => $nota,
+                'professor' => $atribuicoesPorDisciplina->get($nota->disciplina_id)?->professor,
+                'coordenador' => $nota->disciplina?->coordenador,
+                'indicador' => [
+                    'label' => $label,
+                    'valor' => $indicador,
+                ],
+            ];
+        });
+
         return view('notas.aluno', compact(
             'notas',
             'turmaAtual',
             'mediaGeral',
             'aprovacoes',
-            'reprovacoes'
+            'reprovacoes',
+            'disciplinasDetalhadas'
         ));
     }
 
@@ -254,6 +297,19 @@ class NotaController extends Controller
 
         if (! $anoLetivo) {
             return $this->redirectSemAnoLetivoAtivo();
+        }
+
+        if ($user->isAluno()) {
+            $this->checkPermission('notas.view_own');
+
+            $notas = Nota::query()
+                ->where('aluno_id', $user->id)
+                ->where('ano_letivo_id', $anoLetivo->id)
+                ->with(['disciplina', 'avaliacoesContinuas' => fn ($query) => $query->orderBy('trimestre')->orderBy('data_avaliacao')])
+                ->orderBy(Disciplina::select('nome')->whereColumn('disciplinas.id', 'notas.disciplina_id'))
+                ->get();
+
+            return view('notas.avaliacoes-continuas-aluno', compact('notas', 'anoLetivo'));
         }
 
         $turmas = collect();
