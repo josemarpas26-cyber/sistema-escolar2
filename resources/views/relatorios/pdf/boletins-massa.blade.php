@@ -44,7 +44,7 @@
     <div class="row">
         @foreach($dupla as $index => $aluno)
             @php
-                $notas = $notasPorAluno->get($aluno->id, collect())->sortBy(fn($nota) => $nota->disciplina?->nome)->take(12)->values();
+                $notas = $notasPorAluno->get($aluno->id, collect())->sortBy(fn($nota) => $nota->disciplina?->nome)->take(14)->values();
                 $numeroOrdem = $alunos->search(fn($item) => $item->id === $aluno->id) + 1;
             @endphp
             <div class="col">
@@ -70,16 +70,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @for($i = 0; $i < 12; $i++)
-                                @php $nota = $notas[$i] ?? null; @endphp
+                            {{-- ✅ Itera apenas as disciplinas reais, sem linhas vazias --}}
+                            @foreach($notas as $nota)
                                 <tr>
-                                    <td>{{ $nota?->disciplina?->nome ?? '' }}</td>
+                                    <td>{{ $nota->disciplina?->nome ?? '' }}</td>
                                     @foreach($configNotas as $config)
-                                        @php $valor = $nota?->{$config['key']}; @endphp
+                                        @php $valor = $nota->{$config['key']}; @endphp
                                         <td>{{ $valor !== null ? number_format((float) $valor, 2, ',', '') : '' }}</td>
                                     @endforeach
                                 </tr>
-                            @endfor
+                            @endforeach
                         </tbody>
                     </table>
 
