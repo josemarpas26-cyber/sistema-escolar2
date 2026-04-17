@@ -4,6 +4,7 @@ use App\Http\Controllers\AnoLetivoController;
 use App\Http\Controllers\CursoController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FocusModeController;
 use App\Http\Controllers\DisciplinaController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\NotaController;
@@ -30,6 +31,16 @@ Route::middleware(['auth'])->group(function () {
         ->name('users.restore');
 
     Route::resource('users', UserController::class);
+
+    Route::post('focus-modes/matricular-alunos', [FocusModeController::class, 'matricularAlunos'])
+        ->name('focus.matricular-alunos');
+    Route::post('focus-modes/importar-alunos', [FocusModeController::class, 'importarAlunos'])
+        ->name('focus.importar-alunos');
+    Route::post('focus-modes/atualizar-status', [FocusModeController::class, 'atualizarStatus'])
+        ->name('focus.atualizar-status');
+    Route::delete('focus-modes/arquivar-usuarios', [FocusModeController::class, 'arquivarUsuarios'])
+        ->name('focus.arquivar-usuarios');
+
     Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
         ->name('users.toggle-status');
     Route::get('alunos', [UserController::class, 'alunos'])
