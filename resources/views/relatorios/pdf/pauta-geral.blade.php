@@ -21,7 +21,7 @@
             padding-bottom: 8px;
             border-bottom: 3px solid #3B82F6;
         }
-        .header h1 { font-size: 16px; color: #3B82F6; margin-bottom: 4px; }
+        .header h1 { font-size: 12px; color: #3B82F6; margin-bottom: 4px; }
         .header p  { font-size: 9px; color: #64748b; margin: 2px 0; }
 
         /* ── INFO TABLE ── */
@@ -165,6 +165,8 @@
             size: A4 landscape;
             margin: 8mm;
         }
+    .logo { text-align: center; margin-bottom: 2px; }
+    .logo img { height: 35px; }
     </style>
 </head>
 <body>
@@ -268,6 +270,17 @@
 
 {{-- ── HEADER ── --}}
 <div class="header">
+
+            @php
+                $path = public_path('images/logo1.png');
+                $type = pathinfo($path, PATHINFO_EXTENSION);
+                $data = file_get_contents($path);
+                $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+            @endphp
+        <div class="logo">
+                <img src="{{ $base64 }}" alt="Logo">
+        </div>
+
     <h1>PAUTA GERAL DA TURMA</h1>
     <p>{{ $turma->curso->nome }} — {{ $turma->classe }}ª Classe &nbsp;|&nbsp; {{ $turma->nome_completo }} &nbsp;|&nbsp; Ano Letivo: {{ $turma->anoLetivo->nome }}</p>
     <p><strong>Período: {{ $trimestreLabel }}</strong> &nbsp;|&nbsp; Formato de folha: <strong>{{ $pageSize }} Paisagem</strong></p>
