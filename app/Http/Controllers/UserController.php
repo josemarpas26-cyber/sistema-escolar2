@@ -6,7 +6,9 @@ use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\Turma;
 use App\Models\User;
+use App\Notifications\BoasVindasNotification;
 use App\Notifications\CredenciaisAcessoNotification;
+use App\Notifications\EmailAlteradoNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -139,10 +141,6 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
         unset($validated['auto_password']);
 
-        if (!empty($validated['email'])) {
-            $validated['email_verified_at'] = null;
-        }
- 
         // Upload de foto
         if ($request->hasFile('foto_perfil')) {
             $validated['foto_perfil'] = $request->file('foto_perfil')
@@ -152,7 +150,7 @@ class UserController extends Controller
         $user = User::create($validated);
 
         if ($user->email) {
-            $user->sendEmailVerificationNotification();
+            $user->notify(new BoasVindasNotification());
         }
 
         if (! $isAluno && $autoPasswordRequested && $generatedPassword && $user->email) {
@@ -237,12 +235,9 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
-        $emailAlterado = array_key_exists('email', $validated) && $validated['email'] !== $user->email;
+        $emailAnterior = $user->email;
+        $emailAlterado = array_key_exists('email', $validated) && $validated['email'] !== $emailAnterior;
 
-        if ($emailAlterado) {
-            $validated['email_verified_at'] = null;
-        }
- 
         // Upload de nova foto
         if ($request->hasFile('foto_perfil')) {
             if ($user->foto_perfil) {
@@ -255,7 +250,7 @@ class UserController extends Controller
         $user->update($validated);
 
         if ($emailAlterado && $user->email) {
-            $user->sendEmailVerificationNotification();
+            $user->notify(new EmailAlteradoNotification($emailAnterior, $user->email));
         }
  
         return redirect()
