@@ -10,6 +10,7 @@ use App\Models\NotaLog;
 use App\Models\Permission;
 use App\Models\ProfessorTurmaDisciplina;
 use App\Models\Role;
+use App\Exports\PautaExport;
 use App\Models\Turma;
 use App\Models\User;
 use App\Services\PautaGeralTemplateExporter;
@@ -182,6 +183,79 @@ class ExportacoesXlsxTest extends TestCase
             ->assertDownload('pauta-10a-a-informatica.xlsx');
     }
 
+    public function test_pauta_export_mantem_mt1_vazio_para_aluno_que_ingressou_no_segundo_trimestre(): void
+    {
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $anoLetivo = AnoLetivo::create([
+            'nome' => '2025/2026',
+            'data_inicio' => '2025-09-01',
+            'data_fim' => '2026-07-31',
+            'ativo' => true,
+            'encerrado' => false,
+        ]);
+
+        $curso = Curso::create([
+            'nome' => 'Informática',
+            'codigo' => 'INF',
+            'ativo' => true,
+        ]);
+
+        $turma = Turma::create([
+            'nome' => 'A',
+            'classe' => '10',
+            'curso_id' => $curso->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'capacidade' => 40,
+            'ativo' => true,
+        ]);
+
+        $disciplina = Disciplina::create([
+            'nome' => 'Matemática',
+            'codigo' => 'MAT',
+            'leciona_10' => true,
+            'leciona_11' => true,
+            'leciona_12' => true,
+            'disciplina_terminal' => false,
+            'ativo' => true,
+        ]);
+
+        $aluno = User::factory()->create([
+            'role_id' => $alunoRole->id,
+            'name' => 'Aluno 2º Trimestre',
+            'numero_processo' => '2024999',
+            'genero' => 'M',
+        ]);
+
+        $turma->alunos()->attach($aluno->id, [
+            'data_matricula' => '2026-01-15',
+            'status' => 'matriculado',
+        ]);
+
+        $nota = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'mt1' => null,
+            'mt2' => 15,
+            'mt3' => 16,
+            'mft2' => 15,
+            'cf' => 15.5,
+            'ca' => 16,
+            'cfd' => 16,
+            'status' => 'em_lancamento',
+        ]);
+
+        $rows = (new PautaExport($turma, $disciplina, collect([$nota->load('aluno')])))->array();
+        $linhaAluno = $rows[14];
+
+        $this->assertNull($linhaAluno['K']);
+        $this->assertSame(15.0, (float) $linhaAluno['O']);
+        $this->assertSame(16.0, (float) $linhaAluno['S']);
+    }
+
+
     public function test_dashboard_de_logs_exporta_workbook_xlsx_formatado(): void
     {
         $role = $this->createRoleWithPermissions('admin', ['logs.view']);
@@ -262,6 +336,32 @@ class ExportacoesXlsxTest extends TestCase
         $this->assertSame('Aluno Dashboard', $spreadsheet->getSheet(1)->getCell('D2')->getValue());
     }
 
+
+    public function test_exportacao_de_logs_lista_mantem_cabecalho_de_filtros_formatado(): void
+    {
+        $role = $this->createRoleWithPermissions('admin', ['logs.view']);
+        /** @var User $user */
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)
+            ->get(route('logs.exportar', [
+                'contexto' => 'lista',
+                'utilizador' => 'Nome muito longo para testar quebra de linha no resumo de filtros',
+                'disciplina' => 'Disciplina com nome muito longo para não alargar a tabela',
+            ]));
+
+        $this->assertStringContainsString('.xlsx', (string) $response->headers->get('content-disposition'));
+
+        $path = $response->baseResponse->getFile()->getPathname();
+        $spreadsheet = IOFactory::load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $this->assertArrayHasKey('B3:K3', $sheet->getMergeCells());
+        $this->assertTrue($sheet->getStyle('B3')->getAlignment()->getWrapText());
+        $this->assertSame('Data/Hora', $sheet->getCell('A5')->getValue());
+    }
+
+    
     private function createRoleWithPermissions(string $name, array $permissionNames): Role
     {
         $role = Role::create([

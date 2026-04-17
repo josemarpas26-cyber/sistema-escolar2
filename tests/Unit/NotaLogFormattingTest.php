@@ -24,16 +24,13 @@ class NotaLogFormattingTest extends TestCase
             ], JSON_UNESCAPED_UNICODE),
         ]);
 
-        $this->assertSame(
-            'AC 1.1 | 15,50 | 24/03/2026 → AC 1.1 | 12,00 | 25/03/2026',
-            $log->resumo_alteracao
-        );
+        $this->assertSame('15,50 → 12,00', $log->resumo_alteracao);
     }
 
-    public function test_resumo_alteracao_de_avaliacao_sem_descricao_usa_texto_padrao(): void
+    public function test_resumo_alteracao_de_avaliacao_criada_exibe_apenas_valor_introduzido(): void
     {
         $log = new NotaLog([
-            'acao' => 'edicao',
+            'acao' => 'criacao',
             'campo_alterado' => 'avaliacao_continua',
             'valor_anterior' => null,
             'valor_novo' => json_encode([
@@ -43,7 +40,7 @@ class NotaLogFormattingTest extends TestCase
             ], JSON_UNESCAPED_UNICODE),
         ]);
 
-        $this->assertSame('— → Sem descrição | 10,00 | Sem data', $log->resumo_alteracao);
+        $this->assertSame('— → 10,00', $log->resumo_alteracao);
     }
 
     public function test_descricao_acao_de_avaliacao_continua_segue_acao_base_para_filtros(): void

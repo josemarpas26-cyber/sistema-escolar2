@@ -616,15 +616,14 @@ class PautaExport implements FromArray, WithStyles, WithTitle, WithEvents, WithC
     }
 
     /**
-     * Return an Excel formula for the trimester average if all three component
-     * columns have values, otherwise return the stored/calculated value.
-     * Formula mirrors the original: =(col3+col2+col1)/3
+     * Usa sempre o valor já calculado no backend.
+     *
+     * Isso evita divergências no Excel para alunos que não têm um trimestre
+     * aplicável (ex.: matrícula no 2º trimestre, onde MT1 deve permanecer vazio)
+     * e garante compatibilidade com pesos dinâmicos da configuração de avaliação.
      */
     private function calcOrValue($nota, string $field, string $c3, string $c2, string $c1, int $row)
     {
-        $v = $nota->$field ?? null;
-        // If the model exposes raw sub-components they are already stored; just
-        // emit the same formula the original xlsx uses.
-        return "=({$c3}{$row}+{$c2}{$row}+{$c1}{$row})/3";
+            return $this->n($nota->$field ?? null);
     }
 }

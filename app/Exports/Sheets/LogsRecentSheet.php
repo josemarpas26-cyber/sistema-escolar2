@@ -115,6 +115,18 @@ class LogsRecentSheet implements FromArray, ShouldAutoSize, WithEvents, WithTitl
         if ($valor === null || $valor === '') {
             return '-';
         }
+        
+        if (is_string($valor)) {
+            $dados = json_decode($valor, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($dados) && array_key_exists('valor', $dados)) {
+                $valorAvaliacao = $dados['valor'];
+
+                return is_numeric($valorAvaliacao)
+                    ? number_format((float) $valorAvaliacao, 2, ',', '.')
+                    : '-';
+            }
+        }
 
         if (is_numeric($valor)) {
             return number_format((float) $valor, 2, ',', '.');

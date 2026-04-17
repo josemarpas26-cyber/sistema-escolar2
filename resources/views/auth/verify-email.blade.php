@@ -1,30 +1,20 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        A sua conta foi criada internamente, mas o e-mail ainda precisa de ser verificado.
-        Use o link enviado para a sua caixa de entrada antes de continuar.
-    </div>
 
-    @if (session('status') === 'verification-link-sent')
-        <div class="mb-4 text-sm font-medium text-green-600">
-            Enviámos um novo link de verificação para o e-mail associado a esta conta.
+        <div class="space-y-4 text-center">
+        <h1 class="text-2xl font-bold text-gray-900">
+            Bem-vindo(a) ao Sistema Escolar do IPIKK
+        </h1>
+
+        <p class="text-sm text-gray-600 leading-relaxed">
+            A sua conta foi criada com sucesso e já está pronta para uso.
+            Desejamos uma excelente experiência na plataforma.
+        </p>
+
+        <div class="pt-2">
+            <a href="{{ route('dashboard') }}"
+               class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                Entrar no sistema
+            </a>
         </div>
-    @endif
-
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
-
-            <x-primary-button>
-                 Reenviar Link de Verificação
-            </x-primary-button>
-        </form>
-
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-
-            <button type="submit" class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                Terminar Sessao
-            </button>
-        </form>
     </div>
 </x-guest-layout>
