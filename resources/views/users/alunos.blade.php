@@ -40,19 +40,22 @@
 </x-card>
 
 @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
-<x-card class="mb-6">
-    <div class="flex items-center justify-between gap-2 mb-4">
+<x-card class="mb-6 foco-wrap">
+    <div class="foco-header mb-4">
         <div>
             <h3 class="text-lg font-semibold text-gray-900">Modos Foco</h3>
-            <p class="text-sm text-gray-500">Uma única ação para operações em massa com validação e feedback claro.</p>
+            <p class="text-sm text-gray-500">Ações rápidas em massa com feedback inteligente para evitar operações redundantes.</p>
         </div>
-        <span class="text-xs text-gray-500">Selecionados: <strong id="focus-selected-count">0</strong></span>
+        <span class="foco-counter text-xs text-gray-600">
+            <i class="fas fa-users mr-1"></i>
+            Selecionados: <strong id="focus-selected-count">0</strong>
+        </span>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <form method="POST" action="{{ route('focus.matricular-alunos') }}" class="space-y-2 focus-form">
+        <form method="POST" action="{{ route('focus.matricular-alunos') }}" class="space-y-2 focus-form foco-action-card">
             @csrf
-            <h4 class="font-medium text-gray-900">Modo Foco: Matrícula de múltiplos alunos</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-user-check mr-1 text-emerald-600"></i> Modo Foco: Matrícula de múltiplos alunos</h4>
             <div class="focus-ids"></div>
             <select name="turma_id" class="input" required>
                 <option value="">Selecionar turma</option>
@@ -64,9 +67,9 @@
             <button type="submit" class="btn btn-primary w-full">Aplicar matrícula em massa</button>
         </form>
 
-        <form method="POST" action="{{ route('focus.atualizar-status') }}" class="space-y-2 focus-form">
+        <form method="POST" action="{{ route('focus.atualizar-status') }}" class="space-y-2 focus-form foco-action-card">
             @csrf
-            <h4 class="font-medium text-gray-900">Modo Foco: Atualização em lote</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-toggle-on mr-1 text-blue-600"></i> Modo Foco: Atualização em lote</h4>
             <div class="focus-ids"></div>
             <select name="ativo" class="input" required>
                 <option value="1">Marcar como ativo</option>
@@ -75,17 +78,17 @@
             <button type="submit" class="btn btn-primary w-full">Atualizar selecionados</button>
         </form>
 
-        <form method="POST" action="{{ route('focus.arquivar-usuarios') }}" class="space-y-2 focus-form" onsubmit="return confirm('Arquivar os registos selecionados? Esta ação pode ser revertida na Lixeira.')">
+        <form method="POST" action="{{ route('focus.arquivar-usuarios') }}" class="space-y-2 focus-form foco-action-card" onsubmit="return confirm('Arquivar os registos selecionados? Esta ação pode ser revertida na Lixeira.')">
             @csrf
             @method('DELETE')
-            <h4 class="font-medium text-gray-900">Modo Foco: Eliminação/arquivamento em massa</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-box-archive mr-1 text-amber-600"></i> Modo Foco: Eliminação/arquivamento em massa</h4>
             <div class="focus-ids"></div>
             <button type="submit" class="btn btn-danger w-full">Arquivar selecionados</button>
         </form>
 
-        <form method="POST" action="{{ route('focus.importar-alunos') }}" enctype="multipart/form-data" class="space-y-2">
+        <form method="POST" action="{{ route('focus.importar-alunos') }}" enctype="multipart/form-data" class="space-y-2 foco-action-card">
             @csrf
-            <h4 class="font-medium text-gray-900">Modo Foco: Importação em massa (Excel/CSV)</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-file-import mr-1 text-violet-600"></i> Modo Foco: Importação em massa (Excel/CSV)</h4>
             <input type="file" name="ficheiro" class="input" accept=".csv,.txt,.xlsx,.xls" required>
             <p class="text-xs text-gray-500">Colunas mínimas: <code>name</code>, <code>numero_processo</code>, <code>bi</code>, <code>data_nascimento</code>.</p>
             <button type="submit" class="btn btn-primary w-full">Importar ficheiro</button>
@@ -223,6 +226,50 @@
 </x-card>
 
 @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
+<style>
+    .foco-wrap{
+        background: linear-gradient(180deg, rgba(37,99,235,.04) 0%, rgba(37,99,235,.01) 100%);
+        border: 1px solid rgba(37,99,235,.16);
+    }
+    .foco-header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:.75rem;
+        flex-wrap:wrap;
+    }
+    .foco-counter{
+        display:inline-flex;
+        align-items:center;
+        background:#fff;
+        border:1px solid #dbeafe;
+        border-radius:9999px;
+        padding:.35rem .7rem;
+        font-weight:600;
+    }
+    .foco-action-card{
+        border:1px solid #e5e7eb;
+        border-radius:12px;
+        padding:14px;
+        background:#fff;
+        box-shadow:0 1px 2px rgba(15,23,42,.04);
+        transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+    }
+    .foco-action-card:hover{
+        border-color:#cbd5e1;
+        box-shadow:0 8px 18px rgba(15,23,42,.08);
+        transform:translateY(-1px);
+    }
+    .dark .foco-wrap{
+        background: linear-gradient(180deg, rgba(56,139,253,.12) 0%, rgba(56,139,253,.04) 100%);
+        border-color:#334155;
+    }
+    .dark .foco-counter,
+    .dark .foco-action-card{
+        background:#0f172a;
+        border-color:#334155;
+    }
+</style>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const selectAll = document.getElementById('focus-select-all');
