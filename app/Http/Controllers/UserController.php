@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UserCreatedMail;
 
 class UserController extends Controller
 {
@@ -137,7 +139,8 @@ class UserController extends Controller
                 : Str::password(12);
             $validated['password'] = $generatedPassword;
         }
- 
+
+        $plainPassword = $validated['password'] ?? null;
         $validated['password'] = Hash::make($validated['password']);
         unset($validated['auto_password']);
 
@@ -153,8 +156,8 @@ class UserController extends Controller
             $user->notify(new BoasVindasNotification());
         }
 
-        if (! $isAluno && $autoPasswordRequested && $generatedPassword && $user->email) {
-            $user->notify(new CredenciaisAcessoNotification($generatedPassword));
+            if ($user->email && $plainPassword) {
+            $user->notify(new CredenciaisAcessoNotification($plainPassword));
         }
  
         $successMessage = 'Utilizador criado com sucesso!';
