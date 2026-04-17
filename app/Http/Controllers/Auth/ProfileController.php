@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Notifications\EmailAlteradoNotification;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,11 +45,8 @@ class ProfileController extends Controller
             'foto_perfil.max' => 'A imagem nao pode exceder 2MB',
         ]);
 
-        $emailAlterado = array_key_exists('email', $validated) && $validated['email'] !== $user->email;
-
-        if ($emailAlterado) {
-            $validated['email_verified_at'] = null;
-        }
+        $emailAnterior = $user->email;
+        $emailAlterado = array_key_exists('email', $validated) && $validated['email'] !== $emailAnterior;
 
         if ($request->hasFile('foto_perfil')) {
             if ($user->foto_perfil) {
@@ -62,7 +60,7 @@ class ProfileController extends Controller
         $user->update($validated);
 
         if ($emailAlterado && $user->email) {
-            $user->sendEmailVerificationNotification();
+            $user->notify(new EmailAlteradoNotification($emailAnterior, $user->email));
         }
 
         return back()->with('success', 'Perfil atualizado com sucesso!');

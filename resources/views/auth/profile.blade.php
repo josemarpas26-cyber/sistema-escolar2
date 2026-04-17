@@ -305,36 +305,6 @@
             </div>
         </x-card>
 
-        @if($user->email)
-            <x-card title="Verificação de E-mail" icon="fas fa-envelope">
-                @if($user->hasVerifiedEmail())
-                    <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-                        O seu e-mail já está verificado.
-                    </div>
-                @else
-                    <div class="space-y-4">
-                        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                            O seu e-mail ainda não foi verificado. Algumas funcionalidades podem depender desta confirmação.
-                        </div>
-
-                        @if(session('status') === 'verification-link-sent')
-                            <div class="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                                Enviámos um novo link de verificação para o seu e-mail.
-                            </div>
-                        @endif
-
-                        <form method="POST" action="{{ route('verification.send') }}">
-                            @csrf
-                            <button type="submit" class="btn btn-outline w-full">
-                                <i class="fas fa-paper-plane mr-2"></i>
-                                Reenviar Link de Verificação
-                            </button>
-                        </form>
-                    </div>
-                @endif
-            </x-card>
-        @endif
-
         @if($user->isAluno())
             <x-card title="Encarregado" icon="fas fa-user-friends">
                 <div class="space-y-3 text-sm">

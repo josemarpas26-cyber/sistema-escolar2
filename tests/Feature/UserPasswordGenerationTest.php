@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\BoasVindasNotification;
 use App\Notifications\CredenciaisAcessoNotification;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -66,7 +66,7 @@ class UserPasswordGenerationTest extends TestCase
         $professor = User::where('email', 'professor@example.com')->firstOrFail();
 
         Notification::assertSentTo($professor, CredenciaisAcessoNotification::class);
-        Notification::assertSentTo($professor, VerifyEmail::class);
+        Notification::assertSentTo($professor, BoasVindasNotification::class);
     }
 
     private function createUsuarioComPermissaoUsersCreate(): User
