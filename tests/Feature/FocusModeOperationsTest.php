@@ -10,6 +10,7 @@ use App\Models\Turma;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class FocusModeOperationsTest extends TestCase
@@ -100,6 +101,74 @@ class FocusModeOperationsTest extends TestCase
             'numero_processo' => '2026002',
             'name' => 'Aluno Dois',
         ]);
+    }
+
+    public function test_modo_foco_matricula_informa_quando_alunos_ja_estao_matriculados(): void
+    {
+        $admin = $this->createAdminComPermissoes(['users.edit']);
+        $alunoRole = $this->createRole('aluno');
+        $turma = $this->createTurma();
+
+        $alunos = User::factory()->count(2)->create([
+            'role_id' => $alunoRole->id,
+        ]);
+
+        DB::table('turma_aluno')->insert([
+            'turma_id' => $turma->id,
+            'aluno_id' => $alunos->first()->id,
+            'data_matricula' => '2026-01-10',
+            'status' => 'matriculado',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->post(route('focus.matricular-alunos'), [
+                'user_ids' => $alunos->pluck('id')->all(),
+                'turma_id' => $turma->id,
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $mensagem = session('success');
+        $this->assertIsString($mensagem);
+        $this->assertStringContainsString('1 nova(s) matrícula(s)', $mensagem);
+        $this->assertStringContainsString('já estavam matriculados', $mensagem);
+    }
+
+    public function test_modo_foco_matricula_retorna_warning_quando_todos_ja_estao_matriculados(): void
+    {
+        $admin = $this->createAdminComPermissoes(['users.edit']);
+        $alunoRole = $this->createRole('aluno');
+        $turma = $this->createTurma();
+
+        $alunos = User::factory()->count(2)->create([
+            'role_id' => $alunoRole->id,
+        ]);
+
+        foreach ($alunos as $aluno) {
+            DB::table('turma_aluno')->insert([
+                'turma_id' => $turma->id,
+                'aluno_id' => $aluno->id,
+                'data_matricula' => '2026-01-10',
+                'status' => 'matriculado',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $response = $this
+            ->actingAs($admin)
+            ->post(route('focus.matricular-alunos'), [
+                'user_ids' => $alunos->pluck('id')->all(),
+                'turma_id' => $turma->id,
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('warning');
+        $this->assertStringContainsString('nenhum aluno novo para matricular', (string) session('warning'));
     }
 
     private function createAdminComPermissoes(array $permissions): User

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -162,6 +163,11 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->loadMissing('role.permissions');
 
         return $this->role?->hasPermission($permissionName) ?? false;
+    }
+
+        public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new CustomResetPasswordNotification($token));
     }
 
     /**
