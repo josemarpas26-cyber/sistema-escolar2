@@ -160,6 +160,13 @@ class NotaLog extends Model
 
     public function getResumoAlteracaoAttribute(): string
     {
+        if ($this->isLogDeAvaliacaoContinua()) {
+            $anterior = $this->formatarValorAvaliacaoContinuaSomenteNota($this->valor_anterior);
+            $novo = $this->formatarValorAvaliacaoContinuaSomenteNota($this->valor_novo);
+
+            return "{$anterior} → {$novo}";
+        }
+
         if ($this->acaoBase() === 'criacao') {
             return 'Registo criado';
         }
@@ -239,6 +246,39 @@ class NotaLog extends Model
         return "{$descricao} | {$valorAvaliacao} | {$dataFormatada}";
     }
 
+ private function formatarValorAvaliacaoContinuaSomenteNota(mixed $valor): string
+    {
+        if ($valor === null) {
+            return '—';
+        }
+
+        if (! is_string($valor)) {
+            return is_numeric($valor)
+                ? number_format((float) $valor, 2, ',', '.')
+                : '—';
+        }
+
+        $dados = json_decode($valor, true);
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($dados)) {
+            return is_numeric($valor)
+                ? number_format((float) $valor, 2, ',', '.')
+                : '—';
+        }
+
+        if (! array_key_exists('valor', $dados) || ! is_numeric($dados['valor'])) {
+            return '—';
+        }
+
+        return number_format((float) $dados['valor'], 2, ',', '.');
+    }
+
+    private function isLogDeAvaliacaoContinua(): bool
+    {
+        return $this->campo_alterado === 'avaliacao_continua'
+            || str_starts_with((string) $this->acao, 'avaliacao_continua_');
+    }
+
+    
     private function acaoBase(): string
     {
         return match ((string) $this->acao) {
