@@ -68,7 +68,7 @@
         </select>
 
         <select name="aluno_id" class="form-input">
-            <option value="">Todos os alunos (massa)</option>
+            <option value="">Todos os alunos </option>
             @foreach($alunos as $aluno)
                 <option value="{{ $aluno->id }}">
                     {{ $aluno->name }} ({{ $aluno->numero_processo }})
