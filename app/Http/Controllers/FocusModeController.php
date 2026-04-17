@@ -51,23 +51,32 @@ class FocusModeController extends Controller
         $turma = Turma::query()->findOrFail($validated['turma_id']);
         $dataMatricula = Carbon::parse($validated['data_matricula'] ?? now())->toDateString();
 
-        DB::transaction(function () use ($alunoIds, $turma, $dataMatricula): void {
-            $idsJaMatriculados = DB::table('turma_aluno')
-                ->where('turma_id', $turma->id)
-                ->whereIn('aluno_id', $alunoIds)
-                ->pluck('aluno_id')
-                ->all();
+        $idsJaMatriculados = DB::table('turma_aluno')
+            ->where('turma_id', $turma->id)
+            ->where('status', 'matriculado')
+            ->whereIn('aluno_id', $alunoIds)
+            ->pluck('aluno_id')
+            ->all();
 
-            $novos = array_values(array_diff($alunoIds, $idsJaMatriculados));
+        $novosIds = array_values(array_diff($alunoIds, $idsJaMatriculados));
+
+        if (empty($novosIds)) {
+            return back()->with(
+                'warning',
+                'Modo Foco: nenhum aluno novo para matricular. Todos os selecionados já estavam matriculados nesta turma.'
+            );
+        }
+
+        DB::transaction(function () use ($novosIds, $turma, $dataMatricula): void {
             $vagasDisponiveis = max(0, $turma->capacidade - $turma->total_alunos);
 
-            if (count($novos) > $vagasDisponiveis) {
+            if (count($novosIds) > $vagasDisponiveis) {
                 throw ValidationException::withMessages([
                     'turma_id' => 'Capacidade insuficiente para concluir a matrícula em massa. Ajuste a seleção de alunos.',
                 ]);
             }
 
-            foreach (array_chunk($alunoIds, self::CHUNK_SIZE) as $chunk) {
+            foreach (array_chunk($novosIds, self::CHUNK_SIZE) as $chunk) {
                 $payload = collect($chunk)
                     ->map(fn (int $alunoId) => [
                         'turma_id' => $turma->id,
@@ -87,7 +96,15 @@ class FocusModeController extends Controller
             }
         });
 
-        return back()->with('success', 'Modo Foco aplicado: matrícula em massa concluída com sucesso.');
+        $totalNovos = count($novosIds);
+        $totalJaMatriculados = count($idsJaMatriculados);
+        $mensagem = "Modo Foco aplicado: {$totalNovos} nova(s) matrícula(s) concluída(s) com sucesso.";
+
+        if ($totalJaMatriculados > 0) {
+            $mensagem .= " {$totalJaMatriculados} aluno(s) já estavam matriculados e foram ignorados.";
+        }
+
+        return back()->with('success', $mensagem);
     }
 
     public function atualizarStatus(Request $request)
@@ -101,20 +118,40 @@ class FocusModeController extends Controller
             'ativo' => ['required', 'boolean'],
         ]);
 
+        $novoStatus = (bool) $validated['ativo'];
+        $idsSemAlteracao = User::query()
+            ->whereIn('id', $validated['user_ids'])
+            ->where('ativo', $novoStatus)
+            ->pluck('id')
+            ->all();
+
+        $idsParaAlterar = array_values(array_diff($validated['user_ids'], $idsSemAlteracao));
+
+        if (empty($idsParaAlterar)) {
+            return back()->with('warning', 'Modo Foco: nenhum registo foi alterado, pois todos já estavam com esse status.');
+        }
+
         $afetados = 0;
 
-        DB::transaction(function () use ($validated, &$afetados): void {
-            foreach (array_chunk($validated['user_ids'], self::CHUNK_SIZE) as $chunk) {
+        DB::transaction(function () use ($idsParaAlterar, $novoStatus, &$afetados): void {
+            foreach (array_chunk($idsParaAlterar, self::CHUNK_SIZE) as $chunk) {
                 $afetados += User::query()
                     ->whereIn('id', $chunk)
                     ->update([
-                        'ativo' => (bool) $validated['ativo'],
+                        'ativo' => $novoStatus,
                         'updated_at' => now(),
                     ]);
             }
         });
 
-        return back()->with('success', "Modo Foco aplicado: {$afetados} registo(s) atualizado(s) em lote.");
+        $inalterados = count($idsSemAlteracao);
+        $mensagem = "Modo Foco aplicado: {$afetados} registo(s) atualizado(s) em lote.";
+
+        if ($inalterados > 0) {
+            $mensagem .= " {$inalterados} registo(s) já estavam com esse status e foram preservados.";
+        }
+
+        return back()->with('success', $mensagem);
     }
 
     public function arquivarUsuarios(Request $request)
