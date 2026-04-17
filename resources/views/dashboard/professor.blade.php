@@ -92,27 +92,4 @@
     @endif
 </x-card>
 
-<!-- Quick Actions -->
-<div class="mt-8">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <a href="{{ route('notas.index') }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-500 hover:bg-primary-50 transition-all">
-            <i class="fas fa-clipboard-list text-2xl text-primary-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Lançar Notas</span>
-        </a>
-
-        <a href="{{ route('relatorios.index') }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all">
-            <i class="fas fa-file-alt text-2xl text-green-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Relatórios</span>
-        </a>
-
-        <a href="{{ route('turmas.index') }}" class="flex items-center p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all">
-            <i class="fas fa-list text-2xl text-blue-600 mr-3"></i>
-            <span class="font-medium text-gray-700">Minhas Turmas</span>
-        </a>
-
-    </div>
-</div>
-
 @endsection

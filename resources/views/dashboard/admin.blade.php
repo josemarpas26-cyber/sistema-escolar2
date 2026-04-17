@@ -352,42 +352,6 @@
 </div>
 
 <!-- ── QUICK ACTIONS ── -->
-<div style="margin-bottom:8px;">
-    <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0 0 14px;letter-spacing:-.3px;">Ações Rápidas</h2>
-    <div class="dash-grid-3">
-
-        <a href="{{ route('users.create') }}" class="qa-card">
-            <div class="qa-icon" style="background:#eff6ff;color:#2563eb;">
-                <i class="fas fa-user-plus"></i>
-            </div>
-            <div>
-                <div class="qa-label">Novo Utilizador</div>
-                <div class="qa-desc">Cadastrar aluno, professor ou admin</div>
-            </div>
-        </a>
-
-        <a href="{{ route('turmas.create') }}" class="qa-card">
-            <div class="qa-icon" style="background:#f0fdf4;color:#16a34a;">
-                <i class="fas fa-chalkboard"></i>
-            </div>
-            <div>
-                <div class="qa-label">Nova Turma</div>
-                <div class="qa-desc">Criar e configurar uma turma</div>
-            </div>
-        </a>
-
-        <a href="{{ route('logs.dashboard') }}" class="qa-card">
-            <div class="qa-icon" style="background:#f5f3ff;color:#7c3aed;">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <div>
-                <div class="qa-label">Dashboard Logs</div>
-                <div class="qa-desc">Estatísticas de alterações</div>
-            </div>
-        </a>
-
-    </div>
-</div>
 
 @endsection
 
