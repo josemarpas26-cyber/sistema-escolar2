@@ -63,8 +63,8 @@
                 <tbody class="divide-y divide-slate-200">
                 @foreach($notas as $nota)
                     <tr>
-                        <td class="px-3 py-2 font-semibold text-slate-800">{{ $nota->aluno->name }}</td>
-                        <td class="px-3 py-2 text-slate-500">{{ $nota->aluno->numero_processo ?? '—' }}</td>
+                        <td class="px-3 py-2 font-semibold text-slate-800 dark:text-slate-100">{{ $nota->aluno->name }}</td>
+                        <td class="px-3 py-2 text-slate-500 dark:text-slate-400">{{ $nota->aluno->numero_processo ?? '—' }}</td>
                         <td class="px-3 py-2">
                             <input type="hidden" name="avaliacoes[{{ $nota->id }}][nota_id]" value="{{ $nota->id }}">
                             <input type="number" step="0.01" min="0" max="20" name="avaliacoes[{{ $nota->id }}][valor]" class="form-input max-w-[120px]" placeholder="0-20">
@@ -105,8 +105,8 @@
             @foreach($notas as $nota)
                 <tr>
                     <td class="px-3 py-3 align-top">
-                        <div class="font-semibold text-gray-800">{{ $nota->aluno->name }}</div>
-                        <div class="text-xs text-gray-500">{{ $nota->aluno->numero_processo ?? '—' }}</div>
+                        <div class="font-semibold text-slate-800 dark:text-slate-100">{{ $nota->aluno->name }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $nota->aluno->numero_processo ?? '—' }}</div>
                     </td>
 
                     @for($trimestre = 1; $trimestre <= 3; $trimestre++)
