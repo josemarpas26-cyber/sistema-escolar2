@@ -177,17 +177,7 @@
                                     <span class="text-xs text-gray-400">Sem avaliações</span>
                                 @endforelse
 
-                                @if($isProfessor && $nota->trimestreEstaDisponivel($trimestre) && ! $nota->{"bloqueado_t{$trimestre}"})
-                                    <form method="POST" action="{{ route('notas.avaliacoes-continuas.store') }}" class="grid grid-cols-12 gap-1">
-                                        @csrf
-                                        <input type="hidden" name="nota_id" value="{{ $nota->id }}">
-                                        <input type="hidden" name="trimestre" value="{{ $trimestre }}">
-                                        <input type="text" name="descricao" maxlength="120" class="col-span-5 form-input h-8 text-xs" placeholder="Descrição (opcional)">
-                                        <input type="number" step="0.01" min="0" max="20" name="valor" required class="col-span-2 form-input h-8 text-xs" placeholder="Nota">
-                                        <input type="date" name="data_avaliacao" class="col-span-3 form-input h-8 text-xs" value="{{ now()->toDateString() }}">
-                                        <button type="submit" class="col-span-2 btn btn-primary h-8 text-xs">+</button>
-                                    </form>
-                                @endif
+
                             </div>
                             @endif
                             <div class="mt-2">
