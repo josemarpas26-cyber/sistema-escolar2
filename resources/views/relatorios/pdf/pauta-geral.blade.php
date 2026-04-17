@@ -8,162 +8,162 @@
 
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 9px; /* Aumentado para A3 */
+            font-size: 7px;
             color: #1a202c;
-            padding: 15px;
+            padding: 10px;
             background: white;
         }
 
         /* ── HEADER ── */
         .header {
             text-align: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 4px solid #3B82F6;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #3B82F6;
         }
-        .header h1 { font-size: 22px; color: #3B82F6; margin-bottom: 5px; }
-        .header p  { font-size: 11px; color: #64748b; margin: 2px 0; }
+        .header h1 { font-size: 16px; color: #3B82F6; margin-bottom: 4px; }
+        .header p  { font-size: 9px; color: #64748b; margin: 2px 0; }
 
-        /* ── INFO TABLE (Substitui o Grid para Dompdf) ── */
+        /* ── INFO TABLE ── */
         .info-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 8px 0;
-            margin-bottom: 15px;
+            border-spacing: 6px 0;
+            margin-bottom: 10px;
         }
         .info-table td {
             width: 20%;
             background: #f3f4f6;
-            border: none;
-            border-left: 4px solid #3B82F6;
-            border-radius: 4px;
-            padding: 8px;
-            text-align: left;
+            border-left: 3px solid #3B82F6;
+            border-radius: 3px;
+            padding: 5px 6px;
             vertical-align: middle;
         }
-        .info-label { font-size: 8px; color: #64748b; text-transform: uppercase; display: block; }
-        .info-value { font-size: 11px; font-weight: bold; color: #1e293b; margin-top: 3px; display: block; }
+        .info-label { font-size: 7px; color: #64748b; text-transform: uppercase; display: block; }
+        .info-value { font-size: 9px; font-weight: bold; color: #1e293b; margin-top: 2px; display: block; }
 
         /* ── TABELA DE NOTAS ── */
         table.pauta-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             table-layout: fixed;
         }
 
         th.disc-group {
             background: #1e40af;
             color: white;
-            font-size: 10px; /* Aumentado */
-            padding: 6px 2px;
+            font-size: 7px;
+            padding: 4px 1px;
             text-align: center;
             border: 1px solid #1e3a8a;
+            /* Quebra o nome da disciplina em 2 linhas se necessário */
+            word-break: break-word;
+            white-space: normal;
         }
 
         th.sub-col {
             background: #3B82F6;
             color: white;
-            font-size: 8px; /* Aumentado */
-            padding: 5px 1px;
+            font-size: 6px;
+            padding: 3px 1px;
             text-align: center;
             border: 1px solid #2563EB;
+            white-space: nowrap;
         }
 
         th.fix-col {
             background: #374151;
             color: white;
-            font-size: 10px;
-            padding: 6px 3px;
+            font-size: 7px;
+            padding: 4px 2px;
             text-align: center;
             border: 1px solid #1f2937;
         }
 
         table.pauta-table td {
-            padding: 4px 1px;
+            padding: 3px 1px;
             border: 1px solid #cbd5e1;
             text-align: center;
-            font-size: 9px; /* Aumentado */
+            font-size: 7px;
         }
 
         td.nome-aluno {
             text-align: left !important;
-            padding-left: 6px !important;
-            font-size: 10px !important;
+            padding-left: 4px !important;
+            font-size: 7px !important;
             font-weight: bold;
         }
 
         tbody tr:nth-child(even) { background: #f9fafb; }
 
-        td.mt-col   { background: #dbeafe; font-weight: bold; }
-        td.cfd-col  { background: #d1fae5; font-weight: bold; }
-        td.ca-col   { background: #fef3c7; font-weight: bold; }
+        td.mt-col  { background: #dbeafe; font-weight: bold; }
+        td.cfd-col { background: #d1fae5; font-weight: bold; }
+        td.ca-col  { background: #fef3c7; font-weight: bold; }
 
-        .aprovado { color: #059669; font-weight: bold; }
+        .aprovado  { color: #059669; font-weight: bold; }
         .reprovado { color: #dc2626; font-weight: bold; }
 
-        /* ── RESUMO (Substitui Grid para Dompdf) ── */
+        /* ── RESUMO ── */
         .summary-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 10px 0;
+            border-spacing: 8px 0;
             background: #eff6ff;
             border: 2px solid #3B82F6;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 20px;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 15px;
         }
         .summary-table td {
             width: 25%;
             background: white;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 8px;
+            border-radius: 3px;
             text-align: center;
-            border: none;
         }
-        .summary-label { font-size: 9px; color: #64748b; display: block; }
-        .summary-value { font-size: 18px; font-weight: bold; margin-top: 5px; display: block; }
+        .summary-label { font-size: 8px; color: #64748b; display: block; }
+        .summary-value { font-size: 14px; font-weight: bold; margin-top: 4px; display: block; }
         .summary-value.blue  { color: #3B82F6; }
         .summary-value.green { color: #10B981; }
         .summary-value.red   { color: #EF4444; }
 
-        /* ── ASSINATURAS (Substitui Grid para Dompdf) ── */
+        /* ── ASSINATURAS ── */
         .assinaturas-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 40px;
+            margin-top: 30px;
         }
         .assinaturas-table td {
             width: 33.33%;
             text-align: center;
-            border: none;
-            padding: 0 30px;
+            padding: 0 20px;
         }
-        .assinatura-linha { border-top: 1px solid #1e293b; padding-top: 10px; margin-bottom: 5px; }
-        .assinatura-label { font-size: 10px; color: #64748b; }
+        .assinatura-linha { border-top: 1px solid #1e293b; padding-top: 8px; margin-bottom: 4px; }
+        .assinatura-label { font-size: 8px; color: #64748b; }
 
         /* ── LEGENDA E FOOTER ── */
         .legenda {
             background: #f3f4f6;
-            padding: 8px 12px;
-            border-radius: 4px;
-            margin-bottom: 12px;
-            font-size: 8.5px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            margin-bottom: 8px;
+            font-size: 7px;
             color: #475569;
         }
 
         .footer {
             text-align: center;
-            margin-top: 20px;
-            padding-top: 10px;
+            margin-top: 15px;
+            padding-top: 8px;
             border-top: 1px solid #e2e8f0;
-            font-size: 9px;
+            font-size: 8px;
             color: #64748b;
         }
 
         @page {
-            size: A3 landscape;
-            margin: 10mm;
+            size: A4 landscape;
+            margin: 8mm;
         }
     </style>
 </head>
@@ -177,9 +177,9 @@
         default => 'Final (CFD)',
     };
 
-    $isFinal = $trimestre === 'final' || !in_array($trimestre, ['1','2','3']);
+    $isFinal     = $trimestre === 'final' || !in_array($trimestre, ['1','2','3']);
     $disciplinas = $turma->disciplinas->sortBy('nome');
-    $alunos = $turma->alunos->sortBy('name');
+    $alunos      = $turma->alunos->sortBy('name');
 
     $notasIndex = [];
     foreach ($turma->notas as $nota) {
@@ -187,7 +187,7 @@
     }
 
     $configAvaliacao = $anoLetivo?->configuracaoAvaliacao ?? $turma->anoLetivo?->configuracaoAvaliacao;
-    $colsDisciplina = [];
+    $colsDisciplina  = [];
 
     if (in_array($trimestre, ['1','2','3'], true) && $configAvaliacao) {
         $colsDisciplina = $configAvaliacao->provas
@@ -205,9 +205,9 @@
         }
 
         if ($trimestre === '3') {
-            $colsDisciplina[] = ['campo' => 'cf', 'label' => 'CF', 'tipo' => 'mt'];
-            $colsDisciplina[] = ['campo' => 'pg', 'label' => 'PG', 'tipo' => 'normal'];
-            $colsDisciplina[] = ['campo' => 'ca', 'label' => 'CA', 'tipo' => 'ca'];
+            $colsDisciplina[] = ['campo' => 'cf',  'label' => 'CF',  'tipo' => 'mt'];
+            $colsDisciplina[] = ['campo' => 'pg',  'label' => 'PG',  'tipo' => 'normal'];
+            $colsDisciplina[] = ['campo' => 'ca',  'label' => 'CA',  'tipo' => 'ca'];
         }
     }
 
@@ -222,8 +222,27 @@
         ];
     }
 
-    $numCols   = count($colsDisciplina);
-    $campoMT   = match($trimestre) { '1' => 'mt1', '2' => 'mt2', '3' => 'mt3', default => 'cfd' };
+    $numCols = count($colsDisciplina);
+    $numDiscs = $disciplinas->count();
+
+    // ── Escolha dinâmica do tamanho da folha ─────────────────────────────
+    // Colunas totais = 4 fixas (Nº, Nome, Processo, Gen) + disciplinas × colunas por disciplina
+    $totalCols = 4 + ($numDiscs * $numCols);
+
+    $pageSize = match(true) {
+        $totalCols <= 30  => 'A3',
+        $totalCols <= 55  => 'A2',
+        $totalCols <= 90  => 'A1',
+        default           => 'A0',
+    };
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Larguras das colunas fixas e de notas (em %)
+    $fixedWidth = 28; // % total para as 4 colunas fixas
+    $notasWidth = 100 - $fixedWidth;
+    $colWidth   = $notasWidth / ($numDiscs * $numCols); // % por coluna de nota
+
+    $campoMT = match($trimestre) { '1' => 'mt1', '2' => 'mt2', '3' => 'mt3', default => 'cfd' };
 
     $totalAprovados  = 0;
     $totalReprovados = 0;
@@ -249,9 +268,9 @@
 
 {{-- ── HEADER ── --}}
 <div class="header">
-    <h1>📊 PAUTA GERAL DA TURMA</h1>
+    <h1>PAUTA GERAL DA TURMA</h1>
     <p>{{ $turma->curso->nome }} — {{ $turma->classe }}ª Classe &nbsp;|&nbsp; {{ $turma->nome_completo }} &nbsp;|&nbsp; Ano Letivo: {{ $turma->anoLetivo->nome }}</p>
-    <p><strong>Período: {{ $trimestreLabel }}</strong></p>
+    <p><strong>Período: {{ $trimestreLabel }}</strong> &nbsp;|&nbsp; Formato de folha: <strong>{{ $pageSize }} Paisagem</strong></p>
 </div>
 
 {{-- ── INFO TABLE ── --}}
@@ -271,7 +290,7 @@
         </td>
         <td>
             <span class="info-label">Disciplinas</span>
-            <span class="info-value">{{ $disciplinas->count() }}</span>
+            <span class="info-value">{{ $numDiscs }}</span>
         </td>
         <td>
             <span class="info-label">Total Alunos</span>
@@ -288,19 +307,33 @@
     @else
         MT1/MT2/MT3 = Médias Trimestrais &nbsp;|&nbsp; PG = Prova Global &nbsp;|&nbsp; CA = Classif. Anual &nbsp;|&nbsp; CFD = Classif. Final Disciplina &nbsp;|&nbsp; ✓ Aprovado ≥ 10
     @endif
+    &nbsp;|&nbsp; Folha: <strong>{{ $pageSize }} Paisagem</strong>
+    &nbsp;|&nbsp; Total de colunas: <strong>{{ $totalCols }}</strong>
 </div>
 
 {{-- ── TABELA PRINCIPAL ── --}}
 <table class="pauta-table">
+    <colgroup>
+        {{-- Colunas fixas --}}
+        <col style="width: 2%">   {{-- Nº --}}
+        <col style="width: 13%">  {{-- Nome --}}
+        <col style="width: 7%">   {{-- Processo --}}
+        <col style="width: 2%">   {{-- Gen --}}
+        {{-- Colunas de notas: largura igual distribuída --}}
+        @for($c = 0; $c < $numDiscs * $numCols; $c++)
+            <col style="width: {{ number_format($colWidth, 2) }}%">
+        @endfor
+    </colgroup>
+
     <thead>
         <tr>
-            <th class="fix-col" style="width:3%" rowspan="2">Nº</th>
-            <th class="fix-col" style="width:14%" rowspan="2">Nome do Aluno</th>
-            <th class="fix-col" style="width:8%" rowspan="2">Processo</th>
-            <th class="fix-col" style="width:3%" rowspan="2">Gen</th>
+            <th class="fix-col" rowspan="2">Nº</th>
+            <th class="fix-col" rowspan="2">Nome do Aluno</th>
+            <th class="fix-col" rowspan="2">Processo</th>
+            <th class="fix-col" rowspan="2">Gen</th>
             @foreach($disciplinas as $disc)
                 <th class="disc-group" colspan="{{ $numCols }}">
-                    {{ $disc->codigo ?? $disc->nome }}
+                    {{ $disc->codigo ?? \Illuminate\Support\Str::limit($disc->nome, 12) }}
                 </th>
             @endforeach
         </tr>
@@ -320,22 +353,22 @@
         <tr>
             <td>{{ $contador++ }}</td>
             <td class="nome-aluno">{{ $aluno->name }}</td>
-            <td>{{ $aluno->numero_processo ?? "-" }}</td>
-            <td>{{ in_array($aluno->genero, ["M", "F"]) ? $aluno->genero : "-" }}</td>
-            
+            <td>{{ $aluno->numero_processo ?? '-' }}</td>
+            <td>{{ in_array($aluno->genero, ['M','F']) ? $aluno->genero : '-' }}</td>
+
             @foreach($disciplinas as $disc)
                 @php $nota = $notasAluno[$disc->id] ?? null; @endphp
                 @foreach($colsDisciplina as $col)
                     @php
                         $val     = $nota ? $nota->{$col['campo']} : null;
                         $tdClass = match($col['tipo']) {
-                            'mt'  => 'mt-col',
-                            'cfd' => 'cfd-col',
-                            'ca'  => 'ca-col',
+                            'mt'    => 'mt-col',
+                            'cfd'   => 'cfd-col',
+                            'ca'    => 'ca-col',
                             default => '',
                         };
                         $statusClass = '';
-                        if (in_array($col['tipo'], ['cfd', 'mt', 'ca']) && $val !== null) {
+                        if (in_array($col['tipo'], ['cfd','mt','ca']) && $val !== null) {
                             $statusClass = $val >= 10 ? 'aprovado' : 'reprovado';
                         }
                     @endphp
@@ -393,7 +426,7 @@
 
 {{-- ── FOOTER ── --}}
 <div class="footer">
-    <p>Gerado em {{ now()->format('d/m/Y H:i') }} &nbsp;|&nbsp; Sistema de Gestão Escolar 🇦🇴</p>
+    <p>Gerado em {{ now()->format('d/m/Y H:i') }} &nbsp;|&nbsp; Sistema de Gestão Escolar 🇦🇴 &nbsp;|&nbsp; Folha: {{ $pageSize }} Paisagem</p>
 </div>
 
 </body>
