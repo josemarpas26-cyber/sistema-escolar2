@@ -25,7 +25,6 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
             ['EXPORTAÇÃO DE LOGS'],
             ['Gerado em '.now()->format('d/m/Y H:i')],
             ['Filtros aplicados', $this->resumoFiltros()],
-            [],
             [
                 'Data/Hora',
                 'Usuário',
@@ -71,9 +70,10 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
 
                 $sheet->mergeCells('A1:K1');
                 $sheet->mergeCells('A2:K2');
+                $sheet->mergeCells('B3:K3');
 
-                $sheet->freezePane('A6');
-                $sheet->setAutoFilter("A5:{$lastColumn}{$lastRow}");
+                $sheet->freezePane('A5'); // agora os dados começam na linha 5
+                $sheet->setAutoFilter("A4:{$lastColumn}{$lastRow}");
 
                 $sheet->getStyle('A1:K2')->applyFromArray([
                     'font' => [
@@ -95,7 +95,16 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
                     'font' => ['bold' => true],
                 ]);
 
-                $sheet->getStyle('A5:K5')->applyFromArray([
+                $sheet->getStyle('B3:K3')->applyFromArray([
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_LEFT,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'wrapText' => true,
+                    ],
+                ]);
+
+
+                $sheet->getStyle('A4:K4')->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'color' => ['rgb' => 'FFFFFF'],
@@ -110,7 +119,7 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
                     ],
                 ]);
 
-                $sheet->getStyle("A5:K{$lastRow}")->applyFromArray([
+                $sheet->getStyle("A4:K{$lastRow}")->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -122,7 +131,7 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
                     ],
                 ]);
 
-                for ($row = 6; $row <= $lastRow; $row++) {
+                for ($row = 5; $row <= $lastRow; $row++) {
                     if ($row % 2 !== 0) {
                         continue;
                     }
@@ -131,9 +140,11 @@ class LogsListExport implements FromArray, ShouldAutoSize, WithEvents
                     $sheet->getStyle("A{$row}:K{$row}")->getFill()->getStartColor()->setRGB('F8FAFC');
                 }
 
-                $sheet->getStyle("A6:A{$lastRow}")
-                    ->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                if ($lastRow >= 5) {
+                    $sheet->getStyle("A5:A{$lastRow}")
+                        ->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
             },
         ];
     }

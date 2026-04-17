@@ -336,6 +336,32 @@ class ExportacoesXlsxTest extends TestCase
         $this->assertSame('Aluno Dashboard', $spreadsheet->getSheet(1)->getCell('D2')->getValue());
     }
 
+
+    public function test_exportacao_de_logs_lista_mantem_cabecalho_de_filtros_formatado(): void
+    {
+        $role = $this->createRoleWithPermissions('admin', ['logs.view']);
+        /** @var User $user */
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)
+            ->get(route('logs.exportar', [
+                'contexto' => 'lista',
+                'utilizador' => 'Nome muito longo para testar quebra de linha no resumo de filtros',
+                'disciplina' => 'Disciplina com nome muito longo para não alargar a tabela',
+            ]));
+
+        $this->assertStringContainsString('.xlsx', (string) $response->headers->get('content-disposition'));
+
+        $path = $response->baseResponse->getFile()->getPathname();
+        $spreadsheet = IOFactory::load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $this->assertArrayHasKey('B3:K3', $sheet->getMergeCells());
+        $this->assertTrue($sheet->getStyle('B3')->getAlignment()->getWrapText());
+        $this->assertSame('Data/Hora', $sheet->getCell('A5')->getValue());
+    }
+
+    
     private function createRoleWithPermissions(string $name, array $permissionNames): Role
     {
         $role = Role::create([
