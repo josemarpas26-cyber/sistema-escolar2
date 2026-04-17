@@ -91,6 +91,7 @@ class TurmaController extends Controller
     public function store(Request $request)
     {
         $this->checkPermission('turmas.create');
+        $nomeCompletoInformado = $this->montarNomeCompleto($request->all());
 
         // 1️⃣ Verificar se existe ano letivo ativo
         $anoAtivo = AnoLetivo::ativo()->first();
@@ -103,7 +104,18 @@ class TurmaController extends Controller
 
         // 2️⃣ Validar dados
         $validated = $request->validate([
-            'nome' => ['required', 'string', 'size:1', 'regex:/^[A-Za-z]$/'],
+             'nome' => [
+                'required',
+                'string',
+                'size:1',
+                'regex:/^[A-Za-z]$/',
+                Rule::unique('turmas', 'nome')->where(function ($query) use ($request) {
+                    return $query
+                        ->where('curso_id', $request->input('curso_id'))
+                        ->where('classe', $request->input('classe'))
+                        ->where('turno', $request->input('turno'));
+                }),
+            ],
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
@@ -124,6 +136,7 @@ class TurmaController extends Controller
             'nome.regex' => 'O nome da turma deve ser uma letra de A a Z.',
             'turno.required' => 'O turno é obrigatório.',
             'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
+            'nome.unique' => "Já existe uma turma com o nome {$nomeCompletoInformado} neste curso, classe e turno.",
         ]);
 
             $validated['nome'] = strtoupper(trim($validated['nome']));
@@ -135,15 +148,17 @@ class TurmaController extends Controller
                 ->with('error', 'Só é permitido criar turmas no ano letivo ativo.');
         }
 
-        // 4️⃣ Verificar se já existe turma com mesmo nome no mesmo ano
+        // 4️⃣ Verificar se já existe turma com o mesmo nome completo
         $turmaExiste = Turma::where('nome', $validated['nome'])
-            ->where('ano_letivo_id', $validated['ano_letivo_id'])
+             ->where('curso_id', $validated['curso_id'])
+            ->where('classe', $validated['classe'])
+            ->where('turno', $validated['turno'])
             ->exists();
 
         if ($turmaExiste) {
             return back()
                 ->withInput()
-                ->with('error', 'Já existe uma turma com este nome neste ano letivo.');
+                ->with('error', 'Já existe uma turma com o nome completo '.$this->montarNomeCompleto($validated).' neste curso, classe e turno.');
         }
 
         // 5️⃣ Criar turma
@@ -214,9 +229,23 @@ class TurmaController extends Controller
     public function update(Request $request, Turma $turma)
     {
         $this->checkPermission('turmas.edit');
+        $nomeCompletoInformado = $this->montarNomeCompleto($request->all());
 
         $validated = $request->validate([
-            'nome' => ['required', 'string', 'size:1', 'regex:/^[A-Za-z]$/'],
+            'nome' => [
+                'required',
+                'string',
+                'size:1',
+                'regex:/^[A-Za-z]$/',
+                Rule::unique('turmas', 'nome')
+                    ->ignore($turma->id)
+                    ->where(function ($query) use ($request) {
+                        return $query
+                            ->where('curso_id', $request->input('curso_id'))
+                            ->where('classe', $request->input('classe'))
+                            ->where('turno', $request->input('turno'));
+                    }),
+            ],
             'classe' => 'required|in:10,11,12',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
@@ -240,9 +269,24 @@ class TurmaController extends Controller
             'nome.regex' => 'O nome da turma deve ser uma letra de A a Z.',
             'turno.required' => 'O turno é obrigatório.',
             'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
+            'nome.unique' => "Já existe uma turma com o nome {$nomeCompletoInformado} neste curso, classe e turno.",
         ]);
 
             $validated['nome'] = strtoupper(trim($validated['nome']));
+
+        $turmaExiste = Turma::where('nome', $validated['nome'])
+            ->where('curso_id', $validated['curso_id'])
+            ->where('classe', $validated['classe'])
+            ->where('turno', $validated['turno'])
+            ->where('id', '!=', $turma->id)
+            ->exists();
+
+        if ($turmaExiste) {
+            return back()
+                ->withInput()
+                ->with('error', 'Já existe uma turma com o nome completo '.$this->montarNomeCompleto($validated).' neste curso, classe e turno.');
+        }
+
 
         $turma->update($validated);
 
@@ -453,6 +497,7 @@ class TurmaController extends Controller
 
         $turmaExistente = Turma::where('curso_id', $turma->curso_id)
             ->where('classe', (string) $novaClasse)
+            ->where('turno', $turma->turno)
             ->where('nome', $turma->nome)
             ->where('ano_letivo_id', $proximoAno->id)
             ->exists();
@@ -663,5 +708,15 @@ class TurmaController extends Controller
         ]);
 
         return back()->with('success', $mensagemSucesso);
+    }
+
+    private function montarNomeCompleto(array $dados): string
+    {
+        $cursoCodigo = isset($dados['curso_id']) ? (Curso::find($dados['curso_id'])?->codigo ?? 'CURSO') : 'CURSO';
+        $classe = strtoupper(trim((string) ($dados['classe'] ?? 'XX')));
+        $nome = strtoupper(trim((string) ($dados['nome'] ?? 'X')));
+        $turno = strtoupper(trim((string) ($dados['turno'] ?? 'X')));
+
+        return strtoupper(trim((string) $cursoCodigo)).$classe.$nome.$turno;
     }
 }
