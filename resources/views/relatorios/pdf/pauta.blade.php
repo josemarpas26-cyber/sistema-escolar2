@@ -178,7 +178,7 @@
 
     <!-- Header -->
     <div class="header">
-        <h1>📊 PAUTA DE NOTAS</h1>
+        <h1>PAUTA DE NOTAS</h1>
         <p style="font-size: 11px;">
             {{ $turma->nome_completo }} - {{ $disciplina->nome }}
             <span class="trimestre-badge">{{ $trimestreLabel }}</span>
