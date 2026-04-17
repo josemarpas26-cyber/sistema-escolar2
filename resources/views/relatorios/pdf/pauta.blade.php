@@ -163,6 +163,9 @@
         font-weight: bold;
         margin-left: 6px;
     }
+    .logo { text-align: center; margin-bottom: 2px; }
+    .logo img { height: 35px; }
+
 </style>
 </head>
 <body>
@@ -178,6 +181,16 @@
 
     <!-- Header -->
     <div class="header">
+            @php
+                $path = public_path('images/logo1.png');
+                $type = pathinfo($path, PATHINFO_EXTENSION);
+                $data = file_get_contents($path);
+                $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+            @endphp
+        <div class="logo">
+                <img src="{{ $base64 }}" alt="Logo">
+        </div>
+        
         <h1>PAUTA DE NOTAS</h1>
         <p style="font-size: 11px;">
             {{ $turma->nome_completo }} - {{ $disciplina->nome }}
