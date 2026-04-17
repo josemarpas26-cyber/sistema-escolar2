@@ -5,8 +5,8 @@
 @section('content')
 
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 mb-2">Redefinir Palavra-passe</h2>
-    <p class="text-gray-600 text-sm">Introduza a sua nova palavra-passe abaixo</p>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Redefinir Palavra-passe</h2>
+    <p class="text-gray-600 dark:text-gray-300 text-sm">Introduza a sua nova palavra-passe abaixo</p>
 </div>
 
 <form method="POST" action="{{ route('password.update') }}" class="space-y-6">
@@ -17,7 +17,7 @@
 
     <!-- Email -->
     <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+         <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Email
         </label>
         <div class="relative">
@@ -29,7 +29,7 @@
                 id="email" 
                 name="email" 
                 value="{{ old('email', $request->email) }}"
-                class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-500 @enderror"
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-500 @enderror"
                 required 
                 autofocus
             >
@@ -41,7 +41,7 @@
 
     <!-- Password -->
     <div>
-        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Nova Senha
         </label>
         <div class="relative" x-data="{ mostrar: false }">
@@ -52,7 +52,7 @@
                 :type="mostrar ? 'text' : 'password'" 
                 id="password" 
                 name="password" 
-                class="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('password') border-red-500 @enderror"
+                class="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('password') border-red-500 @enderror"
                 placeholder="••••••••"
                 required
             >
@@ -80,7 +80,7 @@
 
     <!-- Password Confirmation -->
     <div>
-        <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="password_confirmation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Confirmar Nova Senha
         </label>
         <div class="relative" x-data="{ mostrar: false }">
@@ -91,7 +91,7 @@
                 :type="mostrar ? 'text' : 'password'"
                 id="password_confirmation" 
                 name="password_confirmation" 
-                class="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                class="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                 placeholder="••••••••"
                 required
             >
