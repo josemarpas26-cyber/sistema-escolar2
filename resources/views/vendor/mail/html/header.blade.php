@@ -30,8 +30,8 @@
                         <td width="52" height="52" bgcolor="#4d7fd4"
                             style="width: 52px; height: 52px; background-color: rgba(255,255,255,0.18); border-radius: 12px; text-align: center; vertical-align: middle;">
                             {{-- Ícone de cadeado como imagem PNG pública --}}
-                            <img src="https://img.icons8.com/ios/50/ffffff/lock--v1.png"
-                                 alt="Cadeado"
+                            <img src="https://img.icons8.com/ios/50/ffffff/appointment-reminders--v1.png"
+                                 alt="Notificação"
                                  width="26"
                                  height="26"
                                  style="display: block; margin: 13px auto; border: 0;">
@@ -42,12 +42,12 @@
         </tr>
         <tr>
             <td style="color: #ffffff; font-size: 34px; font-weight: 800; line-height: 1.2; padding-bottom: 8px; font-family: Arial, sans-serif;">
-                Redefinição de senha
+                {{ config('app.name') }}
             </td>
         </tr>
         <tr>
             <td style="color: #dbeafe; font-size: 18px; line-height: 1.5; font-family: Arial, sans-serif;">
-                Recebemos um pedido para redefinir a sua palavra-passe
+                Notificação automática da plataforma
             </td>
         </tr>
     </table>

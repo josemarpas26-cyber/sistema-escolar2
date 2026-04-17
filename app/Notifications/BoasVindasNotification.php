@@ -19,8 +19,9 @@ class BoasVindasNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Bem-vindo ao Sistema Escolar')
-            ->view('emails.verify-email', [
-                'nome' => $notifiable->name,
-            ]);
+            ->greeting('Olá, '.$notifiable->name.'!')
+            ->line('Seja bem-vindo ao Sistema Escolar.')
+            ->line('A sua conta foi criada com sucesso e já pode aceder à plataforma.')
+            ->line('Se precisar de apoio, contacte a secretaria ou a administração da escola.');
     }
 }
