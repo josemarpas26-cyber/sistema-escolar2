@@ -39,6 +39,61 @@
     </form>
 </x-card>
 
+@if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
+<x-card class="mb-6">
+    <div class="flex items-center justify-between gap-2 mb-4">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900">Modos Foco</h3>
+            <p class="text-sm text-gray-500">Uma única ação para operações em massa com validação e feedback claro.</p>
+        </div>
+        <span class="text-xs text-gray-500">Selecionados: <strong id="focus-selected-count">0</strong></span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <form method="POST" action="{{ route('focus.matricular-alunos') }}" class="space-y-2 focus-form">
+            @csrf
+            <h4 class="font-medium text-gray-900">Modo Foco: Matrícula de múltiplos alunos</h4>
+            <div class="focus-ids"></div>
+            <select name="turma_id" class="input" required>
+                <option value="">Selecionar turma</option>
+                @foreach($turmas as $turma)
+                    <option value="{{ $turma->id }}">{{ $turma->nome_completo }}</option>
+                @endforeach
+            </select>
+            <input type="date" class="input" name="data_matricula" value="{{ now()->toDateString() }}">
+            <button type="submit" class="btn btn-primary w-full">Aplicar matrícula em massa</button>
+        </form>
+
+        <form method="POST" action="{{ route('focus.atualizar-status') }}" class="space-y-2 focus-form">
+            @csrf
+            <h4 class="font-medium text-gray-900">Modo Foco: Atualização em lote</h4>
+            <div class="focus-ids"></div>
+            <select name="ativo" class="input" required>
+                <option value="1">Marcar como ativo</option>
+                <option value="0">Marcar como inativo</option>
+            </select>
+            <button type="submit" class="btn btn-primary w-full">Atualizar selecionados</button>
+        </form>
+
+        <form method="POST" action="{{ route('focus.arquivar-usuarios') }}" class="space-y-2 focus-form" onsubmit="return confirm('Arquivar os registos selecionados? Esta ação pode ser revertida na Lixeira.')">
+            @csrf
+            @method('DELETE')
+            <h4 class="font-medium text-gray-900">Modo Foco: Eliminação/arquivamento em massa</h4>
+            <div class="focus-ids"></div>
+            <button type="submit" class="btn btn-danger w-full">Arquivar selecionados</button>
+        </form>
+
+        <form method="POST" action="{{ route('focus.importar-alunos') }}" enctype="multipart/form-data" class="space-y-2">
+            @csrf
+            <h4 class="font-medium text-gray-900">Modo Foco: Importação em massa (Excel/CSV)</h4>
+            <input type="file" name="ficheiro" class="input" accept=".csv,.txt,.xlsx,.xls" required>
+            <p class="text-xs text-gray-500">Colunas mínimas: <code>name</code>, <code>numero_processo</code>, <code>bi</code>, <code>data_nascimento</code>.</p>
+            <button type="submit" class="btn btn-primary w-full">Importar ficheiro</button>
+        </form>
+    </div>
+</x-card>
+@endif
+
 {{-- Lista --}}
 <x-card>
     @if($alunos->count() > 0)
@@ -46,6 +101,11 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
+                    @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
+                        <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">
+                            <input type="checkbox" id="focus-select-all" class="rounded border-gray-300">
+                        </th>
+                    @endif
                     <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Aluno</th>
                     <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Nº Processo</th>
                     <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Turma</th>
@@ -69,6 +129,11 @@
                         || $professorPodeVerBoletim;
                 @endphp
                 <tr class="hover:bg-gray-50">
+                    @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
+                        <td class="px-6 py-4 align-top">
+                            <input type="checkbox" class="focus-item rounded border-gray-300" value="{{ $aluno->id }}">
+                        </td>
+                    @endif
                     <td class="px-6 py-4">
                         <div class="flex items-center">
                             <img src="{{ $aluno->foto_perfil_url }}"
@@ -156,5 +221,54 @@
     </div>
     @endif
 </x-card>
+
+@if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAll = document.getElementById('focus-select-all');
+        const items = Array.from(document.querySelectorAll('.focus-item'));
+        const hiddenFields = Array.from(document.querySelectorAll('.focus-ids'));
+        const countElement = document.getElementById('focus-selected-count');
+
+        const syncSelection = () => {
+            const selectedIds = items.filter((item) => item.checked).map((item) => Number(item.value));
+            hiddenFields.forEach((field) => {
+                field.innerHTML = '';
+                selectedIds.forEach((id) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'user_ids[]';
+                    input.value = id;
+                    field.appendChild(input);
+                });
+            });
+            countElement.textContent = String(selectedIds.length);
+        };
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                items.forEach((item) => {
+                    item.checked = this.checked;
+                });
+                syncSelection();
+            });
+        }
+
+        items.forEach((item) => {
+            item.addEventListener('change', syncSelection);
+        });
+
+        document.querySelectorAll('.focus-form').forEach((form) => {
+            form.addEventListener('submit', function (event) {
+                const selected = items.some((item) => item.checked);
+                if (!selected) {
+                    event.preventDefault();
+                    alert('Selecione pelo menos um aluno para usar este Modo Foco.');
+                }
+            });
+        });
+    });
+</script>
+@endif
 
 @endsection
