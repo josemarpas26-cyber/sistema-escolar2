@@ -72,13 +72,18 @@ Artisan::command('backup:database', function () {
     $mysqldumpPath = env('MYSQLDUMP_PATH', 'mysqldump');
 
 if ($driver === 'pgsql') {
+    $connectionString = sprintf(
+        'postgresql://%s:%s@%s:%s/%s?sslmode=require',
+        $username,
+        $password,
+        $host,
+        $port,
+        $database
+    );
+
     $command = sprintf(
-        'PGPASSWORD=%s pg_dump --sslmode=require --no-owner --no-privileges --clean --if-exists --host=%s --port=%s --username=%s %s > %s',
-        escapeshellarg($password),
-        escapeshellarg($host),
-        escapeshellarg($port),
-        escapeshellarg($username),
-        escapeshellarg($database),
+        'pg_dump --no-owner --no-privileges --clean --if-exists "%s" > %s',
+        $connectionString,
         escapeshellarg($targetFile),
     );
 } else {
