@@ -4,10 +4,6 @@
 
 @section('header-actions')
 <div class="flex flex-wrap gap-2">
-    <a href="{{ route('notas.index') }}" class="btn btn-outline">
-        <i class="fas fa-clipboard-list mr-2"></i>
-        Minhas notas
-    </a>
     <a href="{{ route('relatorios.boletim', auth()->user()) }}" class="btn btn-primary" target="_blank">
         <i class="fas fa-file-pdf mr-2"></i>
         Boletim
