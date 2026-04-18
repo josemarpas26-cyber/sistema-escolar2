@@ -17,17 +17,17 @@ Artisan::command('backup:database', function () {
     $backupDiskPath = storage_path('app/backups/database');
     File::ensureDirectoryExists($backupDiskPath);
 
-    $timestamp     = now()->format('Y-m-d_His');
-    $retentionDays = (int) env('DB_BACKUP_RETENTION_DAYS', 14);
-    $cleanupThreshold = now()->subDays(max($retentionDays, 1));
+    // Limpa todos os backups anteriores, mantendo apenas o mais recente
+    $existingFiles = collect(File::files($backupDiskPath))
+        ->sortByDesc(fn($f) => $f->getMTime())
+        ->skip(1);
 
-    foreach (File::files($backupDiskPath) as $file) {
-        if ($file->getMTime() < $cleanupThreshold->timestamp) {
-            File::delete($file->getPathname());
-        }
+    foreach ($existingFiles as $file) {
+        File::delete($file->getPathname());
     }
 
-    $driver = $connection['driver'] ?? null;
+    $timestamp = now()->format('Y-m-d_His');
+    $driver    = $connection['driver'] ?? null;
 
     // ── SQLite ────────────────────────────────────────────────────────────
     if ($driver === 'sqlite') {
@@ -44,7 +44,7 @@ Artisan::command('backup:database', function () {
         return self::SUCCESS;
     }
 
-    // ── MySQL via PDO (sem processo externo) ──────────────────────────────
+    // ── MySQL via PDO ─────────────────────────────────────────────────────
     if ($driver === 'mysql') {
         $database = $connection['database'] ?? null;
 
@@ -64,13 +64,11 @@ Artisan::command('backup:database', function () {
             $output[] = "SET FOREIGN_KEY_CHECKS=0;";
             $output[] = "";
 
-            // Obter todas as tabelas
             $tables = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_COLUMN);
 
             foreach ($tables as $table) {
                 $this->line("  → A exportar tabela: {$table}");
 
-                // DROP + CREATE
                 $createStmt = $pdo->query("SHOW CREATE TABLE `{$table}`")->fetch(PDO::FETCH_ASSOC);
                 $createSQL  = $createStmt['Create Table'] ?? '';
 
@@ -78,7 +76,6 @@ Artisan::command('backup:database', function () {
                 $output[] = $createSQL . ";";
                 $output[] = "";
 
-                // Dados
                 $rows = $pdo->query("SELECT * FROM `{$table}`")->fetchAll(PDO::FETCH_ASSOC);
 
                 if (! empty($rows)) {
@@ -88,7 +85,7 @@ Artisan::command('backup:database', function () {
                     foreach ($chunks as $chunk) {
                         $values = array_map(function (array $row) use ($pdo): string {
                             $escaped = array_map(
-                                fn ($v) => $v === null ? 'NULL' : $pdo->quote((string) $v),
+                                fn($v) => $v === null ? 'NULL' : $pdo->quote((string) $v),
                                 $row
                             );
                             return '(' . implode(', ', $escaped) . ')';
@@ -101,7 +98,6 @@ Artisan::command('backup:database', function () {
                 }
             }
 
-            // Views
             $views = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'VIEW'")->fetchAll(PDO::FETCH_COLUMN);
 
             foreach ($views as $view) {
