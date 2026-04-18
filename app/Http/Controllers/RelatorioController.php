@@ -144,9 +144,15 @@ class RelatorioController extends Controller
 
     public function boletimAluno(Request $request, ?User $aluno = null)
     {
-        $this->checkPermission('relatorios.boletins'); // no início do método
+       // $this->checkPermission('relatorios.boletins'); // no início do método
 
         $user = auth()->user();
+
+        if ($user->isAluno()) {
+            $this->checkPermission('notas.view_own');
+        } else {
+            $this->checkPermission('relatorios.boletins');
+        }
 
         if (! $aluno && $request->filled('aluno_id')) {
             $aluno = User::alunos()->findOrFail($request->aluno_id);
@@ -155,7 +161,7 @@ class RelatorioController extends Controller
         if (! $aluno) {
             if ($user->isAluno()) {
                 $aluno = $user;
-                $this->checkPermission('notas.view_own');
+             //   $this->checkPermission('notas.view_own');
             } else {
                 return back()->with('error', 'Selecione um aluno para gerar o boletim.');
             }
