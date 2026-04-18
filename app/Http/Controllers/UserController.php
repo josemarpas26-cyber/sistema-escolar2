@@ -47,7 +47,7 @@ class UserController extends Controller
     {
         $this->checkPermission('users.view');
 
-        $query = User::with('role')->latest();
+        $query = User::with('role')->orderBy('name');
 
         if ($request->filled('role_id')) {
             $query->where('role_id', $request->role_id);
@@ -147,7 +147,7 @@ class UserController extends Controller
         // Upload de foto
         if ($request->hasFile('foto_perfil')) {
             $validated['foto_perfil'] = $request->file('foto_perfil')
-                ->store('fotos_perfil', 'public');
+                ->storePublicly('fotos_perfil', 'public');
         }
  
         $user = User::create($validated);
@@ -244,10 +244,10 @@ class UserController extends Controller
         // Upload de nova foto
         if ($request->hasFile('foto_perfil')) {
             if ($user->foto_perfil) {
-                Storage::disk('public')->delete($user->foto_perfil);
+                Storage::disk('public')->delete($this->normalizarCaminhoFoto($user->foto_perfil));
             }
             $validated['foto_perfil'] = $request->file('foto_perfil')
-                ->store('fotos_perfil', 'public');
+                ->storePublicly('fotos_perfil', 'public');
         }
  
         $user->update($validated);
@@ -414,5 +414,20 @@ class UserController extends Controller
         $professores = $query->paginate(20);
 
         return view('users.professores', compact('professores'));
+    }
+
+    private function normalizarCaminhoFoto(?string $caminho): ?string
+    {
+        if (blank($caminho)) {
+            return null;
+        }
+
+        $caminho = ltrim($caminho, '/');
+
+        if (str_starts_with($caminho, 'storage/')) {
+            $caminho = ltrim(substr($caminho, strlen('storage/')), '/');
+        }
+
+        return $caminho;
     }
 }

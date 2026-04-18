@@ -50,11 +50,11 @@ class ProfileController extends Controller
 
         if ($request->hasFile('foto_perfil')) {
             if ($user->foto_perfil) {
-                Storage::disk('public')->delete($user->foto_perfil);
+                Storage::disk('public')->delete($this->normalizarCaminhoFoto($user->foto_perfil));
             }
 
             $validated['foto_perfil'] = $request->file('foto_perfil')
-                ->store('fotos_perfil', 'public');
+                ->storePublicly('fotos_perfil', 'public');
         }
 
         $user->name = $validated['name'];
@@ -118,4 +118,20 @@ class ProfileController extends Controller
 
         return redirect('/');
     }
+    
+    private function normalizarCaminhoFoto(?string $caminho): ?string
+    {
+        if (blank($caminho)) {
+            return null;
+        }
+
+        $caminho = ltrim($caminho, '/');
+
+        if (str_starts_with($caminho, 'storage/')) {
+            $caminho = ltrim(substr($caminho, strlen('storage/')), '/');
+        }
+
+        return $caminho;
+    }
+    
 }

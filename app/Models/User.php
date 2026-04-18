@@ -280,14 +280,31 @@ class User extends Authenticatable
     public function getFotoPerfilUrlAttribute(): string
     {
         if ($this->foto_perfil) {
-            
-            $fotoPerfil = ltrim($this->foto_perfil, '/');
+            $fotoPerfil = trim((string) $this->foto_perfil);
+
+            if (str_starts_with($fotoPerfil, 'http://') || str_starts_with($fotoPerfil, 'https://') || str_starts_with($fotoPerfil, 'data:image/')) {
+                return $fotoPerfil;
+            }
+
+            $fotoPerfil = ltrim($fotoPerfil, '/');
 
             if (str_starts_with($fotoPerfil, 'storage/')) {
                 $fotoPerfil = ltrim(substr($fotoPerfil, strlen('storage/')), '/');
             }
 
-            return Storage::disk('public')->url($fotoPerfil);
+            if (!Storage::disk('public')->exists($fotoPerfil)) {
+                $fotoPerfil = null;
+            }
+
+            if ($fotoPerfil) {
+                $driver = config('filesystems.disks.public.driver');
+
+                if ($driver === 'local') {
+                    return '/storage/' . $fotoPerfil;
+                }
+
+                return Storage::disk('public')->url($fotoPerfil);
+            }
         }
 
         // Imagem padrão baseada no gênero
