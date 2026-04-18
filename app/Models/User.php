@@ -280,7 +280,14 @@ class User extends Authenticatable
     public function getFotoPerfilUrlAttribute(): string
     {
         if ($this->foto_perfil) {
-            return asset('storage/'.$this->foto_perfil);
+            
+            $fotoPerfil = ltrim($this->foto_perfil, '/');
+
+            if (str_starts_with($fotoPerfil, 'storage/')) {
+                $fotoPerfil = ltrim(substr($fotoPerfil, strlen('storage/')), '/');
+            }
+
+            return Storage::disk('public')->url($fotoPerfil);
         }
 
         // Imagem padrão baseada no gênero

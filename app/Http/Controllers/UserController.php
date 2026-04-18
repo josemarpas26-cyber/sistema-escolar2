@@ -355,7 +355,9 @@ class UserController extends Controller
     {
         $this->checkPermission('users.view');
 
-        $query = User::alunos()->with(['role', 'turmas.curso']);
+        $query = User::alunos()
+            ->with(['role', 'turmas.curso'])
+            ->orderBy('name');
 
         // 🔎 Pesquisa
         if ($request->filled('search')) {
@@ -400,7 +402,9 @@ class UserController extends Controller
     {
         $this->checkPermission('users.view');
 
-        $query = User::professores()->with(['role', 'atribuicoes.turma', 'atribuicoes.disciplina']);
+        $query = User::professores()
+            ->with(['role', 'atribuicoes.turma', 'atribuicoes.disciplina'])
+            ->orderBy('name');
 
         if ($request->filled('search')) {
             $search = $request->search;
