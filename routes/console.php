@@ -69,7 +69,7 @@ Artisan::command('backup:database', function () {
 
     $targetFile = "{$backupDiskPath}/{$defaultConnection}_{$timestamp}.sql";
     
-    $mysqldumpPath = '"' . env('MYSQLDUMP_PATH', 'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe') . '"';
+    $mysqldumpPath = env('MYSQLDUMP_PATH', 'mysqldump');
 
     $command = $driver === 'pgsql'
     ? sprintf(
