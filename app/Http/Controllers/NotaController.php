@@ -1272,7 +1272,7 @@ class NotaController extends Controller
         $trimestreInicial = $nota->trimestreInicialDisponivel();
 
         if ($trimestre === 1 && $trimestreInicial === 2) {
-            return 'O 1o trimestre nao se aplica a este aluno porque a matricula ocorreu a partir do 2o trimestre.';
+            return 'O 1º trimestre nao se aplica a este aluno porque a matricula ocorreu a partir do 2º trimestre.';
         }
 
         return "O {$trimestre}o trimestre nao se aplica a este aluno porque a matricula ocorreu apenas no {$trimestreInicial}o trimestre.";

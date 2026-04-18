@@ -219,9 +219,9 @@ class DashboardController extends Controller
             ->values();
 
         $evolucaoTemporal = collect([
-            $this->criarPontoEvolucao('1o Trimestre', 'mt1', $notas),
-            $this->criarPontoEvolucao('2o Trimestre', 'mt2', $notas),
-            $this->criarPontoEvolucao('3o Trimestre', 'mt3', $notas),
+            $this->criarPontoEvolucao('1º Trimestre', 'mt1', $notas),
+            $this->criarPontoEvolucao('2º Trimestre', 'mt2', $notas),
+            $this->criarPontoEvolucao('3º Trimestre', 'mt3', $notas),
             $this->criarPontoEvolucao('Resultado Final', 'cfd', $notas),
         ]);
 

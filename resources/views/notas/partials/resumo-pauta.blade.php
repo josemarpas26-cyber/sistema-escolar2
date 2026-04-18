@@ -17,7 +17,7 @@
 
     <div class="grid gap-4 md:grid-cols-4">
         <div class="rounded-lg border border-gray-200 bg-slate-50 p-4 dark:border-gray-700 dark:bg-gray-900">
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Visao geral</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Visão geral</p>
             <p class="mt-2 text-2xl font-semibold text-slate-800 dark:text-gray-100">{{ $estatisticasPauta['geral']['total_notas'] }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">notas lancadas nos tres trimestres</p>
             <div class="mt-3 flex flex-wrap gap-2 text-xs">
