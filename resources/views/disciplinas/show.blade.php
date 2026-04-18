@@ -108,7 +108,7 @@
                             <td class="px-4 py-3">
                                 @if($curso->pivot->ano_terminal)
                                     <x-badge type="warning">
-                                        {{ $curso->pivot->ano_terminal }}a classe
+                                        {{ $curso->pivot->ano_terminal }}ª classe
                                     </x-badge>
                                 @else
                                     <x-badge type="gray">Nao terminal</x-badge>

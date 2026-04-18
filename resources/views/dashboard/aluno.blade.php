@@ -84,7 +84,7 @@
                 <div class="rounded-2xl p-4" style="background:var(--surface-sunken); border:1px solid var(--border);">
                     <div class="text-xs font-bold uppercase tracking-[0.16em]" style="color:var(--tx-4);">Turma</div>
                     <div class="mt-2 text-lg font-bold" style="color:var(--tx-1);">{{ $turma->nome_completo }}</div>
-                    <div class="mt-1 text-sm" style="color:var(--tx-3);">{{ $turma->classe }}a classe</div>
+                    <div class="mt-1 text-sm" style="color:var(--tx-3);">{{ $turma->classe }}ª classe</div>
                 </div>
                 <div class="rounded-2xl p-4" style="background:var(--surface-sunken); border:1px solid var(--border);">
                     <div class="text-xs font-bold uppercase tracking-[0.16em]" style="color:var(--tx-4);">Curso</div>

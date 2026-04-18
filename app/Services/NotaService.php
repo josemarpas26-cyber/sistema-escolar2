@@ -94,7 +94,7 @@ class NotaService
                 'sucesso'    => 0,
                 'erro'       => 0,
                 'bloqueadas' => 0,
-                'mensagem'   => 'Nao ha CAs para importar na 10a classe.',
+                'mensagem'   => 'Nao ha CAs para importar na 10ª classe.',
             ];
         }
 

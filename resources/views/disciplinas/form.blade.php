@@ -167,13 +167,13 @@
                                             <select name="cursos_terminal[{{ $curso->id }}]" class="input">
                                                 <option value="">Nao terminal neste curso</option>
                                                 <option value="10" {{ ($terminaisPorCurso[$curso->id] ?? '') === '10' ? 'selected' : '' }}>
-                                                    10a classe
+                                                    10ª classe
                                                 </option>
                                                 <option value="11" {{ ($terminaisPorCurso[$curso->id] ?? '') === '11' ? 'selected' : '' }}>
-                                                    11a classe
+                                                    11ª classe
                                                 </option>
                                                 <option value="12" {{ ($terminaisPorCurso[$curso->id] ?? '') === '12' ? 'selected' : '' }}>
-                                                    12a classe
+                                                    12ª classe
                                                 </option>
                                             </select>
                                         </td>
