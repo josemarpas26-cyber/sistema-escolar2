@@ -169,7 +169,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('backups.index');
     Route::post('/backups', [BackupController::class, 'store'])
         ->name('backups.store');
-    Route::get('/backups/download/{file}', [BackupController::class, 'download'])
+    Route::get('/backups/{file}/download', [BackupController::class, 'download'])
         ->name('backups.download');
 
 });
