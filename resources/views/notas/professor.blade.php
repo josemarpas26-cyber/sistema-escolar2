@@ -1472,7 +1472,7 @@
                           @endif
                         </div>
                         <div>
-                          <div class="np-aluno-name">{{ $idx + 1 }}. {{ $nota->aluno->name }}</div>
+                          <div class="np-aluno-name">{{ $idx + 1 }}-{{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
                         </div>
                       </div>
@@ -1634,7 +1634,7 @@
                           @endif
                         </div>
                         <div>
-                          <div class="np-aluno-name">{{ $idx + 1 }}. {{ $nota->aluno->name }}</div>
+                          <div class="np-aluno-name">{{ $idx + 1 }}-{{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
                         </div>
                       </div>
@@ -1793,7 +1793,7 @@
                           @endif
                         </div>
                         <div>
-                          <div class="np-aluno-name">{{ $idx + 1 }}. {{ $nota->aluno->name }}</div>
+                          <div class="np-aluno-name">{{ $idx + 1 }}-{{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
                         </div>
                       </div>
