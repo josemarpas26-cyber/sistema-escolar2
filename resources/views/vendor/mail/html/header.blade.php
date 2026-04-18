@@ -1,20 +1,23 @@
 <tr>
-<td class="header">
+<td class="header" style="background: linear-gradient(135deg, #1a3a6b 0%, #1e4d9b 60%, #2563c7 100%); padding: 36px 48px 32px; border-radius: 12px 12px 0 0;">
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+
+        {{-- Logo + nome da app --}}
         <tr>
-            <td style="padding-bottom: 20px;">
+            <td style="padding-bottom: 28px;">
                 <a href="{{ $url }}" style="display: inline-block; text-decoration: none;">
                     <table cellpadding="0" cellspacing="0" role="presentation">
                         <tr>
-                            <td style="vertical-align: middle; padding-right: 10px;">
-                              <img src="http://127.0.0.1:8000/images/logo1.png"
+                            <td style="vertical-align: middle; padding-right: 12px;">
+                                <img src="{{ asset('images/logo1.png') }}"
                                      alt="{{ config('app.name') }}"
-                                     width="36"
-                                     height="36"
-                                     style="display: block; border-radius: 8px; border: 0;">
+                                     width="40" height="40"
+                                     style="display: block; border-radius: 10px; border: 2px solid rgba(255,255,255,0.25);">
                             </td>
                             <td style="vertical-align: middle;">
-                                <span style="color: #ffffff; font-size: 16px; font-weight: 600; font-family: Arial, sans-serif;">
+                                <span style="color: #ffffff; font-size: 15px; font-weight: 700;
+                                             font-family: Georgia, 'Times New Roman', serif;
+                                             letter-spacing: 0.3px;">
                                     {{ config('app.name') }}
                                 </span>
                             </td>
@@ -23,33 +26,32 @@
                 </a>
             </td>
         </tr>
+
+        {{-- Separador --}}
         <tr>
-            <td style="padding-bottom: 16px;">
-                <table cellpadding="0" cellspacing="0" role="presentation">
-                    <tr>
-                        <td width="52" height="52" bgcolor="#4d7fd4"
-                            style="width: 52px; height: 52px; background-color: rgba(255,255,255,0.18); border-radius: 12px; text-align: center; vertical-align: middle;">
-                            {{-- Ícone de cadeado como imagem PNG pública --}}
-                            <img src="https://img.icons8.com/ios/50/ffffff/appointment-reminders--v1.png"
-                                 alt="Notificação"
-                                 width="26"
-                                 height="26"
-                                 style="display: block; margin: 13px auto; border: 0;">
-                        </td>
-                    </tr>
-                </table>
+            <td style="padding-bottom: 24px;">
+                <div style="width: 48px; height: 3px; background: rgba(255,255,255,0.4); border-radius: 2px;"></div>
             </td>
         </tr>
+
+        {{-- Título principal --}}
         <tr>
-            <td style="color: #ffffff; font-size: 34px; font-weight: 800; line-height: 1.2; padding-bottom: 8px; font-family: Arial, sans-serif;">
-                {{ config('app.name') }}
+            <td style="color: #ffffff; font-size: 28px; font-weight: 800; line-height: 1.15;
+                        padding-bottom: 10px; font-family: Georgia, 'Times New Roman', serif;
+                        letter-spacing: -0.5px;">
+                Sistema de<br>Gestão Escolar
             </td>
         </tr>
+
+        {{-- Subtítulo --}}
         <tr>
-            <td style="color: #dbeafe; font-size: 18px; line-height: 1.5; font-family: Arial, sans-serif;">
-                Notificação automática da plataforma
+            <td style="color: rgba(219,234,254,0.85); font-size: 13px; line-height: 1.5;
+                        font-family: Arial, Helvetica, sans-serif; font-weight: 400;
+                        padding-bottom: 4px;">
+                Comunicação oficial da plataforma
             </td>
         </tr>
+
     </table>
 </td>
 </tr>
