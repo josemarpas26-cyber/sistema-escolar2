@@ -95,6 +95,7 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Nº</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aluno</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nº Processo</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data Matrícula</th>
@@ -107,6 +108,7 @@
                             <tbody class="divide-y divide-gray-200">
                                                                 @foreach($turma->alunos as $aluno)
                                 <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 text-center text-sm font-semibold text-gray-700">{{ $loop->iteration }}</td>
                                     <td class="px-6 py-4">
                                         <a href="{{ route('users.show', $aluno) }}" class="font-medium text-primary-600 hover:text-primary-900">
                                             {{ $aluno->name }}
@@ -349,7 +351,7 @@
 <div class="space-y-2">
 
     {{-- NOTAS --}}
-    <a href="{{ route('notas.index', ['turma_id' => $turma->id]) }}"
+    <a href="{{ route('notas.index', ['turma_id' => \App\Support\IdMask::encode((int) $turma->id)]) }}"
        class="btn btn-primary w-full flex items-center justify-center">
         <i class="fas fa-clipboard-list mr-2"></i>
         <span>Notas</span>
