@@ -260,12 +260,11 @@
                 <x-card title="Encarregado de Educação" icon="fas fa-user-friends">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="label">Nome do Encarregado *</label>
+                            <label class="label">Nome do Encarregado </label>
                             <input type="text"
                                    name="nome_encarregado"
                                    value="{{ old('nome_encarregado', $user->nome_encarregado) }}"
                                    class="input"
-                                   :required="isAluno"
                                    placeholder="Nome completo"
                                    maxlength="255">
                             @error('nome_encarregado')
@@ -273,7 +272,7 @@
                             @enderror
                         </div>
                         <div>
-                            <label class="label">Telefone do Encarregado *</label>
+                            <label class="label">Telefone do Encarregado</label>
                             <input type="tel"
                                    name="contacto_encarregado"
                                    id="contacto_encarregado"
@@ -281,7 +280,6 @@
                                    maxlength="15"
                                    placeholder="923 000 000"
                                    value="{{ old('contacto_encarregado', $user->contacto_encarregado ?? '') }}"
-                                   :required="isAluno"
                                     x-on:input="this.value = this.value.replace(/[^0-9\s\+\-]/g, '');"
                                    x-on:keydown="
                                        const permitidas = /^[0-9\+\-\s]$/;
