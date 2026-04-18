@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page-title', 'Painel Academico')
+@section('page-title', 'Painel Acadêmico')
 
 @section('header-actions')
 <div class="flex flex-wrap gap-2">
@@ -30,9 +30,9 @@
                     Ano letivo {{ $ano_letivo->nome }}
                 </div>
                 <div class="space-y-2">
-                    <h1 class="text-2xl md:text-4xl font-black leading-tight" style="color:var(--tx-1);">Resumo academico completo do aluno</h1>
+                    <h1 class="text-2xl md:text-4xl font-black leading-tight" style="color:var(--tx-1);">Olá, {{ auth()->user()->name ? explode(' ', auth()->user()->name)[0] : 'Usuário' }} </h1>
                     <p class="max-w-3xl text-sm md:text-base" style="color:var(--tx-3);">
-                        O painel mostra apenas os dados ligados a sua turma atual e as disciplinas realmente associadas a ela, incluindo professores, coordenacao, avaliacoes completas, estatisticas e historico.
+                        Bem-vindo ao seu painel acadêmico! Aqui você acompanha o seu desempenho e evolução ao longo do tempo, resultados por disciplina e estatísticas geraisz  .
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -66,11 +66,11 @@
     </section>
 
      <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
-        <x-stat-card title="Media geral" :value="$disciplinas_com_resultado > 0 ? number_format($media_geral, 2) : '--'" icon="fas fa-chart-line" :color="$media_geral >= 10 ? 'green' : 'warning'" />
-        <x-stat-card title="Media atual" :value="$media_atual !== null ? number_format($media_atual, 2) : '--'" icon="fas fa-wave-square" color="primary" />
+        <x-stat-card title="Média geral (CF)" :value="$disciplinas_com_resultado > 0 ? number_format($media_geral, 2) : '--'" icon="fas fa-chart-line" :color="$media_geral >= 10 ? 'green' : 'warning'" />
+        <x-stat-card title="Média atual" :value="$media_atual !== null ? number_format($media_atual, 2) : '--'" icon="fas fa-wave-square" color="primary" />
         <x-stat-card title="Disciplinas" :value="$total_disciplinas" icon="fas fa-book" color="blue" />
-        <x-stat-card title="Aprovacoes" :value="$aprovacoes" icon="fas fa-check-circle" color="green" />
-        <x-stat-card title="Reprovacoes" :value="$reprovacoes" icon="fas fa-times-circle" color="red" />
+        <x-stat-card title="Aprovacões" :value="$aprovacoes" icon="fas fa-check-circle" color="green" />
+        <x-stat-card title="Reprovacões" :value="$reprovacoes" icon="fas fa-times-circle" color="red" />
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -90,7 +90,7 @@
                 <div class="rounded-2xl p-4" style="background:var(--surface-sunken); border:1px solid var(--border);">
                     <div class="text-xs font-bold uppercase tracking-[0.16em]" style="color:var(--tx-4);">Diretor de turma</div>
                     <div class="mt-2 text-lg font-bold" style="color:var(--tx-1);">{{ $turma->coordenador?->name ?? 'Nao definido' }}</div>
-                    <div class="mt-1 text-sm" style="color:var(--tx-3);">Responsavel pelo acompanhamento da turma</div>
+                    <div class="mt-1 text-sm" style="color:var(--tx-3);">Professor(a) responsável da turma</div>
                 </div>
             </div>
             @else
@@ -104,7 +104,7 @@
             @endif
         </x-card>
 
-        <x-card title="Evolucao temporal" icon="fas fa-chart-area">
+        <x-card title="Evolucão temporal" icon="fas fa-chart-area">
              <div class="space-y-5">
                 @foreach($evolucao_temporal as $ponto)
                 @php $percentual = $ponto['media'] !== null ? min(100, max(0, ($ponto['media'] / 20) * 100)) : 0; @endphp
@@ -146,7 +146,7 @@
                         <h3 class="text-lg font-bold" style="color:var(--tx-1);">{{ $item['disciplina']->nome }} - {{ $item['disciplina']->codigo }}</h3>
                         <p class="mt-1 text-sm" style="color:var(--tx-3);">
                             Professor: {{ $item['professor']?->name ?? 'Nao associado' }}
-                            · Coordenador: {{ $item['coordenador']?->name ?? 'Nao definido' }}
+                            · Coordenador: {{ $item['coordenador']?->name ?? 'Não definido' }}
                         </p>
                     </div>
                     <div class="text-left md:text-right">

@@ -6,8 +6,9 @@
 <x-card class="mb-6">
     <div class="flex items-center justify-between gap-4 flex-wrap">
         <div>
+            <p class="text-sm text-gray-600">Ano letivo: {{ $anoLetivo->nome }}</p>
             <h3 class="text-lg font-semibold text-gray-900">Avaliações contínuas por disciplina</h3>
-            <p class="text-sm text-gray-600">Ano letivo ativo: {{ $anoLetivo->nome }}</p>
+            <h6 class="text-sm text-gray-600">Aqui são apresentadas as avaliações realizadas ao longo do período letivo, permitindo acompanhar o desempenho progressivo do aluno.</h6>
         </div>
         <a href="{{ route('notas.index') }}" class="btn btn-outline">
             <i class="fas fa-clipboard-list mr-2"></i>
