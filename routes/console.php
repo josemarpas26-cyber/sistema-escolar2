@@ -72,10 +72,11 @@ Artisan::command('backup:database', function () {
     $mysqldumpPath = env('MYSQLDUMP_PATH', 'mysqldump');
 
 if ($driver === 'pgsql') {
+    $passwordEncoded = rawurlencode($password);
     $connectionString = sprintf(
         'postgresql://%s:%s@%s:%s/%s?sslmode=require',
         $username,
-        $password,
+        $passwordEncoded,
         $host,
         $port,
         $database
