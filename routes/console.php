@@ -71,16 +71,18 @@ Artisan::command('backup:database', function () {
     
     $mysqldumpPath = env('MYSQLDUMP_PATH', 'mysqldump');
 
-    $command = $driver === 'pgsql'
-    ? sprintf(
-        'pg_dump --clean --if-exists --host=%s --port=%s --username=%s %s > %s',
+if ($driver === 'pgsql') {
+    $command = sprintf(
+        'PGPASSWORD=%s pg_dump --sslmode=require --no-owner --no-privileges --clean --if-exists --host=%s --port=%s --username=%s %s > %s',
+        escapeshellarg($password),
         escapeshellarg($host),
         escapeshellarg($port),
         escapeshellarg($username),
         escapeshellarg($database),
         escapeshellarg($targetFile),
-    )
-    : sprintf(
+    );
+} else {
+    $command = sprintf(
         '%s --host=%s --port=%s --user=%s --password=%s %s --routines --triggers --events > %s',
         $mysqldumpPath,
         escapeshellarg($host),
@@ -90,6 +92,7 @@ Artisan::command('backup:database', function () {
         escapeshellarg($database),
         escapeshellarg($targetFile),
     );
+}
 
     $process = Process::fromShellCommandline($command);
     $process->setTimeout(300);
