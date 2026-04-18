@@ -20,6 +20,9 @@ class BackupController extends Controller
 
         $backupPath = storage_path('app/backups/database');
 
+        // Garante que a pasta existe antes de listar
+        File::ensureDirectoryExists($backupPath);
+
         $files = collect(File::files($backupPath))
             ->map(function ($file): array {
                 return [
