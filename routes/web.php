@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnoLetivoController;
 use App\Http\Controllers\CursoController;
 use App\Http\Controllers\CalendarioController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FocusModeController;
 use App\Http\Controllers\DisciplinaController;
@@ -12,8 +13,6 @@ use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\TurmaController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Storage;
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('dashboard')
@@ -166,30 +165,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/relatorios/boletins-massa', [RelatorioController::class, 'boletimMassa'])
      ->name('relatorios.boletins-massa');
 
-     Route::get('/backups', function () {
-    $files = collect(Storage::disk('local')->files('backups/database'))
-        ->map(function ($file) {
-            return [
-                'name' => basename($file),
-                'size' => Storage::disk('local')->size($file),
-                'date' => Storage::disk('local')->lastModified($file),
-            ];
-        })
-        ->sortByDesc('date')
-        ->values();
-
-    return view('backups.index', compact('files'));
-})->name('backups.index');
-
-Route::get('/backups/download/{file}', function ($file) {
-    $path = 'backups/database/' . $file;
-
-    if (!Storage::disk('local')->exists($path)) {
-        abort(404);
-    }
-
-    return Storage::disk('local')->download($path);
-})->name('backups.download');
+    Route::get('/backups', [BackupController::class, 'index'])
+        ->name('backups.index');
+    Route::post('/backups', [BackupController::class, 'store'])
+        ->name('backups.store');
+    Route::get('/backups/download/{file}', [BackupController::class, 'download'])
+        ->name('backups.download');
 
 });
 

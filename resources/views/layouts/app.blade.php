@@ -921,6 +921,11 @@
             </a>
 
             @if(auth()->user()->isAdmin())
+            <a href="{{ route('backups.index') }}"
+               class="nav-item {{ request()->routeIs('backups.*') ? 'active' : '' }}">
+                <span class="nav-item-icon"><i class="fas fa-database"></i></span>Backups
+            </a>
+
             @php $deletedCount = \App\Models\User::onlyTrashed()->count(); @endphp
             <a href="{{ route('users.lixeira') }}"
                class="nav-item {{ request()->routeIs('users.lixeira') ? 'active' : '' }}">
