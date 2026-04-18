@@ -448,20 +448,36 @@ function userEditForm() {
         handlePhotoChange(event) {
             const file = event.target.files[0];
             if (!file) return;
+
             this.photoError = '';
+
             const allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+
             if (!allowed.includes(file.type)) {
                 this.photoError = 'Apenas JPG e PNG são permitidos.';
-                event.target.value = ''; return;
+                return;
             }
+
             if (file.size > 2 * 1024 * 1024) {
                 this.photoError = 'Máximo 2MB.';
-                event.target.value = ''; return;
+                return;
             }
+
             this.photoLoading = true;
+
             const reader = new FileReader();
-            reader.onload  = (e) => { this.photoPreview = e.target.result; this.hasCustomPhoto = true; this.photoLoading = false; };
-            reader.onerror = ()  => { this.photoError = 'Erro ao carregar a imagem.'; this.photoLoading = false; event.target.value = ''; };
+
+            reader.onload = (e) => {
+                this.photoPreview = e.target.result;
+                this.hasCustomPhoto = true;
+                this.photoLoading = false;
+            };
+
+            reader.onerror = () => {
+                this.photoError = 'Erro ao carregar a imagem.';
+                this.photoLoading = false;
+            };
+
             reader.readAsDataURL(file);
         },
 
