@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page-title', 'Painel Academico')
+@section('page-title', 'Painel Académico')
 
 @section('header-actions')
 <div class="flex flex-wrap gap-2">
@@ -30,9 +30,9 @@
                     Ano letivo {{ $ano_letivo->nome }}
                 </div>
                 <div class="space-y-2">
-                    <h1 class="text-2xl md:text-4xl font-black leading-tight" style="color:var(--tx-1);">Resumo academico completo do aluno</h1>
+                    <h1 class="text-2xl md:text-4xl font-black leading-tight" style="color:var(--tx-1);">Resumo académico completo do aluno</h1>
                     <p class="max-w-3xl text-sm md:text-base" style="color:var(--tx-3);">
-                        O painel mostra apenas os dados ligados a sua turma atual e as disciplinas realmente associadas a ela, incluindo professores, coordenacao, avaliacoes completas, estatisticas e historico.
+                         O painel mostra apenas os dados ligados à turma atual e as disciplinas realmente associadas a ela, incluindo professores, coordenação, avaliações completas, estatísticas e histórico.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -98,7 +98,7 @@
                 <i class="fas fa-school text-3xl mb-3" style="color:var(--tx-4);"></i>
                 <div class="text-lg font-bold" style="color:var(--tx-1);">Sem turma ativa neste ano letivo</div>
                 <p class="mt-2 text-sm max-w-xl mx-auto" style="color:var(--tx-3);">
-                    O dashboard continua a mostrar o historico abaixo, mas os dados do ano letivo atual dependem de uma matricula ativa.
+                     O dashboard continua a mostrar o histórico abaixo, mas os dados do ano letivo atual dependem de uma matrícula ativa.
                 </p>
             </div>
             @endif

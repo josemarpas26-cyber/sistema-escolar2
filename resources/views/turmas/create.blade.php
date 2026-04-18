@@ -191,7 +191,7 @@
                                     {{ $ano->nome }} {{ $ano->ativo ? '(Ativo)' : '' }}
                                 </option>
                             @empty
-                                <option disabled>Nenhum ano letivo cadastrado</option>
+                                <option disabled>Nenhum ano letivo registrado</option>
                             @endforelse
                         </select>
 

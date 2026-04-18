@@ -161,7 +161,7 @@
                                             <input name="descricao" value="{{ $item->descricao }}" maxlength="120" class="col-span-5 form-input h-8 text-xs" placeholder="Descrição (opcional)">
                                             <input name="valor" type="number" step="0.01" min="0" max="20" value="{{ $item->valor }}" class="col-span-2 form-input h-8 text-xs {{ $valorClass }}" required>
                                             <input name="data_avaliacao" type="date" value="{{ optional($item->data_avaliacao)->format('Y-m-d') }}" class="col-span-3 form-input h-8 text-xs">
-                                            <button class="col-span-2 btn btn-outline h-8 text-xs" type="submit">Salvar</button>
+                                            <button class="col-span-2 btn btn-outline h-8 text-xs" type="submit">Guardar</button>
                                         </form>
                                         <form method="POST" action="{{ route('notas.avaliacoes-continuas.destroy', $item) }}" class="mt-1">
                                             @csrf

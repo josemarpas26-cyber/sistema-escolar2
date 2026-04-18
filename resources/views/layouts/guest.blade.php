@@ -671,8 +671,8 @@
                 <span class="auth-brand-name">SIGA</span>
             </div>
 
-            <h1 class="auth-headline">Gestao escolar com mais clareza, velocidade e confianca.</h1>
-            <p class="auth-sub">Centralize lancamento de notas, relatorios e acompanhamento academico numa experiencia mais simples, responsiva e pronta para o dia a dia da escola.</p>
+            <h1 class="auth-headline">Gestão escolar com mais clareza, velocidade e confiança.</h1>
+            <p class="auth-sub">Centralize o lançamento de notas, relatórios e acompanhamento académico numa experiência mais simples, responsiva e pronta para o dia a dia da escola.</p>
         </div>
 
         <div class="auth-features">
@@ -698,7 +698,7 @@
                 </div>
             </div>
         </div>
-
+        <br>
         <div class="auth-school-wrap">
             <div class="auth-school-badge">
                 <i class="fas fa-school"></i>

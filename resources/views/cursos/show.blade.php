@@ -8,10 +8,10 @@
     <div class="lg:col-span-2">
         <x-card title="Informacoes do Curso" icon="fas fa-info-circle">
             <div class="space-y-3">
-                <div><span class="text-gray-600">Codigo:</span> <span class="font-bold text-lg">{{ $curso->codigo }}</span></div>
+                <div><span class="text-gray-600">Código:</span> <span class="font-bold text-lg">{{ $curso->codigo }}</span></div>
                 <div><span class="text-gray-600">Nome:</span> <span class="font-semibold">{{ $curso->nome }}</span></div>
-                <div><span class="text-gray-600">Area de Formacao:</span> <span class="font-semibold">{{ $curso->areaFormacao?->nome ?? '-' }}</span></div>
-                @if($curso->descricao)<div><span class="text-gray-600">Descricao:</span> <p class="mt-1">{{ $curso->descricao }}</p></div>@endif
+                <div><span class="text-gray-600">Área de Formação:</span> <span class="font-semibold">{{ $curso->areaFormacao?->nome ?? '-' }}</span></div>
+                @if($curso->descricao)<div><span class="text-gray-600">Descrição:</span> <p class="mt-1">{{ $curso->descricao }}</p></div>@endif
                 @if($curso->coordenador)<div><span class="text-gray-600">Coordenador:</span> <a href="{{ route('users.show', $curso->coordenador) }}" class="text-primary-600">{{ $curso->coordenador->name }}</a></div>@endif
                 <div><span class="text-gray-600">Status:</span> <x-badge type="{{ $curso->ativo ? 'success' : 'danger' }}">{{ $curso->ativo ? 'Ativo' : 'Inativo' }}</x-badge></div>
             </div>

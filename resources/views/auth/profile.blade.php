@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page-title', 'Meu Perfil')
+@section('page-title', 'O meu perfil')
 
 @section('content')
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -89,7 +89,7 @@
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="label">Endereco</label>
+                                <label class="label">Morada</label>
                                 <input
                                     type="text"
                                     name="endereco"
@@ -104,7 +104,7 @@
                     <div class="mt-6 flex justify-end">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save mr-2"></i>
-                            Guardar Alteracoes
+                            Guardar Alterações
                         </button>
                     </div>
                 </form>
@@ -147,27 +147,27 @@
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="label">Endereco</label>
+                        <label class="label">Morada</label>
                         <input type="text" value="{{ $user->endereco ?? '-' }}" class="input cursor-not-allowed bg-gray-50 text-gray-500" disabled>
                     </div>
                 </div>
             @endif
         </x-card>
 
-        <x-card title="Alterar Senha" icon="fas fa-lock">
+        <x-card title="Alterar palavra-passe" icon="fas fa-lock">
              <form method="POST" action="{{ route('profile.password') }}" x-data="{ mostrarAtual: false, mostrarNova: false, mostrarConfirmar: false }">
                 @csrf
                 @method('PUT')
 
                 <div class="space-y-4">
                     <div>
-                        <label class="label">Senha Atual *</label>
+                        <label class="label">Palavra-passe atual *</label>
                         <div class="relative">
                             <input :type="mostrarAtual ? 'text' : 'password'" name="current_password" class="input pr-11" required>
                             <button type="button"
                                     x-on:click="mostrarAtual = !mostrarAtual"
                                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
-                                    :aria-label="mostrarAtual ? 'Ocultar senha' : 'Mostrar senha'"
+                                    :aria-label="mostrarAtual ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                                     tabindex="-1">
                                 <svg x-show="mostrarAtual" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -186,13 +186,13 @@
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
-                            <label class="label">Nova Senha *</label>
+                           <label class="label">Nova palavra-passe *</label>
                              <div class="relative">
                                 <input :type="mostrarNova ? 'text' : 'password'" name="password" class="input pr-11" required minlength="8">
                                 <button type="button"
                                         x-on:click="mostrarNova = !mostrarNova"
                                         class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
-                                        :aria-label="mostrarNova ? 'Ocultar senha' : 'Mostrar senha'"
+                                        :aria-label="mostrarNova ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                                         tabindex="-1">
                                     <svg x-show="mostrarNova" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -210,13 +210,13 @@
                         </div>
 
                         <div>
-                            <label class="label">Confirmar Nova Senha *</label>
+                            <label class="label">Confirmar nova palavra-passe *</label>
                             <div class="relative">
                                 <input :type="mostrarConfirmar ? 'text' : 'password'" name="password_confirmation" class="input pr-11" required>
                                 <button type="button"
                                         x-on:click="mostrarConfirmar = !mostrarConfirmar"
                                         class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
-                                        :aria-label="mostrarConfirmar ? 'Ocultar senha' : 'Mostrar senha'"
+                                        :aria-label="mostrarConfirmar ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                                         tabindex="-1">
                                     <svg x-show="mostrarConfirmar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -235,7 +235,7 @@
                 <div class="mt-6 flex justify-end">
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-key mr-2"></i>
-                        Alterar Senha
+                           Alterar palavra-passe
                     </button>
                 </div>
             </form>
@@ -346,7 +346,7 @@
                         <button type="button"
                                 x-on:click="mostrarEliminar = !mostrarEliminar"
                                 class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
-                                :aria-label="mostrarEliminar ? 'Ocultar senha' : 'Mostrar senha'"
+                                :aria-label="mostrarEliminar ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                                 tabindex="-1">
                             <svg x-show="mostrarEliminar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>

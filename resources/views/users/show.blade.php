@@ -65,7 +65,7 @@
 
                 @if($user->endereco)
                 <div class="md:col-span-2">
-                    <p class="text-sm text-gray-500 mb-1">Endereço</p>
+                    <p class="text-sm text-gray-500 mb-1">Morada</p>
                     <p class="font-semibold text-gray-900">{{ $user->endereco }}</p>
                 </div>
                 @endif

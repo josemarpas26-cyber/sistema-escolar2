@@ -10,7 +10,7 @@
             <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="label">Codigo *</label>
+                        <label class="label">Código *</label>
                         <input
                             type="text"
                             name="codigo"
@@ -98,7 +98,7 @@
             </div>
 
             <div class="mt-6 flex space-x-3">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-2"></i>Salvar</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-2"></i>Guardar</button>
                 <a href="{{ route('cursos.index') }}" class="btn btn-outline">Cancelar</a>
             </div>
         </x-card>

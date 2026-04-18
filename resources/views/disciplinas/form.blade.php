@@ -16,7 +16,7 @@
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <label class="label">Codigo *</label>
+                        <label class="label">Código *</label>
                         <input type="text"
                                name="codigo"
                                value="{{ old('codigo', $disciplina->codigo ?? '') }}"

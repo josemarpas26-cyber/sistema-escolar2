@@ -7,7 +7,7 @@
     <div class="mb-4 flex items-center justify-between gap-3">
         <div>
             <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-700">Resumo da pauta</h3>
-            <p class="text-sm text-gray-500">Indicadores rapidos para acompanhar o lancamento por trimestre.</p>
+            <p class="text-sm text-gray-500">Indicadores rápidos para acompanhar o lançamento por trimestre.</p>
         </div>
         <div class="text-right text-xs text-gray-500">
             <div>{{ $estatisticasPauta['total_registos'] }} registo(s)</div>

@@ -97,7 +97,7 @@
                     @empty
                     <tr>
                         <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                            Nenhum ano letivo cadastrado.
+                            Nenhum ano letivo registado.
                         </td>
                     </tr>
                     @endforelse
@@ -108,7 +108,7 @@
     @else
     <div class="text-center py-12">
         <i class="fas fa-calendar-alt text-5xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500">Nenhum ano letivo cadastrado</p>
+        <p class="text-gray-500">Nenhum ano letivo registado</p>
         <a href="{{ route('anos-letivos.create') }}" class="btn btn-primary mt-4"><i class="fas fa-plus mr-2"></i>Criar Primeiro Ano</a>
     </div>
     @endif
