@@ -15,7 +15,7 @@
     <x-card title="Informacoes da Disciplina" icon="fas fa-info-circle">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-                <span class="text-gray-600">Codigo:</span>
+                <span class="text-gray-600">Código:</span>
                 <span class="font-bold text-lg">{{ $disciplina->codigo }}</span>
             </div>
 

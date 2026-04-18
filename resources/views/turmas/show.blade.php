@@ -156,7 +156,7 @@
                     @else
                     <div class="text-center py-8">
                         <i class="fas fa-users text-4xl text-gray-300 mb-3"></i>
-                        <p class="text-gray-500">Nenhum aluno matriculado</p>
+                        <p class="text-gray-500">Nenhum aluno matrículado</p>
                            @if($canManageTurma)
                         <button onclick="toggleModal('matricularModal')" 
                                 class="btn btn-primary mt-4">

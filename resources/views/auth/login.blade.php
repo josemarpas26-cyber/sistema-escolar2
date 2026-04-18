@@ -34,7 +34,7 @@
 
     <!-- Senha -->
     <div class="auth-field">
-        <label class="auth-label" for="password">Senha</label>
+        <label class="auth-label" for="password">Palavra-passe</label>
          <div class="auth-input-wrap" x-data="{ mostrar: false }">
             <i class="fas fa-lock auth-input-icon"></i>
             <input
@@ -51,7 +51,7 @@
                 type="button"
                 x-on:click="mostrar = !mostrar"
                 class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
-                :aria-label="mostrar ? 'Ocultar senha' : 'Mostrar senha'"
+                :aria-label="mostrar ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                 tabindex="-1"
             >
                 <svg x-show="mostrar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

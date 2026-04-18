@@ -1,6 +1,6 @@
 @extends('layouts.guest')
 
-@section('title', 'Recuperar Senha')
+@section('title', 'Recuperar palavra-passe')
 
 @section('content')
 

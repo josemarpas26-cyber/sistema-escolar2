@@ -196,7 +196,7 @@
                             @elseif($nota)
                                 Em andamento
                             @else
-                                Sem lancamento
+                                Sem lançamento
                             @endif
                         </span>
                     </div>
@@ -213,7 +213,7 @@
                         <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
                             <h4 class="font-bold" style="color:var(--tx-1);">{{ $bloco['titulo'] }}</h4>
                             <span class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">
-                                {{ !$bloco['disponivel'] ? 'Nao aplicavel' : (!$nota ? 'Sem lancamento' : 'Dados completos') }}
+                                 {{ !$bloco['disponivel'] ? 'Não aplicável' : (!$nota ? 'Sem lançamento' : 'Dados completos') }}
                             </span>
                         </div>
                         <div class="p-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -222,9 +222,9 @@
                                 <div class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">{{ $campo['label'] }}</div>
                                 <div class="mt-2 text-base font-extrabold" style="color:{{ $campo['valor'] === null ? 'var(--tx-4)' : 'var(--tx-1)' }};">
                                     @if(!$bloco['disponivel'] && $campo['label'] !== 'Estado')
-                                        Nao aplicavel
+                                       Não aplicável
                                     @elseif($campo['label'] === 'Estado')
-                                        {{ $campo['valor'] ?? ($nota ? 'Em andamento' : 'Sem lancamento') }}
+                                        {{ $campo['valor'] ?? ($nota ? 'Em andamento' : 'Sem lançamento') }}
                                     @else
                                         {{ $formatNota($campo['valor']) }}
                                     @endif
@@ -261,7 +261,7 @@
     <x-card>
         <div class="text-center py-12">
             <i class="fas fa-exclamation-triangle text-5xl text-yellow-400 mb-4"></i>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">O utilizador não está matriculado em nenhuma turma</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">O utilizador não está matrículado em nenhuma turma
             <p class="text-gray-600">
                    Entre em contacto com a secretaria para regularizar a sua matrícula
             </p>

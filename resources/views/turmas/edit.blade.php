@@ -206,7 +206,7 @@
             <div class="flex flex-col space-y-3">
                 <button type="submit" class="btn btn-primary w-full">
                     <i class="fas fa-save mr-2"></i>
-                    Salvar Alterações
+                    Guardar Alterações
                 </button>
                 <a href="{{ route('turmas.show', $turma) }}" class="btn btn-outline w-full">
                     <i class="fas fa-arrow-left mr-2"></i>

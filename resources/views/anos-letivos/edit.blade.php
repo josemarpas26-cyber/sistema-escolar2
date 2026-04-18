@@ -73,7 +73,7 @@
                     </a>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save mr-2"></i>
-                        Salvar Alterações
+                         Guardar alterações
                     </button>
                 </div>
 

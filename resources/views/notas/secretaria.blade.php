@@ -170,7 +170,7 @@
                         @csrf
                         <input type="hidden" name="turma_id" value="{{ $turmaSelecionada->id }}">
                         <input type="hidden" name="disciplina_id" value="{{ $disciplinaSelecionada->id }}">
-                        <button type="submit" class="nr-btn nr-btn-primary" title="Atualiza a pauta com todos os alunos matriculados, mesmo sem notas lançadas">
+                        <button type="submit" class="nr-btn nr-btn-primary" title="Atualiza a pauta com todos os alunos matrículados, mesmo sem notas lançadas">
                             <i class="fas fa-sync-alt"></i> Atualizar alunos da turma
                         </button>
                     </form>
@@ -264,7 +264,7 @@
         <div class="nr-stats nr-mb">
             <div class="nr-stat nr-stat-blue">
                 <div class="nr-stat-ico"><i class="fas fa-list-ol"></i></div>
-                <div><div class="nr-stat-val">{{ $notas->count() }}</div><div class="nr-stat-lbl">Registros</div></div>
+                <div><div class="nr-stat-val">{{ $notas->count() }}</div><div class="nr-stat-lbl">Registos</div></div>
             </div>
             <div class="nr-stat nr-stat-purple">
                 <div class="nr-stat-ico"><i class="fas fa-chart-line"></i></div>

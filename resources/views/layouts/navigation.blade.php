@@ -35,7 +35,7 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="auth()->user()->isAluno() || auth()->user()->isProfessor() ? route('perfil.senha') : route('profile.show')">
-                            {{ auth()->user()->isAluno() || auth()->user()->isProfessor() ? __('Alterar Senha') : __('Meu Perfil') }}
+                            {{ auth()->user()->isAluno() || auth()->user()->isProfessor() ? __('Alterar palavra-passe') : __('O meu perfil') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -81,7 +81,7 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="auth()->user()->isAluno() || auth()->user()->isProfessor() ? route('perfil.senha') : route('profile.show')">
-                    {{ auth()->user()->isAluno() || auth()->user()->isProfessor() ? __('Alterar Senha') : __('Meu Perfil') }}
+                    {{ auth()->user()->isAluno() || auth()->user()->isProfessor() ? __('Alterar palavra-passe') : __('O meu perfil') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->

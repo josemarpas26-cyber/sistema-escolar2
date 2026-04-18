@@ -42,7 +42,7 @@
     <!-- Password -->
     <div>
         <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Nova Senha
+             Nova palavra-passe
         </label>
         <div class="relative" x-data="{ mostrar: false }">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -60,7 +60,7 @@
                 type="button"
                 x-on:click="mostrar = !mostrar"
                 class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors duration-150 focus:outline-none"
-                :aria-label="mostrar ? 'Ocultar senha' : 'Mostrar senha'"
+                :aria-label="mostrar ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                 tabindex="-1"
             >
                 <svg x-show="mostrar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -81,7 +81,7 @@
     <!-- Password Confirmation -->
     <div>
         <label for="password_confirmation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Confirmar Nova Senha
+            Confirmar nova palavra-passe
         </label>
         <div class="relative" x-data="{ mostrar: false }">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -99,7 +99,7 @@
                 type="button"
                 x-on:click="mostrar = !mostrar"
                 class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors duration-150 focus:outline-none"
-                :aria-label="mostrar ? 'Ocultar senha' : 'Mostrar senha'"
+                :aria-label="mostrar ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                 tabindex="-1"
             >
                 <svg x-show="mostrar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

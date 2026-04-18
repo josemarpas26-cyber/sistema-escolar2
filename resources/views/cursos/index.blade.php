@@ -11,13 +11,13 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Codigo</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Area de Formacao</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Área de Formação</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coordenador</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Turmas</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acoes</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -51,7 +51,7 @@
     @else
     <div class="text-center py-12">
         <i class="fas fa-book text-5xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500">Nenhum curso cadastrado</p>
+        <p class="text-gray-500">Nenhum curso registado</p>
         <a href="{{ route('cursos.create') }}" class="btn btn-primary mt-4"><i class="fas fa-plus mr-2"></i>Criar Primeiro Curso</a>
     </div>
     @endif

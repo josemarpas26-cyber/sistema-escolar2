@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page-title', 'Novo Usuário')
+@section('page-title', 'Novo Utilizador')
 
 @section('content')
 
@@ -124,7 +124,7 @@
 
                     <!-- Endereço -->
                     <div class="md:col-span-2">
-                        <label class="label">Endereço</label>
+                        <label class="label">Morada</label>
                         <input type="text"
                                name="endereco"
                                value="{{ old('endereco') }}"
@@ -197,7 +197,7 @@
                      <div x-data="{ autoPass: {{ old('auto_password', true) ? 'true' : 'false' }}, mostrarSenha: false, mostrarConfirmar: false }" class="md:col-span-2">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="label">Senha *</label>
+                                <label class="label">Palavra-passe *</label>
                                 <div class="relative">
                                     <input :type="mostrarSenha ? 'text' : 'password'"
                                            name="password"
@@ -213,7 +213,7 @@
                                     <button type="button"
                                             x-on:click="mostrarSenha = !mostrarSenha"
                                             class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
-                                            :aria-label="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+                                            :aria-label="mostrarSenha ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                                             tabindex="-1">
                                         <svg x-show="mostrarSenha" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -236,14 +236,14 @@
                                     Gerar palavra-passe aleatória automaticamente
                                 </label>
                                 <p x-show="isAluno" x-cloak class="text-xs text-blue-600 mt-2">
-                                    Para alunos, ao gerar senha automaticamente será usado o número de processo.
+                                    Para alunos, ao gerar palavra-passe automaticamente será usado o número de processo.
                                 </p>
                                 @error('password')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <label class="label">Confirmar Senha *</label>
+                                <label class="label">Confirmar Palavra-passe *</label>
                                  <div class="relative">
                                     <input :type="mostrarConfirmar ? 'text' : 'password'"
                                            name="password_confirmation"
@@ -259,7 +259,7 @@
                                     <button type="button"
                                             x-on:click="mostrarConfirmar = !mostrarConfirmar"
                                             class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none"
-                                            :aria-label="mostrarConfirmar ? 'Ocultar senha' : 'Mostrar senha'"
+                                            :aria-label="mostrarConfirmar ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'"
                                             tabindex="-1">
                                         <svg x-show="mostrarConfirmar" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>

@@ -149,7 +149,7 @@
                                             <textarea name="descricao" rows="2" class="form-input md:col-span-2">{{ $evento->descricao }}</textarea>
 
                                             <div class="md:col-span-2 flex gap-2">
-                                                <button class="btn btn-primary" type="submit">Salvar</button>
+                                                <button class="btn btn-primary" type="submit">Guardar</button>
                                             </div>
                                         </form>
 
