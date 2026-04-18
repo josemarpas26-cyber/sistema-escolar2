@@ -1132,8 +1132,8 @@
     $podeFinalizarNotas = auth()->user()->can('notas.editar');
 
     /* ── Turma/disciplina seleccionadas ── */
-    $turmaId      = request('turma_id');
-    $disciplinaId = request('disciplina_id');
+    $turmaId      = $turmaToken ?? request('turma_id');
+    $disciplinaId = $disciplinaToken ?? request('disciplina_id');
 
     /* ── Tab activa (preserva estado após submit) ── */
     $activeTab = request('_tab', old('_tab', '1'));
@@ -1211,7 +1211,7 @@
           <option value="">Selecionar turma…</option>
           @foreach($atribuicoes->groupBy('turma_id') as $tId => $items)
             @php $t = $items->first()->turma; @endphp
-            <option value="{{ $tId }}" {{ request('turma_id') == $tId ? 'selected' : '' }}>
+            <option value="{{ \App\Support\IdMask::encode((int) $tId) }}" {{ ($turmaToken ?? request('turma_id')) === \App\Support\IdMask::encode((int) $tId) ? 'selected' : '' }}>
               {{ $t->nome_completo }}
             </option>
           @endforeach
@@ -1228,18 +1228,18 @@
                 :disabled="!turmaId"
                 required>
           <option value="">Selecionar disciplina…</option>
-          @if(request('turma_id'))
-            @foreach($atribuicoes->where('turma_id', request('turma_id')) as $atrib)
-              <option value="{{ $atrib->disciplina_id }}"
-                      {{ request('disciplina_id') == $atrib->disciplina_id ? 'selected' : '' }}>
+          @if($turma ?? false)
+            @foreach($atribuicoes->where('turma_id', $turma->id) as $atrib)
+              <option value="{{ \App\Support\IdMask::encode((int) $atrib->disciplina_id) }}"
+                      {{ ($disciplinaToken ?? request('disciplina_id')) === \App\Support\IdMask::encode((int) $atrib->disciplina_id) ? 'selected' : '' }}>
                 {{ $atrib->disciplina->nome }}
               </option>
             @endforeach
           @else
             {{-- Todas as disciplinas do professor para JS preencher --}}
             @foreach($atribuicoes as $atrib)
-              <option value="{{ $atrib->disciplina_id }}"
-                      data-turma="{{ $atrib->turma_id }}"
+              <option value="{{ \App\Support\IdMask::encode((int) $atrib->disciplina_id) }}"
+                      data-turma="{{ \App\Support\IdMask::encode((int) $atrib->turma_id) }}"
                       class="disc-option-all"
                       style="display:none">
                 {{ $atrib->disciplina->nome }}
@@ -1426,7 +1426,7 @@
               <table class="np-tbl">
                 <thead>
                   <tr>
-                    <th class="th-left th-sticky" style="min-width:200px;width:200px">Aluno</th>
+                    <th class="th-left th-sticky" style="min-width:220px;width:220px">Nº / Aluno</th>
                     <th>
                       <span class="np-th-tooltip" data-tip="Média de Avaliações Contínuas — 1º Trimestre">
                         MAC1 <i class="fas fa-info-circle"></i>
@@ -1472,7 +1472,7 @@
                           @endif
                         </div>
                         <div>
-                          <div class="np-aluno-name">{{ $nota->aluno->name }}</div>
+                          <div class="np-aluno-name">{{ $idx + 1 }}. {{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
                         </div>
                       </div>
@@ -1604,7 +1604,7 @@
               <table class="np-tbl">
                 <thead>
                   <tr>
-                    <th class="th-left th-sticky" style="min-width:200px;width:200px">Aluno</th>
+                    <th class="th-left th-sticky" style="min-width:220px;width:220px">Nº / Aluno</th>
                     <th><span class="np-th-tooltip" data-tip="Média do 1º Trimestre (referência)">MT1 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Média de Avaliações Contínuas — 2º Trimestre">MAC2 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Prova do Professor — 2º Trimestre">PP2 <i class="fas fa-info-circle"></i></span></th>
@@ -1634,7 +1634,7 @@
                           @endif
                         </div>
                         <div>
-                          <div class="np-aluno-name">{{ $nota->aluno->name }}</div>
+                          <div class="np-aluno-name">{{ $idx + 1 }}. {{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
                         </div>
                       </div>
@@ -1761,7 +1761,7 @@
               <table class="np-tbl">
                 <thead>
                   <tr>
-                    <th class="th-left th-sticky" style="min-width:200px;width:200px">Aluno</th>
+                    <th class="th-left th-sticky" style="min-width:220px;width:220px">Nº / Aluno</th>
                     <th><span class="np-th-tooltip" data-tip="Média Final até 2º Trimestre (referência)">MFT2 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Média de Avaliações Contínuas — 3º Trimestre">MAC3 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Prova do Professor — 3º Trimestre">PP3 <i class="fas fa-info-circle"></i></span></th>
@@ -1793,7 +1793,7 @@
                           @endif
                         </div>
                         <div>
-                          <div class="np-aluno-name">{{ $nota->aluno->name }}</div>
+                          <div class="np-aluno-name">{{ $idx + 1 }}. {{ $nota->aluno->name }}</div>
                           <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
                         </div>
                       </div>

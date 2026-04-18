@@ -15,6 +15,7 @@ use App\Notifications\PautaDesbloqueadaNotification;
 use App\Services\EstadoMatriculaService;
 use App\Services\EstatisticasAcademicasService;
 use App\Services\NotaService;
+use App\Support\IdMask;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,8 +88,14 @@ class NotaController extends Controller
             ->with(['turma', 'disciplina'])
             ->get();
 
-        $turmaId = $request->turma_id;
-        $disciplinaId = $request->disciplina_id;
+        $turmaToken = $request->query('turma_id');
+        $disciplinaToken = $request->query('disciplina_id');
+        $turmaId = IdMask::decode($turmaToken);
+        $disciplinaId = IdMask::decode($disciplinaToken);
+
+        if (($turmaToken && $turmaId === null) || ($disciplinaToken && $disciplinaId === null)) {
+            abort(404);
+        }
         $notas = null;
         $turma = null;
         $disciplina = null;
@@ -111,7 +118,10 @@ class NotaController extends Controller
 
             $turma = Turma::findOrFail($turmaId);
             $disciplina = Disciplina::findOrFail($disciplinaId);
-            $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+            $alunos = $turma->alunos()
+                ->wherePivot('status', 'matriculado')
+                ->orderBy('users.name')
+                ->get();
 
             $notasPorAluno = Nota::where('turma_id', $turma->id)
                 ->where('disciplina_id', $disciplina->id)
@@ -142,7 +152,9 @@ class NotaController extends Controller
             'turma',
             'disciplina',
             'estatisticasPauta',
-            'notificacoesDesbloqueio'
+            'notificacoesDesbloqueio',
+            'turmaToken',
+            'disciplinaToken'
         ));
     }
 
@@ -651,8 +663,8 @@ class NotaController extends Controller
 
         return redirect()
             ->route('notas.index', [
-                'turma_id' => $nota->turma_id,
-                'disciplina_id' => $nota->disciplina_id,
+                'turma_id' => IdMask::encode((int) $nota->turma_id),
+                'disciplina_id' => IdMask::encode((int) $nota->disciplina_id),
             ])
             ->with('success', 'Nota atualizada com sucesso.');
     }
@@ -703,8 +715,8 @@ class NotaController extends Controller
 
         return redirect()
             ->route('notas.index', [
-                'turma_id' => $turma->id,
-                'disciplina_id' => $disciplina->id,
+                'turma_id' => IdMask::encode((int) $turma->id),
+                'disciplina_id' => IdMask::encode((int) $disciplina->id),
             ])
             ->with('success', "Pauta inicializada. {$criados} registros criados.");
     }

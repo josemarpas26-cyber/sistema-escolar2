@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasMaskedRouteKey;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Turma extends Model
 {
-    use HasFactory;
+    use HasFactory, HasMaskedRouteKey;
 
     protected $fillable = [
         'nome',
@@ -50,6 +51,7 @@ class Turma extends Model
     {
         return $this->belongsToMany(User::class, 'turma_aluno', 'turma_id', 'aluno_id')
             ->withPivot('data_matricula', 'status')
+            ->orderBy('users.name')
             ->withTimestamps();
     }
 
