@@ -8,7 +8,7 @@
       action="{{ route('users.update', $user) }}"
       enctype="multipart/form-data"
       x-data="userEditForm()"
-      >
+      @submit="handleSubmit">
     @csrf
     @method('PUT')
 
