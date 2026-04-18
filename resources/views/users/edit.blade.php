@@ -260,12 +260,11 @@
                 <x-card title="Encarregado de Educação" icon="fas fa-user-friends">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="label">Nome do Encarregado *</label>
+                            <label class="label">Nome do Encarregado </label>
                             <input type="text"
                                    name="nome_encarregado"
                                    value="{{ old('nome_encarregado', $user->nome_encarregado) }}"
                                    class="input"
-                                   :required="isAluno"
                                    placeholder="Nome completo"
                                    maxlength="255">
                             @error('nome_encarregado')
@@ -273,7 +272,7 @@
                             @enderror
                         </div>
                         <div>
-                            <label class="label">Telefone do Encarregado *</label>
+                            <label class="label">Telefone do Encarregado</label>
                             <input type="tel"
                                    name="contacto_encarregado"
                                    id="contacto_encarregado"
@@ -281,7 +280,6 @@
                                    maxlength="15"
                                    placeholder="923 000 000"
                                    value="{{ old('contacto_encarregado', $user->contacto_encarregado ?? '') }}"
-                                   :required="isAluno"
                                     x-on:input="this.value = this.value.replace(/[^0-9\s\+\-]/g, '');"
                                    x-on:keydown="
                                        const permitidas = /^[0-9\+\-\s]$/;
@@ -450,20 +448,36 @@ function userEditForm() {
         handlePhotoChange(event) {
             const file = event.target.files[0];
             if (!file) return;
+
             this.photoError = '';
+
             const allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+
             if (!allowed.includes(file.type)) {
                 this.photoError = 'Apenas JPG e PNG são permitidos.';
-                event.target.value = ''; return;
+                return;
             }
+
             if (file.size > 2 * 1024 * 1024) {
                 this.photoError = 'Máximo 2MB.';
-                event.target.value = ''; return;
+                return;
             }
+
             this.photoLoading = true;
+
             const reader = new FileReader();
-            reader.onload  = (e) => { this.photoPreview = e.target.result; this.hasCustomPhoto = true; this.photoLoading = false; };
-            reader.onerror = ()  => { this.photoError = 'Erro ao carregar a imagem.'; this.photoLoading = false; event.target.value = ''; };
+
+            reader.onload = (e) => {
+                this.photoPreview = e.target.result;
+                this.hasCustomPhoto = true;
+                this.photoLoading = false;
+            };
+
+            reader.onerror = () => {
+                this.photoError = 'Erro ao carregar a imagem.';
+                this.photoLoading = false;
+            };
+
             reader.readAsDataURL(file);
         },
 

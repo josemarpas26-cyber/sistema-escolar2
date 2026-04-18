@@ -57,7 +57,16 @@ class ProfileController extends Controller
                 ->store('fotos_perfil', 'public');
         }
 
-        $user->update($validated);
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->telefone = $validated['telefone'] ?? null;
+        $user->endereco = $validated['endereco'] ?? null;
+
+        if (isset($validated['foto_perfil'])) {
+            $user->foto_perfil = $validated['foto_perfil'];
+        }
+
+        $user->save();
 
         if ($emailAlterado && $user->email) {
             $user->notify(new EmailAlteradoNotification($emailAnterior, $user->email));
