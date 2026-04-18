@@ -314,7 +314,7 @@ class EstatisticasAcademicasService
 
         return [
             'tipo' => 'admin',
-            'titulo' => 'Visao administrativa por turma',
+            'titulo' => 'Visão administrativa por turma',
             'descricao' => 'Consolidado geral do ano letivo activo para secretaria e administracao.',
             'resumo' => $this->resumirTrimestres(
                 $itens->flatMap(fn ($item) => $item['estatisticas']->flatMap(fn ($disc) => $disc['trimestres']))->values()

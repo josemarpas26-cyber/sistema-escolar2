@@ -885,10 +885,6 @@
             <div class="nav-section-label">Académico</div>
 
             @if(auth()->user()->isAluno())
-            <a href="{{ route('relatorios.meu-historico') }}"
-               class="nav-item {{ request()->routeIs('relatorios.meu-historico') ? 'active' : '' }}">
-                <span class="nav-item-icon"><i class="fas fa-history"></i></span>Meu histórico
-            </a>
             <a href="{{ route('notas.avaliacoes-continuas.index') }}"
                class="nav-item {{ request()->routeIs('notas.avaliacoes-continuas.*') ? 'active' : '' }}">
                 <span class="nav-item-icon"><i class="fas fa-list-check"></i></span>Avaliações contínuas
@@ -896,6 +892,10 @@
             <a href="{{ route('notas.index') }}"
                class="nav-item {{ request()->routeIs('notas.*') && !request()->routeIs('notas.avaliacoes-continuas.*') ? 'active' : '' }}">
                 <span class="nav-item-icon"><i class="fas fa-clipboard-list"></i></span>Notas
+            </a>
+            <a href="{{ route('relatorios.meu-historico') }}"
+               class="nav-item {{ request()->routeIs('relatorios.meu-historico') ? 'active' : '' }}">
+                <span class="nav-item-icon"><i class="fas fa-history"></i></span>Meu histórico
             </a>
             @else
             <a href="{{ route('notas.index') }}"

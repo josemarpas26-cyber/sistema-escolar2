@@ -67,56 +67,67 @@
     <!-- Tabela de Notas -->
     <x-card title="Notas por Disciplina" icon="fas fa-clipboard-list">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                        <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Disciplina</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MAC1</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT1</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MAC2</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT2</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MFT2</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MAC3</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">MT3</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">PG</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">CFD</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Disciplina</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MAC1</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MT1</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MAC2</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MT2</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MFT2</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MAC3</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MT3</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">PG</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">CFD</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+
+                <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($notas as $nota)
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
                         <td class="px-6 py-4">
-                            <div class="font-medium text-gray-900">{{ $nota->disciplina->nome }}</div>
-                            <div class="text-xs text-gray-500">{{ $nota->disciplina->codigo }}</div>
+                            <div class="font-medium text-gray-900 dark:text-gray-100">{{ $nota->disciplina->nome }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $nota->disciplina->codigo }}</div>
                         </td>
-                        <td class="px-6 py-4 text-center">{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '-' }}</td>
-                        <td class="px-6 py-4 text-center">
+
+                        <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '-' }}</td>
+
+                        <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">
                             {{ $nota->mt1 ? number_format($nota->mt1, 2) : '-' }}
                         </td>
-                        <td class="px-6 py-4 text-center">{{ $nota->mac2 !== null ? number_format($nota->mac2, 2) : '-' }}</td>
-                        <td class="px-6 py-4 text-center">
+
+                        <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">{{ $nota->mac2 !== null ? number_format($nota->mac2, 2) : '-' }}</td>
+
+                        <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">
                             {{ $nota->mt2 ? number_format($nota->mt2, 2) : '-' }}
                         </td>
-                        <td class="px-6 py-4 text-center font-semibold">
+
+                        <td class="px-6 py-4 text-center font-semibold text-gray-900 dark:text-gray-100">
                             {{ $nota->mft2 ? number_format($nota->mft2, 2) : '-' }}
                         </td>
-                        <td class="px-6 py-4 text-center">{{ $nota->mac3 !== null ? number_format($nota->mac3, 2) : '-' }}</td>
-                        <td class="px-6 py-4 text-center">
+
+                        <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">{{ $nota->mac3 !== null ? number_format($nota->mac3, 2) : '-' }}</td>
+
+                        <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">
                             {{ $nota->mt3 ? number_format($nota->mt3, 2) : '-' }}
                         </td>
-                        <td class="px-6 py-4 text-center">
+
+                        <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">
                             {{ $nota->pg ? number_format($nota->pg, 2) : '-' }}
                         </td>
+
                         <td class="px-6 py-4 text-center">
                             @if($nota->cfd)
-                            <span class="text-lg font-bold {{ $nota->cfd >= 10 ? 'text-green-600' : 'text-red-600' }}">
+                            <span class="text-lg font-bold {{ $nota->cfd >= 10 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                                 {{ number_format($nota->cfd, 2) }}
                             </span>
                             @else
-                            <span class="text-gray-400">-</span>
+                            <span class="text-gray-400 dark:text-gray-500">-</span>
                             @endif
                         </td>
+
                         <td class="px-6 py-4 text-center">
                             @if($nota->cfd)
                             <x-badge type="{{ $nota->isAprovado() ? 'success' : 'danger' }}">
@@ -127,19 +138,10 @@
                             @endif
                         </td>
                     </tr>
-                    <tr class="bg-gray-50/60">
-                        <td class="px-6 pb-4 pt-0 text-xs text-gray-600" colspan="11">
-                            @php
-                                $av1 = $nota->avaliacoesContinuas->where('trimestre', 1);
-                                $av2 = $nota->avaliacoesContinuas->where('trimestre', 2);
-                                $av3 = $nota->avaliacoesContinuas->where('trimestre', 3);
-                                $blocosTrimestres = [
-                                    1 => ['items' => $av1, 'media' => $nota->mac1],
-                                    2 => ['items' => $av2, 'media' => $nota->mac2],
-                                    3 => ['items' => $av3, 'media' => $nota->mac3],
-                                ];
-                            @endphp
 
+                    <tr class="bg-gray-50/60 dark:bg-gray-800/50">
+                        <td class="px-6 pb-4 pt-0 text-xs text-gray-600 dark:text-gray-400" colspan="11">
+                            {{-- conteúdo --}}
                         </td>
                     </tr>
                     @endforeach
@@ -149,9 +151,9 @@
 
         @if($notas->isEmpty())
         <div class="text-center py-12">
-            <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-4"></i>
-            <p class="text-gray-500 text-lg mb-2">Nenhuma nota disponível</p>
-            <p class="text-gray-400 text-sm">As notas serão exibidas aqui quando forem lançadas pelos professores</p>
+            <i class="fas fa-clipboard-list text-5xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400 text-lg mb-2">Nenhuma nota disponível</p>
+            <p class="text-gray-400 dark:text-gray-500 text-sm">As notas serão exibidas aqui quando forem lançadas pelos professores</p>
         </div>
         @endif
     </x-card>
