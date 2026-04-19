@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\File;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
 
 class BackupController extends Controller
 {
@@ -15,12 +18,17 @@ class BackupController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        $files = collect(Storage::disk('local')->files('backups/database'))
-            ->map(function (string $file): array {
+        $backupPath = storage_path('app/backups/database');
+
+        // Garante que a pasta existe antes de listar
+        File::ensureDirectoryExists($backupPath);
+
+        $files = collect(File::files($backupPath))
+            ->map(function ($file): array {
                 return [
-                    'name' => basename($file),
-                    'size' => Storage::disk('local')->size($file),
-                    'date' => Storage::disk('local')->lastModified($file),
+                    'name' => $file->getFilename(),
+                    'size' => $file->getSize(),
+                    'date' => $file->getMTime(),
                 ];
             })
             ->sortByDesc('date')
@@ -68,25 +76,25 @@ class BackupController extends Controller
         return back()->with('success', 'Backup gerado com sucesso.');
     }
 
-    public function download(Request $request, string $file): StreamedResponse
+    public function download(Request $request, string $file): BinaryFileResponse
     {
         $this->authorizeAdmin($request);
 
-        $file = basename($file);
-        $path = 'backups/database/'.$file;
+        $file     = basename($file);
+        $fullPath = storage_path("app/backups/database/{$file}");
 
-        if (! Storage::disk('local')->exists($path)) {
+        if (! File::exists($fullPath)) {
             abort(404);
         }
 
         Log::info('Download de backup efetuado.', [
-            'usuario_id' => $request->user()?->id,
+            'usuario_id'   => $request->user()?->id,
             'usuario_nome' => $request->user()?->name,
-            'ip' => $request->ip(),
-            'arquivo' => $file,
+            'ip'           => $request->ip(),
+            'arquivo'      => $file,
         ]);
 
-        return Storage::disk('local')->download($path);
+        return response()->download($fullPath);
     }
 
     private function authorizeAdmin(Request $request): void

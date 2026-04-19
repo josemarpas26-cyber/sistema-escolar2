@@ -1241,7 +1241,8 @@
               <option value="{{ \App\Support\IdMask::encode((int) $atrib->disciplina_id) }}"
                       data-turma="{{ \App\Support\IdMask::encode((int) $atrib->turma_id) }}"
                       class="disc-option-all"
-                      style="display:none">
+                      disabled
+                      hidden>
                 {{ $atrib->disciplina->nome }}
               </option>
             @endforeach
@@ -2289,9 +2290,7 @@
 
 @push('scripts')
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   SELECTOR DATA — Alpine component
-═══════════════════════════════════════════════════════════════ */
+  
 function npSelectorData() {
   const STORAGE_KEY = 'siga_np_last';
 
@@ -2302,32 +2301,45 @@ function npSelectorData() {
     restored: false,
 
     init() {
-      /* Restaurar última pauta se a URL não tiver parâmetros */
-      if (!this.turmaId && !this.disciplinaId) {
-        const saved = this._load();
-        if (saved?.turmaId && saved?.disciplinaId) {
-          this.turmaId      = saved.turmaId;
-          this.disciplinaId = saved.disciplinaId;
-          this.activeTab    = saved.tab ?? '1';
-          this.restored = true;
-          /* Submeter automaticamente após 500ms */
-          setTimeout(() => document.getElementById('np-selector-form').submit(), 500);
-        }
-      } else if (this.turmaId && this.disciplinaId) {
+      // Filtra disciplinas para a turma que já vem da URL (render inicial)
+      if (this.turmaId) {
+        this._filterDiscs(this.turmaId);
+      }
+
+      if (this.turmaId && this.disciplinaId) {
         this._save();
+        return;
+      }
+
+      // Sem parâmetros na URL: pré-preenche com o último guardado
+      const saved = this._load();
+      if (saved?.turmaId && saved?.disciplinaId) {
+        this.turmaId      = saved.turmaId;
+        this.disciplinaId = saved.disciplinaId;
+        this.activeTab    = saved.tab ?? '1';
+        this.restored     = true;
+        this._filterDiscs(this.turmaId);
       }
     },
 
     onTurmaChange() {
       this.disciplinaId = '';
-      /* Filtrar disciplinas visíveis para a turma selecionada */
-      document.querySelectorAll('.disc-option-all').forEach(opt => {
-        opt.style.display = opt.dataset.turma === this.turmaId ? '' : 'none';
-      });
+      this._filterDiscs(this.turmaId);
     },
 
     onDisciplinaChange() {
-      if (this.turmaId && this.disciplinaId) this._save();
+      if (this.turmaId && this.disciplinaId) {
+        this._save();
+      }
+    },
+
+    // Método extraído — chamado em todos os pontos de entrada
+    _filterDiscs(turmaId) {
+      document.querySelectorAll('.disc-option-all').forEach(opt => {
+        const match = opt.dataset.turma === turmaId;
+        opt.disabled = !match;
+        opt.hidden   = !match;
+      });
     },
 
     _save() {
@@ -2347,9 +2359,6 @@ function npSelectorData() {
   };
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PAUTA DATA — Alpine component (tabela interactiva)
-═══════════════════════════════════════════════════════════════ */
 function npPautaData() {
   const STORAGE_KEY = 'siga_np_last';
 
@@ -2359,7 +2368,6 @@ function npPautaData() {
     saving: false,
 
     init() {
-      /* Proteção "alterações não salvas" */
       window.addEventListener('beforeunload', (e) => {
         if (this.dirty) {
           e.preventDefault();
@@ -2375,7 +2383,6 @@ function npPautaData() {
         this.dirty = false;
       }
       this.activeTab = tab;
-      /* Persistir tab escolhida */
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         saved.tab = tab;
@@ -2386,8 +2393,6 @@ function npPautaData() {
     onNotaInput(event, idx, trimestre) {
       const input = event.target;
       const val   = parseFloat(input.value);
-
-      /* Colorir input em tempo real */
       input.classList.remove('val-ok', 'val-fail');
       if (input.value !== '' && !isNaN(val)) {
         if (val < 0 || val > 20) {
@@ -2398,7 +2403,6 @@ function npPautaData() {
         const clamped = Math.min(20, Math.max(0, val));
         input.classList.add(clamped >= 10 ? 'val-ok' : 'val-fail');
       }
-
       this.dirty = true;
     },
 
@@ -2424,17 +2428,11 @@ function npPautaData() {
     onFormSubmit(event, tab) {
       this.saving = true;
       this.dirty  = false;
-      /* Deixar o form submeter normalmente (POST) */
-      /* Flash nas linhas após redirect é tratado via session */
     },
   };
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FLASH de sucesso por linha (após redirect)
-═══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
-  /* Se há mensagem de sucesso, animar todas as linhas salvas */
   const hasSuccess = document.querySelector('.alert-success') ||
                      document.querySelector('[data-flash-success]');
   if (hasSuccess) {
@@ -2445,7 +2443,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 200);
   }
 
-  /* Corrigir dismiss dos alerts para 4 segundos (bug original: 60s) */
   document.querySelectorAll('.auto-dismiss').forEach(el => {
     el.dataset.dismissAfter = '4000';
   });
