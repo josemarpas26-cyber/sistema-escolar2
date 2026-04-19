@@ -1,11 +1,7 @@
 @extends('layouts.app')
 
-<<<<<<< HEAD
-@section('page-title', 'Painel Académico')
-=======
-@section('page-title', 'Painel Acadêmico')
->>>>>>> 96a6942f08997eab38befefe27b0eba3ac662097
 
+@section('page-title', 'Painel Acadêmico')
 @section('header-actions')
 <div class="flex flex-wrap gap-2">
     <a href="{{ route('relatorios.boletim', auth()->user()) }}" class="btn btn-primary" target="_blank">
@@ -34,15 +30,11 @@
                     Ano letivo {{ $ano_letivo->nome }}
                 </div>
                 <div class="space-y-2">
-<<<<<<< HEAD
-                    <h1 class="text-2xl md:text-4xl font-black leading-tight" style="color:var(--tx-1);">Resumo académico completo do aluno</h1>
-                    <p class="max-w-3xl text-sm md:text-base" style="color:var(--tx-3);">
-                         O painel mostra apenas os dados ligados à turma atual e as disciplinas realmente associadas a ela, incluindo professores, coordenação, avaliações completas, estatísticas e histórico.
-=======
+
                     <h1 class="text-2xl md:text-4xl font-black leading-tight" style="color:var(--tx-1);">Olá, {{ auth()->user()->name ? explode(' ', auth()->user()->name)[0] : 'Usuário' }} </h1>
                     <p class="max-w-3xl text-sm md:text-base" style="color:var(--tx-3);">
                         Bem-vindo ao seu painel acadêmico! Aqui você acompanha o seu desempenho e evolução ao longo do tempo, resultados por disciplina e estatísticas geraisz  .
->>>>>>> 96a6942f08997eab38befefe27b0eba3ac662097
+
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
