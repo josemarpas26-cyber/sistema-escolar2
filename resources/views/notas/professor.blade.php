@@ -1193,6 +1193,13 @@
   {{-- ═══════════════════════════════════════════════
        SELECTOR BAR
   ═══════════════════════════════════════════════ --}}
+  @php
+    $turmaTokens = $atribuicoes
+      ->pluck('turma_id')
+      ->unique()
+      ->mapWithKeys(fn ($id) => [(int) $id => \App\Support\IdMask::encode((int) $id)]);
+  @endphp
+
   <form id="np-selector-form"
         method="GET"
         action="{{ route('notas.index') }}"
@@ -1210,8 +1217,13 @@
                 required>
           <option value="">Selecionar turma…</option>
           @foreach($atribuicoes->groupBy('turma_id') as $tId => $items)
-            @php $t = $items->first()->turma; @endphp
-            <option value="{{ \App\Support\IdMask::encode((int) $tId) }}" {{ ($turmaToken ?? request('turma_id')) === \App\Support\IdMask::encode((int) $tId) ? 'selected' : '' }}>
+            @php
+              $t = $items->first()->turma;
+              $turmaOptionToken = $turmaTokens->get((int) $tId);
+              $selectedTurma = ($turmaToken ?? request('turma_id'));
+            @endphp
+            <option value="{{ $turmaOptionToken }}"
+                    {{ $selectedTurma === $turmaOptionToken || (string) $selectedTurma === (string) $tId ? 'selected' : '' }}>
               {{ $t->nome_completo }}
             </option>
           @endforeach
@@ -1233,9 +1245,10 @@
             @php
               $discToken = \App\Support\IdMask::encode((int) $atrib->disciplina_id);
               $selectedDisc = ($disciplinaToken ?? request('disciplina_id'));
+              $turmaDiscToken = $turmaTokens->get((int) $atrib->turma_id);
             @endphp
             <option value="{{ $discToken }}"
-                    data-turma="{{ \App\Support\IdMask::encode((int) $atrib->turma_id) }}"
+                    data-turma="{{ $turmaDiscToken }}"
                     data-turma-raw="{{ (int) $atrib->turma_id }}"
                     class="disc-option-all"
                     {{ $selectedDisc === $discToken || (string) $selectedDisc === (string) $atrib->disciplina_id ? 'selected' : '' }}>
@@ -2288,10 +2301,11 @@
   
 function npSelectorData() {
   const STORAGE_KEY = 'siga_np_last';
+  const RESTORE_GUARD_KEY = 'siga_np_last_autoload_guard';
 
   return {
     turmaId:      '{{ $turmaToken ?? request("turma_id") ?? "" }}',
-    disciplinaId: '{{ request("disciplina_id") ?? "" }}',
+    disciplinaId: '{{ $disciplinaToken ?? request("disciplina_id") ?? "" }}',
     activeTab:    '{{ $activeTab }}',
     restored: false,
 
@@ -2305,6 +2319,7 @@ function npSelectorData() {
 
       if (this.turmaId && this.disciplinaId) {
         this._save();
+        this._clearRestoreGuard();
         return;
       }
 
@@ -2320,18 +2335,40 @@ function npSelectorData() {
         if (!this._isDisciplinaDaTurma(this.disciplinaId, this.turmaId)) {
           this.disciplinaId = '';
         }
+
+        if (this.turmaId && this.disciplinaId) {
+          this._autoLoadFromRestore();
+        }
       }
     },
 
     onTurmaChange() {
       this.disciplinaId = '';
+      this._clearRestoreGuard();
       this._filterDiscs(this.turmaId);
     },
 
     onDisciplinaChange() {
+      this._clearRestoreGuard();
       if (this.turmaId && this.disciplinaId) {
         this._save();
       }
+    },
+
+    _autoLoadFromRestore() {
+      const guardValue = `${this.turmaId}|${this.disciplinaId}`;
+
+      try {
+        if (sessionStorage.getItem(RESTORE_GUARD_KEY) === guardValue) {
+          return;
+        }
+        sessionStorage.setItem(RESTORE_GUARD_KEY, guardValue);
+      } catch (e) {}
+
+      const form = document.getElementById('np-selector-form');
+      if (!form) return;
+
+      setTimeout(() => form.requestSubmit(), 0);
     },
 
     // Método extraído — chamado em todos os pontos de entrada
@@ -2378,6 +2415,11 @@ function npSelectorData() {
     _load() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
       catch(e) { return null; }
+    },
+
+    _clearRestoreGuard() {
+      try { sessionStorage.removeItem(RESTORE_GUARD_KEY); }
+      catch(e) {}
     },
   };
 }
