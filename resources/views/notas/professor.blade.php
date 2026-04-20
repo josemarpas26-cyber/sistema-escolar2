@@ -1228,25 +1228,20 @@
                 :disabled="!turmaId"
                 required>
           <option value="">Selecionar disciplina…</option>
-          @if($turma ?? false)
-            @foreach($atribuicoes->where('turma_id', $turma->id) as $atrib)
-              <option value="{{ \App\Support\IdMask::encode((int) $atrib->disciplina_id) }}"
-                      {{ ($disciplinaToken ?? request('disciplina_id')) === \App\Support\IdMask::encode((int) $atrib->disciplina_id) ? 'selected' : '' }}>
-                {{ $atrib->disciplina->nome }}
-              </option>
-            @endforeach
-          @else
-            {{-- Todas as disciplinas do professor para JS preencher --}}
-            @foreach($atribuicoes as $atrib)
-              <option value="{{ \App\Support\IdMask::encode((int) $atrib->disciplina_id) }}"
-                      data-turma="{{ \App\Support\IdMask::encode((int) $atrib->turma_id) }}"
-                      class="disc-option-all"
-                      disabled
-                      hidden>
-                {{ $atrib->disciplina->nome }}
-              </option>
-            @endforeach
-          @endif
+          {{-- Lista completa para permitir filtragem client-side e restauração robusta de estado --}}
+          @foreach($atribuicoes as $atrib)
+            @php
+              $discToken = \App\Support\IdMask::encode((int) $atrib->disciplina_id);
+              $selectedDisc = ($disciplinaToken ?? request('disciplina_id'));
+            @endphp
+            <option value="{{ $discToken }}"
+                    data-turma="{{ \App\Support\IdMask::encode((int) $atrib->turma_id) }}"
+                    data-turma-raw="{{ (int) $atrib->turma_id }}"
+                    class="disc-option-all"
+                    {{ $selectedDisc === $discToken || (string) $selectedDisc === (string) $atrib->disciplina_id ? 'selected' : '' }}>
+              {{ $atrib->disciplina->nome }}
+            </option>
+          @endforeach
         </select>
       </div>
 
@@ -2295,12 +2290,14 @@ function npSelectorData() {
   const STORAGE_KEY = 'siga_np_last';
 
   return {
-    turmaId:      '{{ request("turma_id") ?? "" }}',
+    turmaId:      '{{ $turmaToken ?? request("turma_id") ?? "" }}',
     disciplinaId: '{{ request("disciplina_id") ?? "" }}',
     activeTab:    '{{ $activeTab }}',
     restored: false,
 
     init() {
+      this.turmaId = this._resolveTurmaToken(this.turmaId);
+
       // Filtra disciplinas para a turma que já vem da URL (render inicial)
       if (this.turmaId) {
         this._filterDiscs(this.turmaId);
@@ -2314,11 +2311,15 @@ function npSelectorData() {
       // Sem parâmetros na URL: pré-preenche com o último guardado
       const saved = this._load();
       if (saved?.turmaId && saved?.disciplinaId) {
-        this.turmaId      = saved.turmaId;
+        this.turmaId      = this._resolveTurmaToken(saved.turmaId);
         this.disciplinaId = saved.disciplinaId;
         this.activeTab    = saved.tab ?? '1';
         this.restored     = true;
         this._filterDiscs(this.turmaId);
+
+        if (!this._isDisciplinaDaTurma(this.disciplinaId, this.turmaId)) {
+          this.disciplinaId = '';
+        }
       }
     },
 
@@ -2335,11 +2336,33 @@ function npSelectorData() {
 
     // Método extraído — chamado em todos os pontos de entrada
     _filterDiscs(turmaId) {
+      const resolvedTurmaId = this._resolveTurmaToken(turmaId);
       document.querySelectorAll('.disc-option-all').forEach(opt => {
-        const match = opt.dataset.turma === turmaId;
+        const match = opt.dataset.turma === resolvedTurmaId;
         opt.disabled = !match;
         opt.hidden   = !match;
       });
+    },
+
+    _resolveTurmaToken(value) {
+      if (!value) return '';
+      const asText = String(value);
+      const options = Array.from(document.querySelectorAll('.disc-option-all'));
+
+      const byToken = options.find(opt => (opt.dataset.turma || '') === asText);
+      if (byToken) return asText;
+
+      const byRaw = options.find(opt => (opt.dataset.turmaRaw || '') === asText);
+      return byRaw ? byRaw.dataset.turma : asText;
+    },
+
+    _isDisciplinaDaTurma(disciplinaToken, turmaToken) {
+      if (!disciplinaToken || !turmaToken) return false;
+
+      const option = Array.from(document.querySelectorAll('.disc-option-all'))
+        .find(opt => String(opt.value || '') === String(disciplinaToken));
+
+      return !!option && option.dataset.turma === turmaToken;
     },
 
     _save() {
