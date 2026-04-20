@@ -145,8 +145,8 @@ class DemoDataSeeder extends Seeder
         $anoLetivo = AnoLetivo::firstOrCreate(
             ['nome' => '2025/2026'],
             [
-                'data_inicio' => '2026-04-16',
-                'data_fim'    => '2026-04-19',
+                'data_inicio' => '2026-04-20',
+                'data_fim'    => '2026-04-26',
                 'ativo'       => true,
                 'encerrado'   => false,
             ]
