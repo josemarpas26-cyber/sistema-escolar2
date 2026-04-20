@@ -2303,10 +2303,10 @@
   
 function npSelectorData() {
   const STORAGE_KEY = 'siga_np_last';
-
+  const RESTORE_GUARD_KEY = 'siga_np_last_autoload_guard';
   return {
     turmaId:      '{{ $turmaToken ?? request("turma_id") ?? "" }}',
-    disciplinaId: '{{ request("disciplina_id") ?? "" }}',
+    disciplinaId: '{{ $disciplinaToken ?? request("disciplina_id") ?? "" }}',
     activeTab:    '{{ $activeTab }}',
     restored: false,
 
@@ -2320,6 +2320,7 @@ function npSelectorData() {
 
       if (this.turmaId && this.disciplinaId) {
         this._save();
+        this._clearRestoreGuard();
         return;
       }
 
@@ -2335,18 +2336,40 @@ function npSelectorData() {
         if (!this._isDisciplinaDaTurma(this.disciplinaId, this.turmaId)) {
           this.disciplinaId = '';
         }
+
+        if (this.turmaId && this.disciplinaId) {
+          this._autoLoadFromRestore();
+        }
       }
     },
 
     onTurmaChange() {
       this.disciplinaId = '';
+      this._clearRestoreGuard();
       this._filterDiscs(this.turmaId);
     },
 
     onDisciplinaChange() {
+      this._clearRestoreGuard();
       if (this.turmaId && this.disciplinaId) {
         this._save();
       }
+    },
+
+    _autoLoadFromRestore() {
+      const guardValue = `${this.turmaId}|${this.disciplinaId}`;
+
+      try {
+        if (sessionStorage.getItem(RESTORE_GUARD_KEY) === guardValue) {
+          return;
+        }
+        sessionStorage.setItem(RESTORE_GUARD_KEY, guardValue);
+      } catch (e) {}
+
+      const form = document.getElementById('np-selector-form');
+      if (!form) return;
+
+      setTimeout(() => form.requestSubmit(), 0);
     },
 
     // Método extraído — chamado em todos os pontos de entrada
@@ -2394,6 +2417,12 @@ function npSelectorData() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
       catch(e) { return null; }
     },
+
+      _clearRestoreGuard() {
+      try { sessionStorage.removeItem(RESTORE_GUARD_KEY); }
+      catch(e) {}
+    },
+
   };
 }
 

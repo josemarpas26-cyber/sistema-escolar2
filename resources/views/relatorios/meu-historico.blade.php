@@ -10,17 +10,19 @@
         </p>
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <div class="text-xs text-slate-500">Aluno</div>
-                <div class="text-sm font-semibold text-slate-800">{{ $aluno->name }}</div>
+            <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3">
+                <div class="text-xs text-slate-500 dark:text-slate-400">Aluno</div>
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $aluno->name }}</div>
             </div>
-            <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <div class="text-xs text-slate-500">Nº de registos</div>
-                <div class="text-sm font-semibold text-slate-800">{{ $totalRegistros }}</div>
+
+            <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3">
+                <div class="text-xs text-slate-500 dark:text-slate-400">Nº de registos</div>
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $totalRegistros }}</div>
             </div>
-            <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <div class="text-xs text-slate-500">Anos com histórico</div>
-                <div class="text-sm font-semibold text-slate-800">{{ $anosComHistorico->count() }}</div>
+
+            <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3">
+                <div class="text-xs text-slate-500 dark:text-slate-400">Anos com histórico</div>
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $anosComHistorico->count() }}</div>
             </div>
         </div>
 
