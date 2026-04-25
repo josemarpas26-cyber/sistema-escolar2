@@ -1695,32 +1695,7 @@ class NotaController extends Controller
 
     private function resolverTrimestreCorrente(?AnoLetivo $anoLetivo): int
     {
-        if (! $anoLetivo || ! $anoLetivo->data_inicio || ! $anoLetivo->data_fim) {
-            return 1;
-        }
-
-        $inicio = $anoLetivo->data_inicio->copy()->startOfDay();
-        $fim = $anoLetivo->data_fim->copy()->startOfDay();
-
-        if ($fim->lte($inicio)) {
-            return 1;
-        }
-
-        $agora = now()->startOfDay();
-
-        if ($agora->lt($inicio)) {
-            return 1;
-        }
-
-        if ($agora->gt($fim)) {
-            return 3;
-        }
-
-        $duracaoTotal = $inicio->diffInDays($fim) + 1;
-        $duracaoTrimestre = (int) ceil($duracaoTotal / 3);
-        $diasDecorridos = $inicio->diffInDays($agora);
-
-        return min(3, (int) floor($diasDecorridos / $duracaoTrimestre) + 1);
+        return $anoLetivo?->trimestreNaData() ?? 1;
     }
     
     private function resolverCamposCaSomenteLeitura(Nota $nota): array

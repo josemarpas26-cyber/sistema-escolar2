@@ -223,15 +223,12 @@ class Nota extends Model
     public function trimestreInicialDisponivel(): int
     {
         $matricula = $this->dataMatriculaNaTurma();
-        $inicioAno = $this->anoLetivo?->data_inicio?->copy()?->startOfDay();
-        $fimAno = $this->anoLetivo?->data_fim?->copy()?->startOfDay();
+        $inicioT2 = $this->anoLetivo?->inicioDoTrimestre(2);
+        $inicioT3 = $this->anoLetivo?->inicioDoTrimestre(3);
 
-        if (! $matricula || ! $inicioAno || ! $fimAno || $fimAno->lte($inicioAno)) {
+        if (! $matricula || ! $inicioT2 || ! $inicioT3) {
             return 1;
         }
-
-        $inicioT2 = $this->inicioDoTrimestre($inicioAno, $fimAno, 2);
-        $inicioT3 = $this->inicioDoTrimestre($inicioAno, $fimAno, 3);
 
         return match (true) {
             $matricula->gte($inicioT3) => 3,
@@ -260,15 +257,6 @@ class Nota extends Model
 
         return Carbon::parse($dataMatricula)->startOfDay();
     }
-
-    private function inicioDoTrimestre(Carbon $inicioAno, Carbon $fimAno, int $trimestre): Carbon
-    {
-        $duracaoTotal = $inicioAno->diffInDays($fimAno) + 1;
-        $duracaoTrimestre = (int) ceil($duracaoTotal / 3);
-
-        return $inicioAno->copy()->addDays(($trimestre - 1) * $duracaoTrimestre);
-    }
-
     private function limparCamposDasProvasDoPeriodo(ConfiguracaoAvaliacao $configuracaoAvaliacao, int $periodo): void
     {
         $codigos = $configuracaoAvaliacao->provas
