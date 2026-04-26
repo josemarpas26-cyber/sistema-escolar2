@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Nota;
+use App\Models\Turma;
 use Illuminate\Support\Facades\DB;
 
 class EstadoMatriculaService
@@ -18,9 +19,15 @@ class EstadoMatriculaService
             return;
         }
 
-        $disciplinaIds = DB::table('turma_disciplina')
-            ->where('turma_id', $turmaId)
-            ->pluck('disciplina_id');
+        $turma = Turma::query()
+            ->with('disciplinas.cursos')
+            ->find($turmaId, ['id', 'curso_id', 'classe', 'ano_letivo_id']);
+
+        if (! $turma) {
+            return;
+        }
+
+        $disciplinaIds = $turma->disciplinas->pluck('id');
 
         if ($disciplinaIds->isEmpty()) {
             $this->definirStatus($turmaId, $alunoId, 'matriculado');
@@ -32,22 +39,15 @@ class EstadoMatriculaService
             ->where('turma_id', $turmaId)
             ->where('aluno_id', $alunoId)
             ->whereIn('disciplina_id', $disciplinaIds)
-            ->get(['disciplina_id', 'cfd']);
+            ->get(['disciplina_id', 'cf', 'cfd']);
 
-        $disciplinasComNota = $notas->pluck('disciplina_id')->unique()->count();
+        $resultado = app(ResultadoAlunoTurmaService::class)->avaliar($turma, $turma->disciplinas, $notas);
 
-        if ($disciplinasComNota < $disciplinaIds->count()) {
-            $this->definirStatus($turmaId, $alunoId, 'matriculado');
-
-            return;
-        }
-
-        $aprovadoEmTodas = $notas
-            ->groupBy('disciplina_id')
-            ->every(fn ($porDisciplina) => optional($porDisciplina->first())->cfd !== null
-                && (float) $porDisciplina->first()->cfd >= 10.0);
-
-        $this->definirStatus($turmaId, $alunoId, $aprovadoEmTodas ? 'concluido' : 'matriculado');
+        $this->definirStatus(
+            $turmaId,
+            $alunoId,
+            $resultado['status'] === ResultadoAlunoTurmaService::STATUS_TRANSITA ? 'concluido' : 'matriculado'
+        );
     }
 
     public function sincronizarTurma(int $turmaId): void

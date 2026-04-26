@@ -183,6 +183,105 @@ class ExportacoesXlsxTest extends TestCase
             ->assertDownload('pauta-10a-a-informatica.xlsx');
     }
 
+    public function test_pauta_geral_marca_recurso_quando_negativa_terminal_e_maior_ou_igual_a_sete(): void
+    {
+        $anoLetivo = AnoLetivo::create([
+            'nome' => '2025/2026',
+            'data_inicio' => '2025-09-01',
+            'data_fim' => '2026-07-31',
+            'ativo' => true,
+            'encerrado' => false,
+        ]);
+
+        $curso = Curso::create([
+            'nome' => 'Informatica',
+            'codigo' => 'INF',
+            'ativo' => true,
+        ]);
+
+        $turma = Turma::create([
+            'nome' => 'A',
+            'classe' => '10',
+            'curso_id' => $curso->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'capacidade' => 40,
+            'ativo' => true,
+        ]);
+
+        $portugues = Disciplina::create([
+            'nome' => 'Lingua Portuguesa',
+            'codigo' => 'LP',
+            'leciona_10' => true,
+            'leciona_11' => true,
+            'leciona_12' => true,
+            'disciplina_terminal' => false,
+            'ativo' => true,
+        ]);
+
+        $tic = Disciplina::create([
+            'nome' => 'TIC',
+            'codigo' => 'TIC',
+            'leciona_10' => true,
+            'leciona_11' => false,
+            'leciona_12' => false,
+            'disciplina_terminal' => true,
+            'ativo' => true,
+        ]);
+
+        $turma->disciplinas()->attach([$portugues->id, $tic->id]);
+        $curso->disciplinas()->attach($portugues->id, ['ano_terminal' => null]);
+        $curso->disciplinas()->attach($tic->id, ['ano_terminal' => 10]);
+
+        $aluno = User::factory()->create([
+            'name' => 'Aluno Recurso',
+            'numero_processo' => '2024555',
+            'genero' => 'M',
+        ]);
+
+        $turma->alunos()->attach($aluno->id, ['data_matricula' => '2025-09-02', 'status' => 'matriculado']);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $portugues->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'mt1' => 14,
+            'mt2' => 14,
+            'mt3' => 14,
+            'mft2' => 14,
+            'cf' => 14,
+            'ca' => 14,
+            'cfd' => 14,
+            'status' => 'finalizado',
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $tic->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'mt1' => 8,
+            'mt2' => 8,
+            'mt3' => 8,
+            'mft2' => 8,
+            'cf' => 8,
+            'ca' => 8,
+            'cfd' => 8,
+            'status' => 'finalizado',
+        ]);
+
+        $spreadsheet = app(PautaGeralTemplateExporter::class)->build([
+            'turma' => $turma,
+            'anoLetivo' => $anoLetivo,
+            'trimestre' => 'final',
+        ]);
+
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $this->assertSame('Recurso', $sheet->getCell('S15')->getValue());
+        $this->assertSame('Não Transita', $sheet->getCell('T15')->getValue());
+    }
+
     public function test_pauta_export_mantem_mt1_vazio_para_aluno_que_ingressou_no_segundo_trimestre(): void
     {
         $alunoRole = $this->createRoleWithPermissions('aluno', []);

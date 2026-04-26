@@ -61,6 +61,51 @@ class EstadoMatriculaServiceTest extends TestCase
         ]);
     }
 
+    public function test_define_concluido_quando_aluno_tem_duas_negativas_nao_terminais_permitidas(): void
+    {
+        [$turma, $aluno, $disciplinas, $ano] = $this->criarCenarioBase();
+
+        $disciplinaExtra = Disciplina::create([
+            'nome' => 'Quimica',
+            'codigo' => 'QUI',
+        ]);
+
+        $turma->disciplinas()->attach($disciplinaExtra->id);
+        $disciplinas[] = $disciplinaExtra;
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplinas[0]->id,
+            'ano_letivo_id' => $ano->id,
+            'cfd' => 8,
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplinas[1]->id,
+            'ano_letivo_id' => $ano->id,
+            'cfd' => 8,
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplinas[2]->id,
+            'ano_letivo_id' => $ano->id,
+            'cfd' => 14,
+        ]);
+
+        app(EstadoMatriculaService::class)->sincronizarAlunoNaTurma($turma->id, $aluno->id);
+
+        $this->assertDatabaseHas('turma_aluno', [
+            'turma_id' => $turma->id,
+            'aluno_id' => $aluno->id,
+            'status' => 'concluido',
+        ]);
+    }
+
     public function test_nao_sobrescreve_status_manual_transferido_ou_desistente(): void
     {
         [$turma, $aluno] = $this->criarCenarioBase();

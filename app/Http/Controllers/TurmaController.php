@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Models\HistoricoAcademico;
+use App\Services\ResultadoAlunoTurmaService;
 
 class TurmaController extends Controller
 {
@@ -520,7 +521,10 @@ class TurmaController extends Controller
         // Guarda: turma sem disciplinas
         // ----------------------------------------------------------------
 
-        $disciplinaIds    = $turma->disciplinas()->pluck('disciplinas.id');
+        $turma->loadMissing('disciplinas.cursos');
+
+        $disciplinas      = $turma->disciplinas;
+        $disciplinaIds    = $disciplinas->pluck('id');
         $totalDisciplinas = $disciplinaIds->count();
 
         if ($totalDisciplinas === 0) {
@@ -543,47 +547,40 @@ class TurmaController extends Controller
         }
 
         // Buscar contagens de aprovação por aluno — UMA query
-        $contagensAprovados = Nota::where('turma_id', $turma->id)
+        $notasFinaisPorAluno = Nota::where('turma_id', $turma->id)
             ->where('ano_letivo_id', $turma->ano_letivo_id)
             ->whereIn('disciplina_id', $disciplinaIds)
-            ->where('cfd', '>=', 10)
-            ->selectRaw('aluno_id, COUNT(DISTINCT disciplina_id) as aprovadas')
-            ->groupBy('aluno_id')
-            ->pluck('aprovadas', 'aluno_id');
+            ->get(['aluno_id', 'disciplina_id', 'cf', 'cfd'])
+            ->groupBy('aluno_id');
 
         // Buscar contagens de notas lançadas por aluno — para feedback
-        $contagensLancadas = Nota::where('turma_id', $turma->id)
-            ->where('ano_letivo_id', $turma->ano_letivo_id)
-            ->whereIn('disciplina_id', $disciplinaIds)
-            ->selectRaw('aluno_id, COUNT(DISTINCT disciplina_id) as lancadas')
-            ->groupBy('aluno_id')
-            ->pluck('lancadas', 'aluno_id');
-
-        // Classificar alunos
+        // Classificar alunos com a regra final de transicao da turma.
         $aprovados     = collect();
         $reprovados    = collect();
+        $emRecurso     = collect();
         $incompletos   = collect();
+        $resultadoAlunoService = app(ResultadoAlunoTurmaService::class);
 
         foreach ($todosAlunos as $aluno) {
-            $lancadas  = $contagensLancadas->get($aluno->id, 0);
-            $aprovadas = $contagensAprovados->get($aluno->id, 0);
+            $notasAluno = $notasFinaisPorAluno->get($aluno->id, collect());
+            $resultado = $resultadoAlunoService->avaliar($turma, $disciplinas, $notasAluno);
 
-            if ($lancadas < $totalDisciplinas) {
-                // Faltam notas em alguma(s) disciplina(s)
+            if ($resultado['status'] === ResultadoAlunoTurmaService::STATUS_PENDENTE) {
+                $lancadas = $notasAluno->pluck('disciplina_id')->unique()->count();
+
                 $incompletos->push([
                     'aluno'    => $aluno,
                     'lancadas' => $lancadas,
                     'faltam'   => $totalDisciplinas - $lancadas,
                 ]);
-            } elseif ($aprovadas < $totalDisciplinas) {
-                // Tem todas as notas mas reprovou em alguma(s)
-                $reprovados->push([
-                    'aluno'      => $aluno,
-                    'aprovadas'  => $aprovadas,
-                    'reprovadas' => $totalDisciplinas - $aprovadas,
-                ]);
-            } else {
+            } elseif ($resultado['status'] === ResultadoAlunoTurmaService::STATUS_TRANSITA) {
                 $aprovados->push($aluno);
+            } elseif ($resultado['status'] === ResultadoAlunoTurmaService::STATUS_RECURSO) {
+                $emRecurso->push($aluno);
+            } else {
+                $reprovados->push([
+                    'aluno' => $aluno,
+                ]);
             }
         }
 
@@ -596,6 +593,10 @@ class TurmaController extends Controller
 
             if ($reprovados->isNotEmpty()) {
                 $mensagem .= " {$reprovados->count()} aluno(s) reprovados.";
+            }
+
+            if ($emRecurso->isNotEmpty()) {
+                $mensagem .= " {$emRecurso->count()} aluno(s) em recurso.";
             }
 
             return back()->with('warning', $mensagem);
@@ -668,6 +669,10 @@ class TurmaController extends Controller
 
         if ($reprovados->isNotEmpty()) {
             $partes[] = "{$reprovados->count()} reprovado(s).";
+        }
+
+        if ($emRecurso->isNotEmpty()) {
+            $partes[] = "{$emRecurso->count()} em recurso.";
         }
 
         if ($incompletos->isNotEmpty()) {

@@ -124,7 +124,7 @@ class PautaGeralTemplateExporter
         $anoLetivo = $dados['anoLetivo'] ?? null;
         $trimestre = (string) ($dados['trimestre'] ?? 'final');
 
-        $turma->loadMissing(['curso.coordenador', 'coordenador', 'disciplinas']);
+        $turma->loadMissing(['curso.coordenador', 'coordenador', 'disciplinas.cursos']);
         $anoLetivo ??= $turma->anoLetivo;
 
         $alunos = $turma->alunos()
@@ -162,7 +162,7 @@ class PautaGeralTemplateExporter
         $this->normalizarAreaDeDados($sheet, $lastDataRow, $layout['lastCol']);
         $this->atualizarCabecalho($sheet, $turma, $anoLetivo, $config, $layout['lastCol'], $styles);
         $this->atualizarCabecalhosDeDisciplinas($sheet, $disciplinas, $config, $layout);
-        $this->preencherLinhasDosAlunos($sheet, $alunos, $disciplinas, $notasIndex, $config, $layout);
+        $this->preencherLinhasDosAlunos($sheet, $turma, $alunos, $disciplinas, $notasIndex, $config, $layout);
         $this->atualizarRodape($sheet, $turma, $disciplinas, $atribuicoes, $footerStart, $layout, $styles);
         $this->ajustarImpressao($sheet, $lastRow, $lastDataRow, $layout['lastCol']);
 
@@ -690,7 +690,7 @@ class PautaGeralTemplateExporter
     }
 
     private function preencherLinhasDosAlunos(
-        Worksheet $sheet, EloquentCollection $alunos, Collection $disciplinas,
+        Worksheet $sheet, Turma $turma, EloquentCollection $alunos, Collection $disciplinas,
         array $notasIndex, array $config, array $layout
     ): void {
         foreach ($alunos as $offset => $aluno) {
@@ -726,7 +726,7 @@ class PautaGeralTemplateExporter
                 }
             }
 
-            [$obs, $resultado] = $this->resolverResultadoAluno($disciplinas, $notasAluno, $config['mostrarResultado'] ?? false);
+            [$obs, $resultado] = $this->resolverResultadoAluno($turma, $disciplinas, $notasAluno, $config['mostrarResultado'] ?? false);
             $sheet->setCellValueExplicit($layout['obsCol'].$row, $obs, DataType::TYPE_STRING);
             $sheet->setCellValueExplicit($layout['resultCol'].$row, $resultado, DataType::TYPE_STRING);
         }
@@ -992,50 +992,15 @@ class PautaGeralTemplateExporter
         return $nota?->{$campo};
     }
 
-    private function resolverResultadoAluno(Collection $disciplinas, array $notasAluno, bool $mostrarResultado): array
+    private function resolverResultadoAluno(Turma $turma, Collection $disciplinas, array $notasAluno, bool $mostrarResultado): array
     {
         if (! $mostrarResultado) {
             return ['', ''];
         }
 
-        $temNota = $temPendente = $temReprovacao = $temExame = $temEEF = false;
+        $resultado = app(ResultadoAlunoTurmaService::class)->avaliar($turma, $disciplinas, $notasAluno);
 
-        foreach ($disciplinas as $disciplina) {
-            $nota = $notasAluno[$disciplina->id] ?? null;
-            $cf   = $nota?->cf;
-            $cfd  = $nota?->cfd;
-
-            if (is_string($cf) && strtoupper($cf) === 'EEF') {
-                $temEEF = true;
-                continue;
-            }
-            if ($cfd === null && $cf === null) {
-                $temPendente = true;
-                continue;
-            }
-
-            $temNota = true;
-            $valor   = $cfd ?? $cf;
-
-            if ($valor !== null && (float) $valor < 10) {
-                $temReprovacao = true;
-                if ($disciplina->disciplina_terminal) {
-                    $temExame = true;
-                }
-            }
-        }
-
-        if (! $temNota || $temPendente) {
-            return ['', ''];
-        }
-        if ($temEEF) {
-            return ['EEF', 'Não Transita'];
-        }
-        if (! $temReprovacao) {
-            return ['', 'Transita'];
-        }
-
-        return [$temExame ? 'Exame' : '', 'Não Transita'];
+        return [$resultado['observacao'], $resultado['resultado']];
     }
 
     private function ordenarDisciplinas(Collection $disciplinas): Collection
