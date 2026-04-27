@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="pusher-key" content="{{ config('broadcasting.connections.pusher.key') }}">
     <meta name="pusher-cluster" content="{{ config('broadcasting.connections.pusher.options.cluster') }}">
+    <meta name="pusher-host" content="{{ env('VITE_PUSHER_HOST', env('PUSHER_HOST', '')) }}">
+    <meta name="pusher-port" content="{{ env('VITE_PUSHER_PORT', env('PUSHER_PORT', '')) }}">
+    <meta name="pusher-scheme" content="{{ env('VITE_PUSHER_SCHEME', env('PUSHER_SCHEME', 'https')) }}">
     @auth
     <meta name="auth-user-id" content="{{ auth()->id() }}">
     @endauth
