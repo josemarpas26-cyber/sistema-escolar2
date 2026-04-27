@@ -40,7 +40,7 @@ class PautaFinalizadaNotification extends Notification
             ? "A secretaria bloqueou o campo {$campoLabel} do {$this->trimestre}Âº trimestre."
             : ($this->trimestre
                 ? "A secretaria finalizou e bloqueou o {$this->trimestre}Âº trimestre da pauta."
-                : 'A secretaria finalizou a pauta e bloqueou novas ediÃ§Ãµes.');
+                : 'A secretaria finalizou a pauta e bloqueou novas edições.');
 
         return [
             'titulo' => $titulo,
