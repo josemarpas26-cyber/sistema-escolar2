@@ -886,17 +886,14 @@ class NotaController extends Controller
         $this->sincronizarEstadoMatriculaAposOperacao($notas, $alunoId);
         $escopoOperacao = $turmaId ? ' da turma selecionada' : ' de todas as turmas do ano letivo';
 
-        if ($turma && $disciplinaId) {
-            $this->notificarProfessoresSobreFinalizacao(
-                $turma,
-                Disciplina::findOrFail($disciplinaId),
-                $validated['trimestre'] ?? null,
-                $validated['campo'] ?? null,
-                $validated['motivo'] ?? null,
-                $validated['aluno_id'] ?? null,
-                $finalizadas
-            );
-        }
+        $this->notificarProfessoresSobreFinalizacaoEmLote(
+            $notas,
+            $validated['trimestre'] ?? null,
+            $validated['campo'] ?? null,
+            $validated['motivo'] ?? null,
+            $validated['aluno_id'] ?? null,
+            $finalizadas
+        );
 
         return back()->with('success', $labelCampo && $trimestre
             ? "Bloqueio de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
@@ -1067,17 +1064,14 @@ class NotaController extends Controller
         });
 
         $escopoAluno = $alunoId ? ' para o aluno selecionado' : '';
-        if ($turma && $disciplina) {
-            $this->notificarProfessoresSobreReabertura(
-                $turma,
-                $disciplina,
-                $validated['trimestre'] ?? null,
-                $validated['campo'] ?? null,
-                $validated['motivo'] ?? null,
-                $validated['aluno_id'] ?? null,
-                $reabertas
-            );
-        }
+        $this->notificarProfessoresSobreReaberturaEmLote(
+            $notas,
+            $validated['trimestre'] ?? null,
+            $validated['campo'] ?? null,
+            $validated['motivo'] ?? null,
+            $validated['aluno_id'] ?? null,
+            $reabertas
+        );
 
         $labelCampo = $campoOperacao ? strtoupper($campoOperacao) : null;
         $this->sincronizarEstadoMatriculaAposOperacao($notas, $alunoId);
@@ -1172,6 +1166,35 @@ class NotaController extends Controller
         }
     }
 
+
+    private function notificarProfessoresSobreReaberturaEmLote(
+        \Illuminate\Support\Collection $notas,
+        ?string $trimestre,
+        ?string $campo,
+        ?string $motivo,
+        ?int $alunoId,
+        int $totalReabertas
+    ): void {
+        if ($totalReabertas <= 0 || $alunoId !== null) {
+            return;
+        }
+
+        $pares = $this->paresTurmaDisciplinaDasNotas($notas);
+
+        foreach ($pares as $par) {
+            $this->notificarProfessoresSobreReabertura(
+                $par['turma'],
+                $par['disciplina'],
+                $trimestre,
+                $campo,
+                $motivo,
+                $alunoId,
+                $totalReabertas
+            );
+        }
+    }
+
+
     private function notificarProfessoresSobreFinalizacao(
         Turma $turma,
         Disciplina $disciplina,
@@ -1214,6 +1237,78 @@ class NotaController extends Controller
             ));
         }
     }
+
+    
+    private function notificarProfessoresSobreFinalizacaoEmLote(
+        \Illuminate\Support\Collection $notas,
+        ?string $trimestre,
+        ?string $campo,
+        ?string $motivo,
+        ?int $alunoId,
+        int $totalFinalizadas
+    ): void {
+        if ($totalFinalizadas <= 0 || $alunoId !== null) {
+            return;
+        }
+
+        $pares = $this->paresTurmaDisciplinaDasNotas($notas);
+
+        foreach ($pares as $par) {
+            $this->notificarProfessoresSobreFinalizacao(
+                $par['turma'],
+                $par['disciplina'],
+                $trimestre,
+                $campo,
+                $motivo,
+                $alunoId,
+                $totalFinalizadas
+            );
+        }
+    }
+
+    private function paresTurmaDisciplinaDasNotas(\Illuminate\Support\Collection $notas): array
+    {
+        $paresIds = $notas
+            ->map(fn (Nota $nota) => [
+                'turma_id' => $nota->turma_id,
+                'disciplina_id' => $nota->disciplina_id,
+            ])
+            ->unique(fn (array $par) => $par['turma_id'].'-'.$par['disciplina_id'])
+            ->values();
+
+        if ($paresIds->isEmpty()) {
+            return [];
+        }
+
+        $turmas = Turma::query()
+            ->whereIn('id', $paresIds->pluck('turma_id')->all())
+            ->get()
+            ->keyBy('id');
+
+        $disciplinas = Disciplina::query()
+            ->whereIn('id', $paresIds->pluck('disciplina_id')->all())
+            ->get()
+            ->keyBy('id');
+
+        return $paresIds
+            ->map(function (array $par) use ($turmas, $disciplinas) {
+                $turma = $turmas->get($par['turma_id']);
+                $disciplina = $disciplinas->get($par['disciplina_id']);
+
+                if (! $turma || ! $disciplina) {
+                    return null;
+                }
+
+                return [
+                    'turma' => $turma,
+                    'disciplina' => $disciplina,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
 
     private function tiposNotificacaoPauta(): array
     {
