@@ -11,6 +11,7 @@ use App\Models\NotaLog;
 use App\Models\ProfessorTurmaDisciplina;
 use App\Models\Turma;
 use App\Models\User;
+use App\Notifications\PautaFinalizadaNotification;
 use App\Notifications\PautaDesbloqueadaNotification;
 use App\Services\EstadoMatriculaService;
 use App\Services\EstatisticasAcademicasService;
@@ -101,7 +102,7 @@ class NotaController extends Controller
         $disciplina = null;
         $estatisticasPauta = null;
         $notificacoesDesbloqueio = $professor->unreadNotifications()
-            ->where('type', PautaDesbloqueadaNotification::class)
+            ->whereIn('type', $this->tiposNotificacaoPauta())
             ->latest()
             ->take(5)
             ->get();
@@ -885,6 +886,18 @@ class NotaController extends Controller
         $this->sincronizarEstadoMatriculaAposOperacao($notas, $alunoId);
         $escopoOperacao = $turmaId ? ' da turma selecionada' : ' de todas as turmas do ano letivo';
 
+        if ($turma && $disciplinaId) {
+            $this->notificarProfessoresSobreFinalizacao(
+                $turma,
+                Disciplina::findOrFail($disciplinaId),
+                $validated['trimestre'] ?? null,
+                $validated['campo'] ?? null,
+                $validated['motivo'] ?? null,
+                $validated['aluno_id'] ?? null,
+                $finalizadas
+            );
+        }
+
         return back()->with('success', $labelCampo && $trimestre
             ? "Bloqueio de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
             : ($trimestre
@@ -1089,7 +1102,7 @@ class NotaController extends Controller
         
         $notificacao = $user->notifications()
             ->where('id', $notificationId)
-            ->where('type', PautaDesbloqueadaNotification::class)
+            ->whereIn('type', $this->tiposNotificacaoPauta())
             ->first();
 
         if ($notificacao instanceof DatabaseNotification) {
@@ -1157,6 +1170,57 @@ class NotaController extends Controller
                 motivo: $motivo
             ));
         }
+    }
+
+    private function notificarProfessoresSobreFinalizacao(
+        Turma $turma,
+        Disciplina $disciplina,
+        ?string $trimestre,
+        ?string $campo,
+        ?string $motivo,
+        ?int $alunoId,
+        int $totalFinalizadas
+    ): void {
+        if ($totalFinalizadas <= 0 || $alunoId !== null) {
+            return;
+        }
+
+        $autor = auth()->user();
+
+        if (! $autor->isSecretaria() && ! $autor->isAdmin()) {
+            return;
+        }
+
+        $professores = User::query()
+            ->whereHas('role', fn ($query) => $query->where('name', 'professor'))
+            ->whereHas('atribuicoes', fn ($query) => $query
+                ->where('turma_id', $turma->id)
+                ->where('disciplina_id', $disciplina->id))
+            ->where('ativo', true)
+            ->get();
+
+        if ($professores->isEmpty()) {
+            return;
+        }
+
+        foreach ($professores as $professor) {
+            $professor->notify(new PautaFinalizadaNotification(
+                turma: $turma,
+                disciplina: $disciplina,
+                autor: $autor,
+                trimestre: $trimestre,
+                campo: $campo,
+                motivo: $motivo
+            ));
+        }
+    }
+
+    private function tiposNotificacaoPauta(): array
+    {
+        return [
+            PautaDesbloqueadaNotification::class,
+            PautaFinalizadaNotification::class,
+        ];
     }
 
     private function notaBloqueadaParaEdicao(Nota $nota, ?string $trimestre = null): bool

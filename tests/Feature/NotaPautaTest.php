@@ -12,7 +12,10 @@ use App\Models\ProfessorTurmaDisciplina;
 use App\Models\Role;
 use App\Models\Turma;
 use App\Models\User;
+use App\Notifications\PautaDesbloqueadaNotification;
+use App\Notifications\PautaFinalizadaNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class NotaPautaTest extends TestCase
@@ -437,6 +440,70 @@ class NotaPautaTest extends TestCase
         $logReabertura = NotaLog::where('acao', 'reabertura')->firstOrFail();
         $this->assertTrue($logReabertura->acao_global);
         $this->assertSame('bloqueado_t2', $logReabertura->campo_alterado);
+    }
+
+    public function test_operacoes_de_pauta_notificam_professor_por_database_e_broadcast(): void
+    {
+        Notification::fake();
+
+        $secretariaRole = $this->createRoleWithPermissions('secretaria', ['notas.editar', 'notas.reabrir']);
+        $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $secretaria = User::factory()->create(['role_id' => $secretariaRole->id]);
+        $professor = User::factory()->create(['role_id' => $professorRole->id]);
+        $aluno = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica();
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $professor->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'status' => 'em_lancamento',
+        ]);
+
+        $this
+            ->actingAs($secretaria)
+            ->post(route('notas.finalizar'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+                'trimestre' => '1',
+            ])
+            ->assertRedirect();
+
+        Notification::assertSentTo($professor, PautaFinalizadaNotification::class, function ($notification, $channels, $notifiable) {
+            $dados = $notification->toArray($notifiable);
+
+            return in_array('database', $channels, true)
+                && in_array('broadcast', $channels, true)
+                && ($dados['trimestre'] ?? null) === '1';
+        });
+
+        $this
+            ->actingAs($secretaria)
+            ->post(route('notas.reabrir'), [
+                'turma_id' => $turma->id,
+                'disciplina_id' => $disciplina->id,
+            ])
+            ->assertRedirect();
+
+        Notification::assertSentTo($professor, PautaDesbloqueadaNotification::class, function ($notification, $channels, $notifiable) {
+            $dados = $notification->toArray($notifiable);
+
+            return in_array('database', $channels, true)
+                && in_array('broadcast', $channels, true)
+                && ($dados['turma_id'] ?? null) !== null
+                && ($dados['disciplina_id'] ?? null) !== null;
+        });
     }
 
     public function test_tela_do_professor_bloqueia_apenas_o_trimestre_fechado(): void

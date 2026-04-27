@@ -9,7 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class PautaDesbloqueadaNotification extends Notification
+class PautaFinalizadaNotification extends Notification
 {
     use Queueable;
 
@@ -31,16 +31,16 @@ class PautaDesbloqueadaNotification extends Notification
     {
         $campoLabel = $this->campo ? strtoupper($this->campo) : null;
         $titulo = $this->campo && $this->trimestre
-            ? "{$campoLabel} do {$this->trimestre}º trimestre desbloqueado"
+            ? "{$campoLabel} do {$this->trimestre}Âº trimestre bloqueado"
             : ($this->trimestre
-                ? "{$this->trimestre}º trimestre desbloqueado"
-                : 'Pauta reaberta para edição');
+                ? "{$this->trimestre}Âº trimestre finalizado"
+                : 'Pauta finalizada');
 
         $descricao = $this->campo && $this->trimestre
-            ? "A secretaria desbloqueou o campo {$campoLabel} do {$this->trimestre}º trimestre."
+            ? "A secretaria bloqueou o campo {$campoLabel} do {$this->trimestre}Âº trimestre."
             : ($this->trimestre
-                ? "A secretaria desbloqueou o {$this->trimestre}º trimestre da pauta."
-                : 'A secretaria reabriu a pauta completa para edição.');
+                ? "A secretaria finalizou e bloqueou o {$this->trimestre}Âº trimestre da pauta."
+                : 'A secretaria finalizou a pauta e bloqueou novas ediÃ§Ãµes.');
 
         return [
             'titulo' => $titulo,
