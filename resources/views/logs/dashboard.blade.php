@@ -156,24 +156,52 @@
 </div>
 
 <x-card title="Atividade dos Ultimos 7 Dias" icon="fas fa-chart-line">
-    <div class="flex h-64 items-end justify-between space-x-2">
-        @foreach($atividadeSemanal as $dia => $total)
-            @php
-                $altura = $atividadeSemanal->max() > 0 ? ($total / $atividadeSemanal->max()) * 100 : 0;
-            @endphp
-            <div class="flex flex-1 flex-col items-center">
-                <div class="group relative w-full cursor-pointer rounded-t bg-primary-500 transition-colors hover:bg-primary-600" style="height: {{ $altura }}%">
-                    <div class="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                        {{ $total }} alteracoes
-                    </div>
-                </div>
-                <div class="mt-2 text-center text-xs text-gray-600">
-                    {{ \Carbon\Carbon::parse($dia)->format('d/m') }}
-                </div>
-            </div>
-        @endforeach
-    </div>
+    <canvas id="atividadeChart" width="400" height="200"></canvas>
 </x-card>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('atividadeChart').getContext('2d');
+    const atividadeData = @json($atividadeSemanal);
+    const labels = Object.keys(atividadeData).map(date => {
+        const d = new Date(date);
+        return d.getDate() + '/' + (d.getMonth() + 1);
+    });
+    const data = Object.values(atividadeData);
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Alterações',
+                data: data,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
 
 <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
     <a href="{{ route('logs.index', ['acao' => 'criacao']) }}" class="rounded-lg border border-green-200 bg-green-50 p-5 transition-colors hover:bg-green-100">
