@@ -283,7 +283,7 @@
                         '1' => $nota->mt1,
                         '2' => $nota->mt2,
                         '3' => $nota->mt3,
-                        default => $nota->cfd,
+                        default => $nota->cfd_efetiva,
                     };
                     $temNota = $valorPeriodo !== null;
                     $aprovadoPeriodo = $temNota && $valorPeriodo >= 10;
@@ -313,12 +313,19 @@
                         <td>{{ $nota->mt2  !== null ? number_format($nota->mt2,  2) : '-' }}</td>
                         <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  2) : '-' }}</td>
                         <td>{{ $nota->pg   !== null ? number_format($nota->pg,   2) : '-' }}</td>
-                        <td><strong>{{ $nota->cfd !== null ? number_format($nota->cfd, 2) : '-' }}</strong></td>
+                        <td>
+                            <strong>{{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 2) : '-' }}</strong>
+                            @if($nota->recursoMelhoraClassificacaoFinal())
+                                <div style="font-size:10px;color:#b45309;">Recurso</div>
+                            @endif
+                        </td>
                     @endif
 
-                    <td class="{{ $temNota ? ($aprovadoPeriodo ? 'aprovado' : 'reprovado') : '' }}">
+                    <td class="{{ $nota->recursoPendente() ? '' : ($temNota ? ($aprovadoPeriodo ? 'aprovado' : 'reprovado') : '') }}">
                         @if(!$temNota)
                             Pendente
+                        @elseif($nota->recursoPendente())
+                            Em recurso
                         @elseif($aprovadoPeriodo)
                             Aprovado
                         @else

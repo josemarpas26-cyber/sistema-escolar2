@@ -550,7 +550,7 @@ class TurmaController extends Controller
         $notasFinaisPorAluno = Nota::where('turma_id', $turma->id)
             ->where('ano_letivo_id', $turma->ano_letivo_id)
             ->whereIn('disciplina_id', $disciplinaIds)
-            ->get(['aluno_id', 'disciplina_id', 'cf', 'cfd'])
+            ->get(['aluno_id', 'disciplina_id', 'cf', 'cfd', 'nota_recurso'])
             ->groupBy('aluno_id');
 
         // Buscar contagens de notas lançadas por aluno — para feedback
@@ -649,8 +649,8 @@ class TurmaController extends Controller
                         ],
                         [
                             'classe' => (string) $turma->classe,
-                            'classificacao_final' => (float) ($nota->cfd ?? $nota->ca ?? 0),
-                            'resultado' => (($nota->cfd ?? 0) >= 10) ? 'aprovado' : 'reprovado',
+                            'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
+                            'resultado' => $nota->isAprovado() ? 'aprovado' : 'reprovado',
                             'observacoes' => 'Registo automático na promoção da turma.',
                             'data_conclusao' => now(),
                         ]

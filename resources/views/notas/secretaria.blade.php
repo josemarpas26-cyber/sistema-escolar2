@@ -14,11 +14,11 @@
     $turmaSelecionada      = $turmaSelecionada      ?? null;
     $disciplinaSelecionada = $disciplinaSelecionada ?? null;
 
-    $notasComCfd     = $notas->whereNotNull('cfd');
-    $mediaGeral      = $notasComCfd->avg('cfd');
+    $notasComCfd     = $notas->filter(fn($n) => $n->cfd_efetiva !== null);
+    $mediaGeral      = $notasComCfd->avg('cfd_efetiva');
     $totalAprovados  = $notasComCfd->filter(fn($n) => $n->isAprovado())->count();
     $totalReprovados = $notasComCfd->filter(fn($n) => !$n->isAprovado())->count();
-    $totalPendentes  = $notas->whereNull('cfd')->count();
+    $totalPendentes  = $notas->filter(fn($n) => $n->cfd_efetiva === null || $n->recursoPendente())->count();
 
     $totalFinalizadas         = $notas->where('status', 'finalizado')->count();
     $totalEmLancamento        = $notas->where('status', '!=', 'finalizado')->count();
@@ -318,7 +318,7 @@
                         @php $cnt = 1; @endphp
                         @forelse($notas as $nota)
                         @php
-                            $temCfd         = !is_null($nota->cfd ?? null);
+                            $temCfd         = !is_null($nota->cfd_efetiva ?? null);
                             $aprov          = $temCfd && $nota->isAprovado();
                             $locked         = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
                             $t1Bloqueado    = $nota->bloqueado_t1 ?? false;
@@ -343,13 +343,18 @@
                             <td class="nr-td-c">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
                             <td class="nr-td-c">
                                 @if($temCfd)
-                                    <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd,2) }}</strong>
+                                    <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd_efetiva,2) }}</strong>
+                                    @if($nota->recursoMelhoraClassificacaoFinal())
+                                        <div class="text-[11px] font-semibold text-amber-600 mt-1">Recurso</div>
+                                    @endif
                                 @else
                                     <span class="nr-muted">—</span>
                                 @endif
                             </td>
                             <td class="nr-td-c">
-                                @if($temCfd)
+                                @if($nota->recursoPendente())
+                                    <span class="nr-badge nr-badge-pend"><i class="fas fa-file-signature"></i> Em recurso</span>
+                                @elseif($temCfd)
                                     <span class="nr-badge {{ $aprov ? 'nr-badge-ok' : 'nr-badge-fail' }}">
                                         <i class="fas {{ $aprov ? 'fa-check' : 'fa-times' }}"></i>
                                         {{ $aprov ? 'Aprovado' : 'Reprovado' }}
@@ -422,8 +427,8 @@
                              <span class="text-xs text-gray-600 dark:text-gray-300">{{ $disc->codigo }}</span>
                         </div>
                         @php
-                            $cfds       = $notasDaDisciplina->whereNotNull('cfd');
-                            $mediaDisc  = $cfds->avg('cfd');
+                            $cfds       = $notasDaDisciplina->filter(fn($n) => $n->cfd_efetiva !== null);
+                            $mediaDisc  = $cfds->avg('cfd_efetiva');
                             $aprovDisc  = $cfds->filter(fn($n) => $n->isAprovado())->count();
                             $reprovDisc = $cfds->filter(fn($n) => !$n->isAprovado())->count();
                         @endphp
@@ -465,7 +470,7 @@
                                     $nota = $dados['notas']->get($disc->id);
                                     if (!$nota) continue;
                                     $aluno  = $dados['aluno'];
-                                    $temCfd = !is_null($nota->cfd);
+                                    $temCfd = !is_null($nota->cfd_efetiva);
                                     $aprov  = $temCfd && $nota->isAprovado();
                                     $locked = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
                                     $t1B    = $nota->bloqueado_t1 ?? false;
@@ -490,13 +495,18 @@
                                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
                                     <td class="px-4 py-3 text-center font-bold text-sm bg-blue-50 dark:bg-blue-900/10">
                                         @if($temCfd)
-                                            <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd,2) }}</strong>
+                                            <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd_efetiva,2) }}</strong>
+                                            @if($nota->recursoMelhoraClassificacaoFinal())
+                                                <div class="text-[11px] font-semibold text-amber-600 mt-1">Recurso</div>
+                                            @endif
                                         @else
                                             <span class="nr-muted">—</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-center text-sm">
-                                        @if($temCfd)
+                                        @if($nota->recursoPendente())
+                                            <span class="nr-badge nr-badge-pend" style="font-size:.62rem;padding:2px 6px;"><i class="fas fa-file-signature"></i> Recurso</span>
+                                        @elseif($temCfd)
                                             <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold {{ $aprov ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700/50' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700/50' }}" style="font-size:.62rem;padding:2px 6px;">
                                                 <i class="fas {{ $aprov ? 'fa-check' : 'fa-times' }}"></i>
                                                 {{ $aprov ? 'Apr' : 'Rep' }}

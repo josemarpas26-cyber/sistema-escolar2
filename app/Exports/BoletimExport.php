@@ -47,8 +47,8 @@ class BoletimExport implements FromCollection, WithHeadings, WithStyles, WithTit
                 $nota->mt1 ? number_format($nota->mt1, 2) : '-',
                 $nota->mt2 ? number_format($nota->mt2, 2) : '-',
                 $nota->mt3 ? number_format($nota->mt3, 2) : '-',
-                $nota->cfd ? number_format($nota->cfd, 2) : '-',
-                $nota->isAprovado() ? 'Aprovado' : 'Reprovado',
+                $nota->cfd_efetiva ? number_format($nota->cfd_efetiva, 2) : '-',
+                $nota->recursoPendente() ? 'Em recurso' : ($nota->isAprovado() ? 'Aprovado' : 'Reprovado'),
             ]);
         }
 

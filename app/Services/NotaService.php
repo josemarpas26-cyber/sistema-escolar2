@@ -158,7 +158,7 @@ class NotaService
         $aprovados = $notas->filter(fn ($nota) => $nota->isAprovado())->count();
 
         return [
-            'media'           => round($notas->avg('cfd'), 2),
+            'media'           => round($notas->avg('cfd_efetiva'), 2),
             'aprovados'       => $aprovados,
             'reprovados'      => $notas->count() - $aprovados,
             'total'           => $notas->count(),
@@ -227,7 +227,7 @@ class NotaService
             ->with('disciplina')
             ->get();
 
-        $notasComCFD = $notas->whereNotNull('cfd');
+        $notasComCFD = $notas->filter(fn (Nota $nota) => $nota->cfd_efetiva !== null);
 
         if ($notasComCFD->isEmpty()) {
             return [
@@ -241,21 +241,21 @@ class NotaService
         }
 
         $aprovados  = $notasComCFD->filter(fn ($nota) => $nota->isAprovado());
-        $melhorNota = $notasComCFD->sortByDesc('cfd')->first();
-        $piorNota   = $notasComCFD->sortBy('cfd')->first();
+        $melhorNota = $notasComCFD->sortByDesc('cfd_efetiva')->first();
+        $piorNota   = $notasComCFD->sortBy('cfd_efetiva')->first();
 
         return [
-            'media_geral'       => round($notasComCFD->avg('cfd'), 2),
+            'media_geral'       => round($notasComCFD->avg('cfd_efetiva'), 2),
             'aprovacoes'        => $aprovados->count(),
             'reprovacoes'       => $notasComCFD->count() - $aprovados->count(),
             'total_disciplinas' => $notas->count(),
             'melhor_nota'       => [
                 'disciplina' => $melhorNota->disciplina->nome,
-                'nota'       => $melhorNota->cfd,
+                'nota'       => $melhorNota->cfd_efetiva,
             ],
             'pior_nota' => [
                 'disciplina' => $piorNota->disciplina->nome,
-                'nota'       => $piorNota->cfd,
+                'nota'       => $piorNota->cfd_efetiva,
             ],
         ];
     }

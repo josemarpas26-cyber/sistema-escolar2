@@ -39,7 +39,7 @@ class EstadoMatriculaService
             ->where('turma_id', $turmaId)
             ->where('aluno_id', $alunoId)
             ->whereIn('disciplina_id', $disciplinaIds)
-            ->get(['disciplina_id', 'cf', 'cfd']);
+            ->get(['disciplina_id', 'cf', 'cfd', 'nota_recurso']);
 
         $resultado = app(ResultadoAlunoTurmaService::class)->avaliar($turma, $turma->disciplinas, $notas);
 

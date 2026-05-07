@@ -119,17 +119,22 @@
                         </td>
 
                         <td class="px-6 py-4 text-center">
-                            @if($nota->cfd)
-                            <span class="text-lg font-bold {{ $nota->cfd >= 10 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                                {{ number_format($nota->cfd, 2) }}
+                            @if($nota->cfd_efetiva)
+                            <span class="text-lg font-bold {{ $nota->cfd_efetiva >= 10 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                {{ number_format($nota->cfd_efetiva, 2) }}
                             </span>
+                            @if($nota->recursoMelhoraClassificacaoFinal())
+                            <div class="text-[11px] font-semibold text-amber-600 mt-1">Recurso</div>
+                            @endif
                             @else
                             <span class="text-gray-400 dark:text-gray-500">-</span>
                             @endif
                         </td>
 
                         <td class="px-6 py-4 text-center">
-                            @if($nota->cfd)
+                            @if($nota->recursoPendente())
+                            <x-badge type="warning">Em recurso</x-badge>
+                            @elseif($nota->cfd_efetiva)
                             <x-badge type="{{ $nota->isAprovado() ? 'success' : 'danger' }}">
                                 {{ $nota->isAprovado() ? 'Aprovado' : 'Reprovado' }}
                             </x-badge>
@@ -171,7 +176,7 @@
                 $nota = $item['nota'];
                 $statusClasse = 'background:var(--warn-bg); color:var(--warn-tx); border:1px solid var(--warn-bd);';
 
-                if ($nota?->cfd !== null) {
+                if ($nota?->cfd_efetiva !== null) {
                     $statusClasse = $nota->isAprovado()
                         ? 'background:var(--ok-bg); color:var(--ok-tx); border:1px solid var(--ok-bd);'
                         : 'background:var(--err-bg); color:var(--err-tx); border:1px solid var(--err-bd);';
@@ -191,7 +196,9 @@
                             {{ $item['indicador']['label'] }}: {{ $item['indicador']['valor'] !== null ? number_format($item['indicador']['valor'], 2) : '--' }}
                         </span>
                         <span class="inline-flex rounded-full px-3 py-2 text-sm font-extrabold" style="{{ $statusClasse }}">
-                            @if($nota?->cfd !== null)
+                            @if($nota?->recursoPendente())
+                                Em recurso
+                            @elseif($nota?->cfd_efetiva !== null)
                                 {{ $nota->isAprovado() ? 'Aprovado' : 'Reprovado' }}
                             @elseif($nota)
                                 Em andamento
@@ -207,7 +214,7 @@
                         ['titulo' => '1º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(1) : true, 'campos' => [['label' => 'MAC1', 'valor' => $nota?->mac1], ['label' => 'PP1', 'valor' => $nota?->pp1], ['label' => 'PT1', 'valor' => $nota?->pt1], ['label' => 'MT1', 'valor' => $nota?->mt1]]],
                         ['titulo' => '2º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(2) : true, 'campos' => [['label' => 'MAC2', 'valor' => $nota?->mac2], ['label' => 'PP2', 'valor' => $nota?->pp2], ['label' => 'PT2', 'valor' => $nota?->pt2], ['label' => 'MT2', 'valor' => $nota?->mt2], ['label' => 'MFT2', 'valor' => $nota?->mft2]]],
                         ['titulo' => '3º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(3) : true, 'campos' => [['label' => 'MAC3', 'valor' => $nota?->mac3], ['label' => 'PP3', 'valor' => $nota?->pp3], ['label' => 'PG', 'valor' => $nota?->pg], ['label' => 'MT3', 'valor' => $nota?->mt3]]],
-                        ['titulo' => 'Fecho final', 'disponivel' => true, 'campos' => [['label' => 'CF', 'valor' => $nota?->cf], ['label' => 'CA', 'valor' => $nota?->ca], ['label' => 'CFD', 'valor' => $nota?->cfd], ['label' => 'Estado', 'valor' => $nota?->status_final]]],
+                        ['titulo' => 'Fecho final', 'disponivel' => true, 'campos' => [['label' => 'CF', 'valor' => $nota?->cf], ['label' => 'CA', 'valor' => $nota?->ca], ['label' => $nota?->recursoMelhoraClassificacaoFinal() ? 'CFD (Recurso)' : 'CFD', 'valor' => $nota?->cfd_efetiva], ['label' => 'Estado', 'valor' => $nota?->status_final]]],
                     ] as $bloco)
                     <section class="rounded-2xl overflow-hidden" style="background:var(--surface-sunken); border:1px solid var(--border);">
                         <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">

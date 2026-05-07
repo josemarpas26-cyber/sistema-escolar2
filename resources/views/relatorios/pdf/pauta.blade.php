@@ -278,7 +278,7 @@
                     '1' => $nota->mt1,
                     '2' => $nota->mt2,
                     '3' => $nota->mt3,
-                    default => $nota->cfd,
+                    default => $nota->cfd_efetiva,
                 };
                 $temNota = $valorPeriodo !== null;
                 $aprovado = $temNota && $valorPeriodo >= 10;
@@ -318,11 +318,16 @@
                     <td>{{ $nota->cf   !== null ? number_format($nota->cf,   1) : '-' }}</td>
                     <td>{{ $nota->pg   !== null ? number_format($nota->pg,   1) : '-' }}</td>
                     <td>{{ $nota->ca   !== null ? number_format($nota->ca,   1) : '-' }}</td>
-                    <td><strong>{{ $nota->cfd !== null ? number_format($nota->cfd, 1) : '-' }}</strong></td>
+                    <td>
+                        <strong>{{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 1) : '-' }}</strong>
+                        @if($nota->recursoMelhoraClassificacaoFinal())
+                            <div style="font-size:9px;color:#b45309;">Recurso</div>
+                        @endif
+                    </td>
                 @endif
 
-                <td class="{{ $temNota ? ($aprovado ? 'aprovado' : 'reprovado') : '' }}">
-                    {{ !$temNota ? '-' : ($aprovado ? 'A' : 'R') }}
+                <td class="{{ $nota->recursoPendente() ? '' : ($temNota ? ($aprovado ? 'aprovado' : 'reprovado') : '') }}">
+                    {{ !$temNota ? '-' : ($nota->recursoPendente() ? 'REC' : ($aprovado ? 'A' : 'R')) }}
                 </td>
             </tr>
             @endforeach

@@ -220,7 +220,7 @@
             ['campo' => 'mt3', 'label' => 'MT3', 'tipo' => 'mt'],
             ['campo' => 'pg',  'label' => 'PG',  'tipo' => 'normal'],
             ['campo' => 'ca',  'label' => 'CA',  'tipo' => 'ca'],
-            ['campo' => 'cfd', 'label' => 'CFD', 'tipo' => 'cfd'],
+            ['campo' => 'cfd_efetiva', 'label' => 'CFD', 'tipo' => 'cfd'],
         ];
     }
 
@@ -244,7 +244,7 @@
     $notasWidth = 100 - $fixedWidth;
     $colWidth   = $notasWidth / ($numDiscs * $numCols); // % por coluna de nota
 
-    $campoMT = match($trimestre) { '1' => 'mt1', '2' => 'mt2', '3' => 'mt3', default => 'cfd' };
+    $campoMT = match($trimestre) { '1' => 'mt1', '2' => 'mt2', '3' => 'mt3', default => 'cfd_efetiva' };
 
     $totalAprovados  = 0;
     $totalReprovados = 0;
