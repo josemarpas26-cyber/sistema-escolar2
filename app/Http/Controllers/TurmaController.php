@@ -607,7 +607,7 @@ class TurmaController extends Controller
         // ----------------------------------------------------------------
 
         $novaTurma = DB::transaction(function () use (
-        $turma, $novaClasse, $proximoAno, $aprovados, $disciplinaIds
+        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $disciplinaIds
         ) {
             $novaTurma = Turma::create([
                 'nome'                 => $turma->nome,
@@ -636,7 +636,7 @@ class TurmaController extends Controller
                 ]);
 
                 $turma->alunos()->updateExistingPivot($aluno->id, [
-                    'status' => 'concluido',
+                    'status' => 'aprovado',
                 ]);
 
                 foreach ($notasFinais->get($aluno->id, collect()) as $nota) {
@@ -656,6 +656,12 @@ class TurmaController extends Controller
                         ]
                     );
                 }
+            }
+
+            foreach ($reprovados as $dadosReprovado) {
+                $turma->alunos()->updateExistingPivot($dadosReprovado['aluno']->id, [
+                    'status' => 'reprovado',
+                ]);
             }
 
             return $novaTurma;
