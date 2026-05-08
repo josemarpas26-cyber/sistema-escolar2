@@ -781,12 +781,7 @@ class NotaController extends Controller
         $nota->save();
         $this->estadoMatriculaService->sincronizarAlunoNaTurma($nota->turma_id, $nota->aluno_id);
 
-        return redirect()
-            ->route('notas.index', [
-                'turma_id' => IdMask::encode((int) $nota->turma_id),
-                'disciplina_id' => IdMask::encode((int) $nota->disciplina_id),
-            ])
-            ->with('success', 'Nota atualizada com sucesso.');
+        return back()->with('success', 'Nota atualizada com sucesso.');
     }
 
     // -------------------------------------------------------------------------
