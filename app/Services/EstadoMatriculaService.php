@@ -15,7 +15,7 @@ class EstadoMatriculaService
             ->where('aluno_id', $alunoId)
             ->value('status');
 
-        if (! in_array($statusAtual, ['matriculado', 'concluido'], true)) {
+        if (! in_array($statusAtual, ['matriculado', 'concluido', 'aprovado', 'reprovado'], true)) {
             return;
         }
 
@@ -46,7 +46,9 @@ class EstadoMatriculaService
         $this->definirStatus(
             $turmaId,
             $alunoId,
-            $resultado['status'] === ResultadoAlunoTurmaService::STATUS_TRANSITA ? 'concluido' : 'matriculado'
+            $resultado['status'] === ResultadoAlunoTurmaService::STATUS_TRANSITA
+                ? 'aprovado'
+                : ($resultado['status'] === ResultadoAlunoTurmaService::STATUS_REPROVADO ? 'reprovado' : 'matriculado')
         );
     }
 
@@ -54,7 +56,7 @@ class EstadoMatriculaService
     {
         $alunoIds = DB::table('turma_aluno')
             ->where('turma_id', $turmaId)
-            ->whereIn('status', ['matriculado', 'concluido'])
+            ->whereIn('status', ['matriculado', 'concluido', 'aprovado', 'reprovado'])
             ->pluck('aluno_id');
 
         foreach ($alunoIds as $alunoId) {

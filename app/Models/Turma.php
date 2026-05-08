@@ -111,7 +111,7 @@ class Turma extends Model
     // Contagem de alunos
     public function getTotalAlunosAttribute(): int
     {
-        return $this->alunos()->wherePivot('status', 'matriculado')->count();
+        return $this->alunos()->wherePivotIn('status', ['matriculado', 'aprovado', 'reprovado'])->count();
     }
 
     public function hasVagas(): bool
