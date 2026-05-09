@@ -146,7 +146,7 @@ class DemoDataSeeder extends Seeder
             ['nome' => '2025/2026'],
             [
                 'data_inicio' => '2025-04-20',
-                'data_fim'    => '2026-04-30',
+                'data_fim'    => '2026-05-30',
                 'ativo'       => true,
                 'encerrado'   => false,
             ]
@@ -157,18 +157,18 @@ class DemoDataSeeder extends Seeder
         // 3. CURSOS
         // =============================================
         $cfb = Curso::firstOrCreate(
-            ['codigo' => 'CFB'],
-            ['nome' => 'Ciências Físicas e Biológicas',   'coordenador_id' => $professores[0]->id, 'ativo' => true]
+            ['codigo' => 'DP'],
+            ['nome' => 'Desenhador Projectista',   'coordenador_id' => $professores[0]->id, 'ativo' => true]
         );
         $cej = Curso::firstOrCreate(
-            ['codigo' => 'CEJ'],
-            ['nome' => 'Ciências Económicas e Jurídicas', 'coordenador_id' => $professores[4]->id, 'ativo' => true]
+            ['codigo' => 'OCC'],
+            ['nome' => 'Obras de Construção Civil', 'coordenador_id' => $professores[4]->id, 'ativo' => true]
         );
         $ch = Curso::firstOrCreate(
-            ['codigo' => 'CH'],
-            ['nome' => 'Ciências Humanas',                'coordenador_id' => $professores[6]->id, 'ativo' => true]
+            ['codigo' => 'FC'],
+            ['nome' => 'Frio e Climatização',                'coordenador_id' => $professores[6]->id, 'ativo' => true]
         );
-        $this->command->info('✅ 3 cursos criados (CFB, CEJ, CH)');
+        $this->command->info('✅ 3 cursos criados (DP, OCC, FC)');
 
         $areaCiencias = AreaFormacao::firstOrCreate(
             ['nome' => 'Ciencias'],
@@ -191,14 +191,14 @@ class DemoDataSeeder extends Seeder
             ['nome' => 'Matemática',        'codigo' => 'MAT', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
             ['nome' => 'Física',            'codigo' => 'FIS', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
             ['nome' => 'Química',           'codigo' => 'QUI', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Biologia',          'codigo' => 'BIO', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Tecnologias de Linguagem de Programação', 'codigo' => 'TLP', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
             ['nome' => 'Língua Portuguesa', 'codigo' => 'LP',  'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
             ['nome' => 'Inglês',            'codigo' => 'ING', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'História',          'codigo' => 'HIS', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Geografia',         'codigo' => 'GEO', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Formação de Atitudes Integradoras',          'codigo' => 'FAI', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Projecto Tecnológico',         'codigo' => 'PT', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
             ['nome' => 'Educação Física',   'codigo' => 'EF',  'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'TIC',               'codigo' => 'TIC', 'l10' => true,  'l11' => false, 'l12' => false, 'terminal' => true],
-            ['nome' => 'Filosofia',         'codigo' => 'FIL', 'l10' => false, 'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Tecnologias de Informação e Comunicação',               'codigo' => 'TIC', 'l10' => true,  'l11' => false, 'l12' => false, 'terminal' => true],
+            ['nome' => 'Desenho Técnico',         'codigo' => 'DP', 'l10' => false, 'l11' => true,  'l12' => true,  'terminal' => false],
             ['nome' => 'Empreendedorismo',  'codigo' => 'EMP', 'l10' => false, 'l11' => false, 'l12' => true,  'terminal' => true],
         ];
 
@@ -236,7 +236,7 @@ class DemoDataSeeder extends Seeder
         );
 
         // Disciplinas da 10ª A
-        $discs10 = ['MAT','FIS','QUI','BIO','LP','ING','HIS','GEO','EF','TIC'];
+        $discs10 = ['MAT','FIS','QUI','TLP','LP','ING','FAI','PT','EF','TIC'];
         $turma10A->disciplinas()->syncWithoutDetaching(
             collect($discs10)->map(fn($c) => $disciplinas[$c]->id)->toArray()
         );
@@ -246,11 +246,11 @@ class DemoDataSeeder extends Seeder
             ['prof' => 0, 'disc' => 'MAT'],
             ['prof' => 1, 'disc' => 'FIS'],
             ['prof' => 2, 'disc' => 'QUI'],
-            ['prof' => 3, 'disc' => 'BIO'],
+            ['prof' => 3, 'disc' => 'TLP'],
             ['prof' => 4, 'disc' => 'LP'],
             ['prof' => 5, 'disc' => 'ING'],
-            ['prof' => 6, 'disc' => 'HIS'],
-            ['prof' => 7, 'disc' => 'GEO'],
+            ['prof' => 6, 'disc' => 'FAI'],
+            ['prof' => 7, 'disc' => 'PT'],
             ['prof' => 8, 'disc' => 'EF'],
             ['prof' => 9, 'disc' => 'TIC'],
         ];
@@ -261,7 +261,7 @@ class DemoDataSeeder extends Seeder
             $this->matricularAluno($turma10A, $aluno, '2024-09-02');
         }
 
-        // ---- Turma 10ª B - CEJ (15 últimos alunos) ----
+        // ---- Turma 10ª B - DP (15 últimos alunos) ----
         $turma10B = Turma::firstOrCreate(
             ['nome' => 'B', 'classe' => '10', 'curso_id' => $cej->id, 'ano_letivo_id' => $anoLetivo->id],
             [
