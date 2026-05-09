@@ -398,7 +398,7 @@ private function getConfiguracaoNotas(): array
     $config = $this->turma->anoLetivo?->configuracaoAvaliacao;
 
     if (! $config || ! in_array($this->trimestre, ['1', '2', '3'], true)) {
-        return [['key' => 'cfd', 'label' => 'CFD']];
+        return [['key' => 'cfd_efetiva', 'label' => 'CFD']];
     }
 
     return $config->provas

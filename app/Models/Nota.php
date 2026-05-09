@@ -27,6 +27,7 @@ class Nota extends Model
         'pg',
         'ca',
         'cfd',
+        'nota_recurso',
         'ca_10', 'ca_11',
         'status',
         'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
@@ -41,6 +42,7 @@ class Nota extends Model
         'pg' => 'decimal:2',
         'ca' => 'decimal:2',
         'cfd' => 'decimal:2',
+        'nota_recurso' => 'decimal:2',
         'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2',
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
         'bloqueado_pp1' => 'boolean', 'bloqueado_pt1' => 'boolean', 'bloqueado_pp2' => 'boolean',
@@ -357,17 +359,101 @@ class Nota extends Model
     {
         $notaMinima = (float) ($this->resolveConfiguracaoAvaliacao()->nota_minima_aprovacao ?? 10);
 
-        return $this->cfd !== null && $this->cfd >= $notaMinima;
+        $valorFinal = $this->classificacaoFinalEfetiva();
+
+        return $valorFinal !== null && $valorFinal >= $notaMinima;
     }
 
     public function getStatusFinalAttribute(): string
     {
-        if ($this->cfd === null) {
+        if ($this->recursoPendente()) {
+            return 'Em recurso';
+        }
+
+        if ($this->classificacaoFinalEfetiva() === null) {
             return 'Em andamento';
         }
 
-        $notaMinima = (float) ($this->resolveConfiguracaoAvaliacao()->nota_minima_aprovacao ?? 10);
+        return $this->isAprovado() ? 'Aprovado' : 'Reprovado';
+    }
 
-        return $this->cfd >= $notaMinima ? 'Aprovado' : 'Reprovado';
+    public function getCfdEfetivaAttribute(): ?float
+    {
+        return $this->classificacaoFinalEfetiva();
+    }
+
+    public function getCfdEfetivaOrigemAttribute(): string
+    {
+        return $this->recursoMelhoraClassificacaoFinal() ? 'recurso' : 'cfd';
+    }
+
+    public function getCfdEfetivaIndicacaoAttribute(): ?string
+    {
+        return $this->recursoMelhoraClassificacaoFinal() ? 'Recurso' : null;
+    }
+
+    public function classificacaoFinalEfetiva(): ?float
+    {
+        $cfd = $this->cfd !== null ? (float) $this->cfd : null;
+        $recurso = $this->nota_recurso !== null ? (float) $this->nota_recurso : null;
+
+        if ($recurso === null) {
+            return $cfd;
+        }
+
+        if ($cfd === null) {
+            return $recurso;
+        }
+
+        return max($cfd, $recurso);
+    }
+
+    public function recursoMelhoraClassificacaoFinal(): bool
+    {
+        return $this->nota_recurso !== null
+            && $this->cfd !== null
+            && (float) $this->nota_recurso > (float) $this->cfd;
+    }
+
+    public function recursoPendente(): bool
+    {
+        return $this->elegivelParaRecurso() && $this->nota_recurso === null;
+    }
+
+    public function elegivelParaRecurso(): bool
+    {
+        if ($this->cfd === null || ! is_numeric($this->cfd)) {
+            return false;
+        }
+
+        $notaMinima = (float) ($this->resolveConfiguracaoAvaliacao()->nota_minima_aprovacao ?? 10);
+        $cfd = (float) $this->cfd;
+
+        if ($cfd < 7 || $cfd >= $notaMinima) {
+            return false;
+        }
+
+        return $this->disciplinaTerminalNaTurma();
+    }
+
+    public function disciplinaTerminalNaTurma(): bool
+    {
+        $turma = $this->relationLoaded('turma')
+            ? $this->turma
+            : $this->turma()->first(['id', 'classe', 'curso_id']);
+
+        $disciplina = $this->relationLoaded('disciplina')
+            ? $this->disciplina
+            : $this->disciplina()->with('cursos')->first();
+
+        if (! $turma || ! $disciplina) {
+            return false;
+        }
+
+        if (! $disciplina->relationLoaded('cursos')) {
+            $disciplina->load('cursos');
+        }
+
+        return $disciplina->ehTerminalNaTurma($turma);
     }
 }

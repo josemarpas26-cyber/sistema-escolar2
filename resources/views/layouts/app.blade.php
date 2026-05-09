@@ -303,9 +303,16 @@
         .sidebar-nav {
             flex: 1; overflow-y: auto;
             padding: 16px 12px;
-            scrollbar-width: none;
+            scrollbar-width: thin;
+            scrollbar-color: var(--surface-border) transparent;
         }
-        .sidebar-nav::-webkit-scrollbar { display: none; }
+        .sidebar-nav::-webkit-scrollbar { width: 8px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: var(--surface-border);
+            border-radius: 999px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover { background-color: var(--tx-4); }
 
         .nav-section-label {
             font-size: 10px; font-weight: 700;

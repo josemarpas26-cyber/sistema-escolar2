@@ -28,6 +28,7 @@ class NotaObserver
         'mac2', 'pp2', 'pt2',
         'mac3', 'pp3', 'pg',
         'ca_10', 'ca_11',
+        'nota_recurso',
         'status',
         'bloqueado_t1',
         'bloqueado_t2',

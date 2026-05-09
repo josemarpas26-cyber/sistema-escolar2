@@ -1152,8 +1152,8 @@
             foreach (['mac1','pp1','pt1','mac2','pp2','pt2','mac3','pp3','pg'] as $c) {
                 if ($n->$c !== null) $camposPreenchidos++;
             }
-            if ($n->cfd !== null) {
-                if ($n->cfd >= 10) $aprovados++;
+            if ($n->cfd_efetiva !== null) {
+                if ($n->isAprovado()) $aprovados++;
                 else $reprovados++;
             }
         }
@@ -1179,6 +1179,11 @@
         && $notas->every(fn($n) => $n->status === 'finalizado' || ($n->bloqueado_t2 ?? false));
     $t3AllLocked = $notas && $notas->count() > 0 && !$podeReabrirNotas
         && $notas->every(fn($n) => $n->status === 'finalizado' || ($n->bloqueado_t3 ?? false));
+    $notasRecurso = $notas
+        ? $notas->filter(fn($n) => $n->elegivelParaRecurso() || $n->nota_recurso !== null)->values()
+        : collect();
+    $recursoPendentes = $notasRecurso->filter(fn($n) => $n->recursoPendente())->count();
+    $recursoComMelhoria = $notasRecurso->filter(fn($n) => $n->recursoMelhoraClassificacaoFinal())->count();
 @endphp
 
 <div id="np-root">
@@ -1385,6 +1390,15 @@
             {{ $label }}
           </button>
           @endforeach
+          <button type="button"
+                  class="np-tab {{ $notasRecurso->isNotEmpty() && $recursoPendentes === 0 ? 'done' : '' }}"
+                  :class="{ active: activeTab === '4' }"
+                  @click="switchTab('4')"
+                  role="tab">
+            <i class="fas fa-check-circle np-tab-check"></i>
+            <span class="np-tab-num">4</span>
+            Recurso
+          </button>
         </div>
 
         {{-- ════════════════════════════════
@@ -1851,16 +1865,24 @@
                       </span>
                     </td>
                     <td>
-                      <span class="np-computed {{ $nota->cfd !== null ? ($nota->cfd >= 10 ? 'c-ok' : 'c-fail') : 'c-empty' }}"
+                      <span class="np-computed {{ $nota->cfd_efetiva !== null ? ($nota->cfd_efetiva >= 10 ? 'c-ok' : 'c-fail') : 'c-empty' }}"
                             id="cfd-{{ $idx }}" style="font-size:14.5px">
-                        {{ $nota->cfd !== null ? number_format($nota->cfd, 2) : '—' }}
+                        {{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 2) : '—' }}
                       </span>
+                      @if($nota->recursoMelhoraClassificacaoFinal())
+                        <div class="text-[11px] font-semibold text-amber-600 mt-1">Recurso</div>
+                      @endif
                     </td>
                     <td>
-                      @if($nota->cfd !== null)
-                        <span class="np-status-badge {{ $nota->cfd >= 10 ? 'ok' : 'fail' }}">
-                          <i class="fas {{ $nota->cfd >= 10 ? 'fa-check' : 'fa-times' }}"></i>
-                          {{ $nota->cfd >= 10 ? 'Aprovado' : 'Reprovado' }}
+                      @if($nota->recursoPendente())
+                        <span class="np-status-badge pend">
+                          <i class="fas fa-file-signature"></i>
+                          Em recurso
+                        </span>
+                      @elseif($nota->cfd_efetiva !== null)
+                        <span class="np-status-badge {{ $nota->isAprovado() ? 'ok' : 'fail' }}">
+                          <i class="fas {{ $nota->isAprovado() ? 'fa-check' : 'fa-times' }}"></i>
+                          {{ $nota->isAprovado() ? 'Aprovado' : 'Reprovado' }}
                         </span>
                       @else
                         <span class="np-status-badge pend">Pendente</span>
@@ -1875,7 +1897,7 @@
                   $medPg   = $notas->whereNotNull('pg')->avg('pg');
                   $medMt3  = $notas->whereNotNull('mt3')->avg('mt3');
                   $medCf   = $notas->whereNotNull('cf')->avg('cf');
-                  $medCfd  = $notas->whereNotNull('cfd')->avg('cfd');
+                  $medCfd  = $notas->filter(fn($n) => $n->cfd_efetiva !== null)->avg('cfd_efetiva');
                 @endphp
                 <tfoot>
                   <tr>
@@ -1909,6 +1931,135 @@
                 @endif
               </div>
             </div>
+          </form>
+        </div>
+
+        <div x-show="activeTab === '4'" x-cloak class="np-tab-content">
+          <form id="form-recurso"
+                method="POST"
+                action="{{ route('notas.lancarRecurso') }}"
+                @submit="onFormSubmit($event, '4')">
+            @csrf
+            <input type="hidden" name="_tab" value="4">
+            <input type="hidden" name="turma_id" value="{{ $turma->id }}">
+            <input type="hidden" name="disciplina_id" value="{{ $disciplina->id }}">
+
+            <div class="np-toolbar">
+              <div class="np-toolbar-left">
+                <div class="np-search-wrap">
+                  <i class="fas fa-search"></i>
+                  <input type="text" class="np-search" placeholder="Filtrar aluno..."
+                         @input="filterRows($event.target.value)">
+                </div>
+                <div class="np-lock-badge partial">
+                  <i class="fas fa-file-signature"></i>
+                  Somente disciplinas terminais com CFD entre 7 e 9,99
+                </div>
+              </div>
+              <div class="np-toolbar-right">
+                <div class="np-kbd-hint"><span class="np-kbd">Tab</span><span>entre campos</span></div>
+                <button type="submit" class="np-btn np-btn-success"
+                        :class="{ 'np-btn-loading': saving }"
+                        :disabled="{{ $notasRecurso->isEmpty() ? 'true' : 'false' }} || saving">
+                  <i class="fas fa-save np-btn-ico"></i>Guardar Recurso
+                </button>
+              </div>
+            </div>
+
+            @if($notasRecurso->isEmpty())
+              <div class="p-8 text-center text-slate-500">
+                Nenhum aluno elegivel para recurso nesta pauta.
+              </div>
+            @else
+              <div class="np-tbl-scroll">
+                <table class="np-tbl">
+                  <thead>
+                    <tr>
+                      <th class="th-left th-sticky" style="min-width:220px;width:220px">Nº / Aluno</th>
+                      <th>CFD Original</th>
+                      <th>Nota Recurso</th>
+                      <th>CFD Final</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach($notasRecurso as $idx => $nota)
+                    @php
+                      $initials = strtoupper(substr($nota->aluno->name ?? 'A', 0, 1));
+                      $avatarColor = $avatarColors[crc32($nota->aluno->name ?? '') % count($avatarColors)];
+                      $alunoTemFoto = filled($nota->aluno->foto_perfil ?? null);
+                    @endphp
+                    <tr data-aluno="{{ strtolower($nota->aluno->name ?? '') }}">
+                      <td class="td-left td-sticky">
+                        <input type="hidden" name="notas[{{ $idx }}][id]" value="{{ $nota->id }}">
+                        <div class="np-aluno-cell">
+                          <div class="np-aluno-avatar" style="{{ $alunoTemFoto ? '' : 'background:'.$avatarColor }}">
+                            @if($alunoTemFoto)
+                              <img src="{{ $nota->aluno->foto_perfil_url }}" alt="Foto de {{ $nota->aluno->name }}" class="np-aluno-avatar-img">
+                            @else
+                              {{ $initials }}
+                            @endif
+                          </div>
+                          <div>
+                            <div class="np-aluno-name">{{ $idx + 1 }}-{{ $nota->aluno->name }}</div>
+                            <div class="np-aluno-proc">{{ $nota->aluno->numero_processo ?? '—' }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="np-computed {{ $nota->cfd !== null ? ($nota->cfd >= 10 ? 'c-ok' : 'c-fail') : 'c-empty' }}">
+                          {{ $nota->cfd !== null ? number_format($nota->cfd, 2) : '—' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="np-input-wrap">
+                          <input type="number" step="0.01" min="0" max="20"
+                                 name="notas[{{ $idx }}][nota_recurso]" value="{{ $nota->nota_recurso }}"
+                                 class="np-nota-input {{ $nota->nota_recurso !== null ? ($nota->nota_recurso >= 10 ? 'val-ok' : 'val-fail') : '' }}"
+                                 @input="onNotaInput($event, {{ $idx }}, 'recurso')"
+                                 @blur="formatNotaInput($event)" placeholder="—">
+                        </div>
+                      </td>
+                      <td>
+                        <span class="np-computed {{ $nota->cfd_efetiva !== null ? ($nota->cfd_efetiva >= 10 ? 'c-ok' : 'c-fail') : 'c-empty' }}">
+                          {{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 2) : '—' }}
+                        </span>
+                        @if($nota->recursoMelhoraClassificacaoFinal())
+                          <div class="text-[11px] font-semibold text-amber-600 mt-1">Recurso</div>
+                        @endif
+                      </td>
+                      <td>
+                        @if($nota->nota_recurso === null)
+                          <span class="np-status-badge pend">
+                            <i class="fas fa-hourglass-half"></i>
+                            Pendente
+                          </span>
+                        @else
+                          <span class="np-status-badge {{ $nota->isAprovado() ? 'ok' : 'fail' }}">
+                            <i class="fas {{ $nota->isAprovado() ? 'fa-check' : 'fa-times' }}"></i>
+                            {{ $nota->recursoMelhoraClassificacaoFinal() ? 'Atualizado' : 'Mantido' }}
+                          </span>
+                        @endif
+                      </td>
+                    </tr>
+                    @endforeach
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="np-form-footer">
+                <div class="np-form-footer-info">
+                  <i class="fas fa-info-circle"></i>
+                  {{ $recursoPendentes }} pendente(s) · {{ $recursoComMelhoria }} substituicao(oes) pela nota de recurso
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button type="submit" class="np-btn np-btn-success"
+                          :class="{ 'np-btn-loading': saving }" :disabled="saving">
+                    <i class="fas fa-save np-btn-ico"></i>Guardar Recurso
+                  </button>
+                </div>
+              </div>
+            @endif
           </form>
         </div>
 

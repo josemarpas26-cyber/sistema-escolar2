@@ -132,11 +132,14 @@ class NotaController extends Controller
                 ->keyBy('aluno_id');
 
             $notas = $alunos
-                ->map(function ($aluno) use ($notasPorAluno) {
+                ->map(function ($aluno) use ($notasPorAluno, $turma, $disciplina, $anoLetivo) {
                     $nota = $notasPorAluno->get($aluno->id);
 
                     if ($nota) {
                         $nota->aluno = $aluno;
+                        $nota->setRelation('turma', $turma);
+                        $nota->setRelation('disciplina', $disciplina);
+                        $nota->setRelation('anoLetivo', $anoLetivo);
                     }
 
                     return $nota;
@@ -187,7 +190,7 @@ class NotaController extends Controller
 
             $query = Nota::where('turma_id', $turmaSelecionada->id)
                 ->where('ano_letivo_id', $anoLetivo->id)
-                ->with(['aluno', 'disciplina']);
+                ->with(['aluno', 'turma', 'disciplina.cursos']);
 
             if ($disciplinaId) {
                 $disciplinaSelecionada = Disciplina::findOrFail($disciplinaId);
@@ -240,17 +243,17 @@ class NotaController extends Controller
 
         $notas = Nota::where('aluno_id', $aluno->id)
             ->where('ano_letivo_id', $anoLetivo->id)
-            ->with(['disciplina.coordenador', 'turma', 'avaliacoesContinuas'])
+            ->with(['disciplina.coordenador', 'disciplina.cursos', 'turma', 'avaliacoesContinuas'])
             ->get();
 
         $turmaAtual = $notas->first()?->turma;
-        $notasComCfd = $notas->whereNotNull('cfd');
+        $notasComCfd = $notas->filter(fn (Nota $nota) => $nota->cfd_efetiva !== null);
         $mediaGeral = $notasComCfd->isNotEmpty()
-            ? round($notasComCfd->avg('cfd'), 2)
+            ? round($notasComCfd->avg('cfd_efetiva'), 2)
             : 0;
 
-        $aprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd >= 10)->count();
-        $reprovacoes = $notasComCfd->filter(fn ($nota) => $nota->cfd < 10)->count();
+        $aprovacoes = $notasComCfd->filter(fn (Nota $nota) => $nota->isAprovado())->count();
+        $reprovacoes = $notasComCfd->count() - $aprovacoes;
 
         $atribuicoesPorDisciplina = $turmaAtual
             ? ProfessorTurmaDisciplina::query()
@@ -266,7 +269,7 @@ class NotaController extends Controller
             $label = 'Sem lançamento';
 
             foreach ([
-                'cfd' => 'CFD',
+                'cfd_efetiva' => $nota->recursoMelhoraClassificacaoFinal() ? 'CFD (Recurso)' : 'CFD',
                 'ca' => 'CA',
                 'cf' => 'CF',
                 'mt3' => 'MT3',
@@ -557,6 +560,115 @@ class NotaController extends Controller
         return back()->with($tipo, $mensagem);
     }
 
+    public function lancarRecurso(Request $request)
+    {
+        $user = auth()->user();
+
+        $user->isProfessor()
+            ? $this->checkPermission('notas.lancar')
+            : $this->checkPermission('notas.editar');
+
+        $validated = $request->validate([
+            'notas' => 'required|array',
+            'notas.*.id' => 'required|exists:notas,id',
+            'notas.*.nota_recurso' => 'nullable|numeric|min:0|max:20',
+        ]);
+
+        $ids = collect($validated['notas'])->pluck('id');
+        $notasMap = Nota::whereIn('id', $ids)
+            ->with(['aluno.turmas', 'anoLetivo', 'turma.curso', 'disciplina.cursos'])
+            ->get()
+            ->keyBy('id');
+
+        $salvas = 0;
+        $inelegiveis = 0;
+        $semAlteracao = 0;
+        $naoEncontradas = [];
+        $alunosAlterados = [];
+
+        DB::transaction(function () use (
+            $validated,
+            $notasMap,
+            $user,
+            &$salvas,
+            &$inelegiveis,
+            &$semAlteracao,
+            &$naoEncontradas,
+            &$alunosAlterados
+        ) {
+            foreach ($validated['notas'] as $notaData) {
+                $nota = $notasMap->get($notaData['id']);
+
+                if (! $nota) {
+                    $naoEncontradas[] = $notaData['id'];
+
+                    continue;
+                }
+
+                if ($user->isProfessor()) {
+                    $this->authorize('update', $nota);
+                }
+
+                if (! $nota->elegivelParaRecurso()) {
+                    $inelegiveis++;
+
+                    continue;
+                }
+
+                if (! array_key_exists('nota_recurso', $notaData) || $notaData['nota_recurso'] === null || $notaData['nota_recurso'] === '') {
+                    $semAlteracao++;
+
+                    continue;
+                }
+
+                $nota->nota_recurso = round((float) $notaData['nota_recurso'], 2);
+
+                if (! $nota->isDirty('nota_recurso')) {
+                    $semAlteracao++;
+
+                    continue;
+                }
+
+                $nota->save();
+                $salvas++;
+                $alunosAlterados[$nota->turma_id.'-'.$nota->aluno_id] = [
+                    'turma_id' => (int) $nota->turma_id,
+                    'aluno_id' => (int) $nota->aluno_id,
+                ];
+            }
+        });
+
+        foreach ($alunosAlterados as $dadosAluno) {
+            $this->estadoMatriculaService->sincronizarAlunoNaTurma($dadosAluno['turma_id'], $dadosAluno['aluno_id']);
+        }
+
+        $partes = [];
+
+        if ($salvas > 0) {
+            $partes[] = "{$salvas} recurso(s) registado(s)";
+        }
+
+        if ($semAlteracao > 0) {
+            $partes[] = "{$semAlteracao} sem alteraçao";
+        }
+
+        if ($inelegiveis > 0) {
+            $partes[] = "{$inelegiveis} inelegivel(is)";
+        }
+
+        if (! empty($naoEncontradas)) {
+            $partes[] = count($naoEncontradas).' registo(s) nao encontrado(s)';
+        }
+
+        $mensagem = empty($partes)
+            ? 'Nenhum recurso foi processado.'
+            : 'Recurso: '.implode('. ', $partes).'.';
+
+        $tipo = $salvas > 0 ? 'success' : (! empty($partes) ? 'warning' : 'info');
+
+        return back()->with($tipo, $mensagem);
+    }
+
     // -------------------------------------------------------------------------
     // Edição individual
     // -------------------------------------------------------------------------
@@ -599,6 +711,7 @@ class NotaController extends Controller
 
         $rules['ca_10'] = 'nullable|numeric|min:-1|max:20';
         $rules['ca_11'] = 'nullable|numeric|min:-1|max:20';
+        $rules['nota_recurso'] = 'nullable|numeric|min:0|max:20';
         $rules['observacoes'] = 'nullable|string';
 
         $validated = $request->validate($rules);
@@ -619,6 +732,12 @@ class NotaController extends Controller
 
         if (! empty($mensagensCamposBloqueados)) {
             throw ValidationException::withMessages($mensagensCamposBloqueados);
+        }
+
+        if ($request->filled('nota_recurso') && ! $nota->elegivelParaRecurso()) {
+            throw ValidationException::withMessages([
+                'nota_recurso' => 'O recurso só pode ser lançado em disciplinas terminais com CFD negativa igual ou superior a 7.',
+            ]);
         }
 
         $camposAlterados = array_keys(array_filter(
@@ -662,12 +781,7 @@ class NotaController extends Controller
         $nota->save();
         $this->estadoMatriculaService->sincronizarAlunoNaTurma($nota->turma_id, $nota->aluno_id);
 
-        return redirect()
-            ->route('notas.index', [
-                'turma_id' => IdMask::encode((int) $nota->turma_id),
-                'disciplina_id' => IdMask::encode((int) $nota->disciplina_id),
-            ])
-            ->with('success', 'Nota atualizada com sucesso.');
+        return back()->with('success', 'Nota atualizada com sucesso.');
     }
 
     // -------------------------------------------------------------------------

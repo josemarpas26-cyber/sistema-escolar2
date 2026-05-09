@@ -79,7 +79,7 @@
                 <!-- Tab Alunos -->
                 <div x-show="tab === 'alunos'">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Alunos Matriculados</h3>
+                        <h3 class="text-lg font-semibold">Alunos da Turma</h3>
                         
                         @if($canManageTurma)
                         <button onclick="toggleModal('matricularModal')" 
@@ -90,7 +90,7 @@
                         @endif
                     </div>
 
-                                        @if($turma->alunos->where('pivot.status', 'matriculado')->count() > 0)
+                                        @if($turma->alunos->whereNotIn('pivot.status', ['transferido', 'desistente'])->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -119,7 +119,7 @@
                                         {{ \Carbon\Carbon::parse($aluno->pivot->data_matricula)->format('d/m/Y') }}
                                     </td>
                                     <td class="px-6 py-4 text-center">
-                                                                                <x-badge type="{{ $aluno->pivot->status === 'matriculado' ? 'success' : 'gray' }}">
+                                                                                <x-badge type="{{ $aluno->pivot->status === 'matriculado' ? 'success' : ($aluno->pivot->status === 'aprovado' ? 'primary' : ($aluno->pivot->status === 'reprovado' ? 'danger' : 'gray')) }}">
                                             {{ ucfirst($aluno->pivot->status) }}
                                         </x-badge>
 

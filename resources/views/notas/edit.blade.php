@@ -26,9 +26,9 @@
                 </p>
             </div>
             <div>
-                @if($nota->cfd)
+                @if($nota->cfd_efetiva)
                 <x-badge type="{{ $nota->isAprovado() ? 'success' : 'danger' }}" class="text-lg">
-                    CFD: {{ number_format($nota->cfd, 2) }}
+                    CFD: {{ number_format($nota->cfd_efetiva, 2) }}
                 </x-badge>
                 @endif
             </div>
@@ -176,6 +176,46 @@
         @endif
 
         <!-- Classificações Finais -->
+        @if($nota->elegivelParaRecurso() || $nota->nota_recurso !== null)
+        <x-card title="Recurso" icon="fas fa-file-signature" class="mb-6 border-2 border-amber-200">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="label">CFD Original</label>
+                    <input type="text" value="{{ $nota->cfd !== null ? number_format($nota->cfd, 2) : '-' }}"
+                           class="input bg-gray-100" readonly>
+                </div>
+                <div>
+                    <label class="label">Nota do Recurso</label>
+                    <input type="number" name="nota_recurso" value="{{ old('nota_recurso', $nota->nota_recurso) }}"
+                           step="0.01" min="0" max="20" class="input" onblur="formatNota(this)">
+                    <p class="text-xs text-gray-500 mt-1">Aplicável apenas a disciplina terminal com CFD negativa igual ou superior a 7.</p>
+                    @error('nota_recurso')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="label">CFD Final</label>
+                    <input type="text" value="{{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 2) : '-' }}"
+                           class="input bg-gray-100 font-bold {{ $nota->cfd_efetiva && $nota->cfd_efetiva >= 10 ? 'text-green-600' : 'text-red-600' }}"
+                           readonly>
+                    @if($nota->recursoMelhoraClassificacaoFinal())
+                        <p class="text-xs text-amber-700 mt-1 font-semibold">Valor final vindo do recurso.</p>
+                    @endif
+                </div>
+                <div>
+                    <label class="label">Situação</label>
+                    <div class="mt-2">
+                        @if($nota->recursoPendente())
+                            <x-badge type="warning" class="text-sm">Em recurso</x-badge>
+                        @elseif($nota->nota_recurso !== null)
+                            <x-badge type="{{ $nota->isAprovado() ? 'success' : 'danger' }}" class="text-sm">
+                                {{ $nota->recursoMelhoraClassificacaoFinal() ? 'Atualizado por recurso' : 'Recurso sem alteração' }}
+                            </x-badge>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </x-card>
+        @endif
+
         <x-card title="Classificações Finais" icon="fas fa-check-circle" class="mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -191,13 +231,20 @@
                 <div>
                     <label class="label">CFD (Final)</label>
                     <input type="text" 
-                           value="{{ $nota->cfd ? number_format($nota->cfd, 2) : '-' }}" 
-                           class="input bg-gray-100 font-bold {{ $nota->cfd && $nota->cfd >= 10 ? 'text-green-600' : 'text-red-600' }}" 
+                           value="{{ $nota->cfd_efetiva ? number_format($nota->cfd_efetiva, 2) : '-' }}" 
+                           class="input bg-gray-100 font-bold {{ $nota->cfd_efetiva && $nota->cfd_efetiva >= 10 ? 'text-green-600' : 'text-red-600' }}" 
                            readonly>
+                    @if($nota->recursoMelhoraClassificacaoFinal())
+                    <p class="text-xs text-amber-700 mt-1 font-semibold">Substituída pelo recurso.</p>
+                    @endif
                 </div>
                 <div>
                     <label class="label">Status</label>
-                    @if($nota->cfd)
+                    @if($nota->recursoPendente())
+                    <div class="mt-2">
+                        <x-badge type="warning" class="text-sm">Em recurso</x-badge>
+                    </div>
+                    @elseif($nota->cfd_efetiva)
                     <div class="mt-2">
                         <x-badge type="{{ $nota->isAprovado() ? 'success' : 'danger' }}" class="text-sm">
                             {{ $nota->isAprovado() ? 'Aprovado' : 'Reprovado' }}

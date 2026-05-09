@@ -550,7 +550,7 @@ class TurmaController extends Controller
         $notasFinaisPorAluno = Nota::where('turma_id', $turma->id)
             ->where('ano_letivo_id', $turma->ano_letivo_id)
             ->whereIn('disciplina_id', $disciplinaIds)
-            ->get(['aluno_id', 'disciplina_id', 'cf', 'cfd'])
+            ->get(['aluno_id', 'disciplina_id', 'cf', 'cfd', 'nota_recurso'])
             ->groupBy('aluno_id');
 
         // Buscar contagens de notas lançadas por aluno — para feedback
@@ -607,7 +607,7 @@ class TurmaController extends Controller
         // ----------------------------------------------------------------
 
         $novaTurma = DB::transaction(function () use (
-        $turma, $novaClasse, $proximoAno, $aprovados, $disciplinaIds
+        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $disciplinaIds
         ) {
             $novaTurma = Turma::create([
                 'nome'                 => $turma->nome,
@@ -636,7 +636,7 @@ class TurmaController extends Controller
                 ]);
 
                 $turma->alunos()->updateExistingPivot($aluno->id, [
-                    'status' => 'concluido',
+                    'status' => 'aprovado',
                 ]);
 
                 foreach ($notasFinais->get($aluno->id, collect()) as $nota) {
@@ -649,13 +649,19 @@ class TurmaController extends Controller
                         ],
                         [
                             'classe' => (string) $turma->classe,
-                            'classificacao_final' => (float) ($nota->cfd ?? $nota->ca ?? 0),
-                            'resultado' => (($nota->cfd ?? 0) >= 10) ? 'aprovado' : 'reprovado',
+                            'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
+                            'resultado' => $nota->isAprovado() ? 'aprovado' : 'reprovado',
                             'observacoes' => 'Registo automático na promoção da turma.',
                             'data_conclusao' => now(),
                         ]
                     );
                 }
+            }
+
+            foreach ($reprovados as $dadosReprovado) {
+                $turma->alunos()->updateExistingPivot($dadosReprovado['aluno']->id, [
+                    'status' => 'reprovado',
+                ]);
             }
 
             return $novaTurma;

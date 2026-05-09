@@ -436,7 +436,7 @@ class RelatorioController extends Controller
             '1' => $nota->mt1,
             '2' => $nota->mt2,
             '3' => $nota->mt3,
-            default => $nota->cfd,
+            default => $nota->cfd_efetiva,
         };
     }
 

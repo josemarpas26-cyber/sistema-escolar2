@@ -72,22 +72,43 @@ class Disciplina extends Model
             default => false,
         };
     }
-    public function anoTerminalParaCurso(?int $cursoId): ?int
-        {
-            if (!$cursoId) {
-                return null;
+
+    public function ehTerminalNaTurma(Turma $turma): bool
+    {
+        $classeAtual = (int) $turma->classe;
+        $cursoId = $turma->curso_id;
+
+        if ($this->relationLoaded('cursos')) {
+            $relacaoCurso = $this->cursos->firstWhere('id', $cursoId);
+
+            if (! $relacaoCurso) {
+                return $this->disciplina_terminal && $classeAtual === 10;
             }
 
-            $relacao = $this->cursos()
-                ->where('curso_id', $cursoId)
-                ->first();
+            $anoTerminal = $relacaoCurso->pivot->ano_terminal;
 
-            if (!$relacao) {
-                return $this->disciplina_terminal ? 10 : null;
-            }
-
-            return $relacao->pivot->ano_terminal !== null
-                ? (int) $relacao->pivot->ano_terminal
-                : null;
+            return $anoTerminal !== null && (int) $anoTerminal === $classeAtual;
         }
+
+        return $this->anoTerminalParaCurso($cursoId) === $classeAtual;
+    }
+
+    public function anoTerminalParaCurso(?int $cursoId): ?int
+    {
+        if (! $cursoId) {
+            return null;
+        }
+
+        $relacao = $this->cursos()
+            ->where('curso_id', $cursoId)
+            ->first();
+
+        if (! $relacao) {
+            return $this->disciplina_terminal ? 10 : null;
+        }
+
+        return $relacao->pivot->ano_terminal !== null
+            ? (int) $relacao->pivot->ano_terminal
+            : null;
+    }
 }

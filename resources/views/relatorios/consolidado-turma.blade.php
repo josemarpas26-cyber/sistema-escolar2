@@ -45,8 +45,8 @@
             <tbody class="divide-y divide-gray-200">
                 @foreach($turma->disciplinas as $disciplina)
                 @php
-                    $notas = $turma->notas->where('disciplina_id', $disciplina->id)->where('cfd', '!=', null);
-                    $media = $notas->avg('cfd');
+                    $notas = $turma->notas->where('disciplina_id', $disciplina->id)->filter(fn($n) => $n->cfd_efetiva !== null);
+                    $media = $notas->avg('cfd_efetiva');
                     $aprovados = $notas->filter(fn($n) => $n->isAprovado())->count();
                     $reprovados = $notas->count() - $aprovados;
                     $taxa = $notas->count() > 0 ? ($aprovados / $notas->count()) * 100 : 0;
@@ -78,8 +78,8 @@
     <!-- Estatísticas Gerais -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         @php
-            $todasNotas = $turma->notas->where('cfd', '!=', null);
-            $mediaGeral = $todasNotas->avg('cfd');
+            $todasNotas = $turma->notas->filter(fn($n) => $n->cfd_efetiva !== null);
+            $mediaGeral = $todasNotas->avg('cfd_efetiva');
             $totalAprovados = $todasNotas->filter(fn($n) => $n->isAprovado())->count();
             $totalReprovados = $todasNotas->count() - $totalAprovados;
         @endphp

@@ -87,6 +87,29 @@ class ResultadoAlunoTurmaServiceTest extends TestCase
         $this->assertSame(ResultadoAlunoTurmaService::STATUS_TRANSITA, $resultado['status']);
     }
 
+    public function test_recurso_com_nota_superior_substitui_cfd_e_permita_transitar(): void
+    {
+        [$turma, $aluno, $disciplinas] = $this->criarCenarioBase(classe: '12', terminalIndex: 2, anoTerminal: 12);
+
+        $this->criarNota($turma, $aluno, $disciplinas[0], 14);
+        $this->criarNota($turma, $aluno, $disciplinas[1], 13);
+        $notaTerminal = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplinas[2]->id,
+            'ano_letivo_id' => $turma->ano_letivo_id,
+            'cfd' => 8,
+            'nota_recurso' => 12,
+        ]);
+
+        $resultado = $this->avaliar($turma, $aluno);
+
+        $this->assertTrue($notaTerminal->fresh()->recursoMelhoraClassificacaoFinal());
+        $this->assertSame(12.0, $notaTerminal->fresh()->cfd_efetiva);
+        $this->assertSame(ResultadoAlunoTurmaService::STATUS_TRANSITA, $resultado['status']);
+        $this->assertSame('Transita', $resultado['resultado']);
+    }
+
     private function avaliar(Turma $turma, User $aluno): array
     {
         $turma->load('disciplinas.cursos');

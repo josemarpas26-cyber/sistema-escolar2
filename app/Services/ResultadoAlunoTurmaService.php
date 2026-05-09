@@ -29,6 +29,7 @@ class ResultadoAlunoTurmaService
         $temEEF = false;
         $temNegativaGrave = false;
         $temRecurso = false;
+        $temNegativaTerminalSemSucessoNoRecurso = false;
         $negativasNaoTerminais = 0;
 
         foreach ($disciplinas as $disciplina) {
@@ -40,6 +41,7 @@ class ResultadoAlunoTurmaService
                 continue;
             }
 
+            $valorBase = $this->valorBase($nota);
             $valorFinal = $this->valorFinal($nota);
 
             if ($valorFinal === null) {
@@ -53,13 +55,18 @@ class ResultadoAlunoTurmaService
                 continue;
             }
 
-            if ($valorFinal < self::LIMITE_NEGATIVA_GRAVE) {
+            if ($valorBase !== null && $valorBase < self::LIMITE_NEGATIVA_GRAVE) {
                 $temNegativaGrave = true;
                 continue;
             }
 
             if ($this->disciplinaTerminalNaTurma($disciplina, $turma)) {
-                $temRecurso = true;
+                if ($this->recursoPendente($nota, $notaMinima)) {
+                    $temRecurso = true;
+                    continue;
+                }
+
+                $temNegativaTerminalSemSucessoNoRecurso = true;
                 continue;
             }
 
@@ -71,15 +78,19 @@ class ResultadoAlunoTurmaService
         }
 
         if ($temEEF) {
-            return $this->resultado(self::STATUS_REPROVADO, 'EEF', 'Não Transita');
+            return $this->resultado(self::STATUS_REPROVADO, 'EEF', 'NÃ£o Transita');
         }
 
-        if ($temNegativaGrave || $negativasNaoTerminais > self::MAX_NEGATIVAS_NAO_TERMINAIS) {
-            return $this->resultado(self::STATUS_REPROVADO, '', 'Não Transita');
+        if (
+            $temNegativaGrave
+            || $temNegativaTerminalSemSucessoNoRecurso
+            || $negativasNaoTerminais > self::MAX_NEGATIVAS_NAO_TERMINAIS
+        ) {
+            return $this->resultado(self::STATUS_REPROVADO, '', 'NÃ£o Transita');
         }
 
         if ($temRecurso) {
-            return $this->resultado(self::STATUS_RECURSO, 'Recurso', 'Não Transita');
+            return $this->resultado(self::STATUS_RECURSO, 'Recurso', 'NÃ£o Transita');
         }
 
         return $this->resultado(self::STATUS_TRANSITA, '', 'Transita');
@@ -112,22 +123,7 @@ class ResultadoAlunoTurmaService
 
     private function disciplinaTerminalNaTurma(Disciplina $disciplina, Turma $turma): bool
     {
-        $classeAtual = (int) $turma->classe;
-        $cursoId = $turma->curso_id;
-
-        if ($disciplina->relationLoaded('cursos')) {
-            $relacaoCurso = $disciplina->cursos->firstWhere('id', $cursoId);
-
-            if (! $relacaoCurso) {
-                return $disciplina->disciplina_terminal && $classeAtual === 10;
-            }
-
-            $anoTerminal = $relacaoCurso->pivot->ano_terminal;
-
-            return $anoTerminal !== null && (int) $anoTerminal === $classeAtual;
-        }
-
-        return $disciplina->anoTerminalParaCurso($cursoId) === $classeAtual;
+        return $disciplina->ehTerminalNaTurma($turma);
     }
 
     private function notaEmEEF(mixed $nota): bool
@@ -139,6 +135,24 @@ class ResultadoAlunoTurmaService
 
     private function valorFinal(mixed $nota): ?float
     {
+        $valor = $this->valorBase($nota);
+        $notaRecurso = $this->campo($nota, 'nota_recurso');
+
+        if (is_numeric($notaRecurso)) {
+            $valorRecurso = (float) $notaRecurso;
+
+            if ($valor === null) {
+                return $valorRecurso;
+            }
+
+            return max($valor, $valorRecurso);
+        }
+
+        return $valor;
+    }
+
+    private function valorBase(mixed $nota): ?float
+    {
         $valor = $this->campo($nota, 'cfd');
 
         if ($valor === null || $valor === '') {
@@ -146,6 +160,19 @@ class ResultadoAlunoTurmaService
         }
 
         return is_numeric($valor) ? (float) $valor : null;
+    }
+
+    private function recursoPendente(mixed $nota, float $notaMinima): bool
+    {
+        $valorBase = $this->valorBase($nota);
+
+        if ($valorBase === null || $valorBase < self::LIMITE_NEGATIVA_GRAVE || $valorBase >= $notaMinima) {
+            return false;
+        }
+
+        $notaRecurso = $this->campo($nota, 'nota_recurso');
+
+        return ! is_numeric($notaRecurso);
     }
 
     private function indexarNotas(iterable $notasAluno): array

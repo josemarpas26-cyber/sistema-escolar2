@@ -290,6 +290,124 @@ class NotaPautaTest extends TestCase
         $this->assertNull($nota->cfd);
     }
 
+    public function test_lancar_recurso_substitui_cfd_quando_nota_for_superior(): void
+    {
+        $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $professor = User::factory()->create(['role_id' => $professorRole->id]);
+        $aluno = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica([
+            'classe' => '12',
+            'disciplina' => [
+                'disciplina_terminal' => true,
+            ],
+        ]);
+
+        $turma->alunos()->attach($aluno->id, [
+            'data_matricula' => '2025-09-02',
+            'status' => 'matriculado',
+        ]);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $professor->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        $nota = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'cfd' => 8,
+            'status' => 'finalizado',
+        ]);
+
+        $this
+            ->actingAs($professor)
+            ->post(route('notas.lancarRecurso'), [
+                '_tab' => '4',
+                'notas' => [
+                    [
+                        'id' => $nota->id,
+                        'nota_recurso' => 13,
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $nota->refresh();
+
+        $this->assertSame(8.0, (float) $nota->cfd);
+        $this->assertSame(13.0, (float) $nota->nota_recurso);
+        $this->assertSame(13.0, $nota->cfd_efetiva);
+        $this->assertTrue($nota->recursoMelhoraClassificacaoFinal());
+        $this->assertDatabaseHas('turma_aluno', [
+            'turma_id' => $turma->id,
+            'aluno_id' => $aluno->id,
+            'status' => 'concluido',
+        ]);
+    }
+
+    public function test_lancar_recurso_ignora_disciplina_nao_terminal(): void
+    {
+        $professorRole = $this->createRoleWithPermissions('professor', ['notas.lancar']);
+        $alunoRole = $this->createRoleWithPermissions('aluno', []);
+
+        $professor = User::factory()->create(['role_id' => $professorRole->id]);
+        $aluno = User::factory()->create(['role_id' => $alunoRole->id]);
+
+        ['anoLetivo' => $anoLetivo, 'turma' => $turma, 'disciplina' => $disciplina] = $this->createEstruturaAcademica([
+            'classe' => '12',
+            'ano_terminal' => null,
+            'disciplina' => [
+                'disciplina_terminal' => false,
+            ],
+        ]);
+
+        $turma->alunos()->attach($aluno->id, [
+            'data_matricula' => '2025-09-02',
+            'status' => 'matriculado',
+        ]);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $professor->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        $nota = Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'cfd' => 8,
+            'status' => 'finalizado',
+        ]);
+
+        $this
+            ->actingAs($professor)
+            ->post(route('notas.lancarRecurso'), [
+                '_tab' => '4',
+                'notas' => [
+                    [
+                        'id' => $nota->id,
+                        'nota_recurso' => 13,
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $nota->refresh();
+
+        $this->assertNull($nota->nota_recurso);
+        $this->assertSame(8.0, $nota->cfd_efetiva);
+    }
+
     public function test_finalizar_e_reabrir_respeitam_aluno_e_trimestre(): void
     {
         $secretariaRole = $this->createRoleWithPermissions('secretaria', ['notas.editar', 'notas.reabrir']);
@@ -790,7 +908,7 @@ class NotaPautaTest extends TestCase
         ], $overrides['disciplina'] ?? []));
 
         $turma->disciplinas()->attach($disciplina->id);
-        $curso->disciplinas()->attach($disciplina->id, ['ano_terminal' => 12]);
+        $curso->disciplinas()->attach($disciplina->id, ['ano_terminal' => $overrides['ano_terminal'] ?? 12]);
 
         return compact('anoLetivo', 'curso', 'turma', 'disciplina');
     }
