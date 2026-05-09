@@ -854,7 +854,8 @@ class NotaController extends Controller
             auth()->user()->can('notas.reabrir')
         );
 
-        return back()->with('success', $resultado['mensagem']);
+        return $this->redirectParaPauta($turma->id, $disciplina->id)
+            ->with('success', $resultado['mensagem']);
     }
 
     public function finalizar(Request $request)
@@ -1009,7 +1010,7 @@ class NotaController extends Controller
             $finalizadas
         );
 
-        return back()->with('success', $labelCampo && $trimestre
+        return $this->redirectParaPauta($turmaId, $disciplinaId)->with('success', $labelCampo && $trimestre
             ? "Bloqueio de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
             : ($trimestre
             ? "Bloqueio do {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluido: {$finalizadas} notas bloqueadas e {$jaFinalizadas} ja estavam bloqueadas."
@@ -1191,7 +1192,7 @@ class NotaController extends Controller
         $this->sincronizarEstadoMatriculaAposOperacao($notas, $alunoId);
         $escopoOperacao = $turmaId ? ' da turma selecionada' : ' de todas as turmas do ano letivo';
 
-        return back()->with('success', $labelCampo && $trimestre
+        return $this->redirectParaPauta($turmaId, $disciplinaId)->with('success', $labelCampo && $trimestre
             ? "Reabertura de {$labelCampo} no {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
             : ($trimestre
             ? "Reabertura do {$trimestre}o trimestre{$escopoAluno}{$escopoOperacao} concluida: {$reabertas} notas desbloqueadas e {$jaAbertas} ja estavam desbloqueadas."
@@ -1223,7 +1224,21 @@ class NotaController extends Controller
     // -------------------------------------------------------------------------
     // Helpers privados
     // -------------------------------------------------------------------------
+    private function redirectParaPauta(?int $turmaId = null, ?int $disciplinaId = null): RedirectResponse
+    {
+        $params = [];
 
+        if ($turmaId) {
+            $params['turma_id'] = IdMask::encode($turmaId);
+        }
+
+        if ($disciplinaId) {
+            $params['disciplina_id'] = IdMask::encode($disciplinaId);
+        }
+
+        return redirect()->route('notas.index', $params);
+    }
+    
     private function verificarPermissaoProfessor(Nota $nota): void
     {
         $temAtribuicao = auth()->user()->atribuicoes()
