@@ -867,6 +867,7 @@
 
         </div>{{-- /est-item-body --}}
     </div>{{-- /est-item --}}
+    <br><br>
     @endforeach
 
     @endif{{-- /itens --}}
