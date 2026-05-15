@@ -9,9 +9,9 @@ use App\Models\User;
 use App\Notifications\BoasVindasNotification;
 use App\Notifications\CredenciaisAcessoNotification;
 use App\Notifications\EmailAlteradoNotification;
+use App\Support\ProfilePhotoStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
@@ -146,8 +146,7 @@ class UserController extends Controller
 
         // Upload de foto
         if ($request->hasFile('foto_perfil')) {
-            $validated['foto_perfil'] = $request->file('foto_perfil')
-                ->storePublicly('fotos_perfil', 'public');
+            $validated['foto_perfil'] = ProfilePhotoStorage::store($request->file('foto_perfil'));
         }
  
         $user = User::create($validated);
@@ -243,11 +242,8 @@ class UserController extends Controller
 
         // Upload de nova foto
         if ($request->hasFile('foto_perfil')) {
-            if ($user->foto_perfil) {
-                Storage::disk('public')->delete($this->normalizarCaminhoFoto($user->foto_perfil));
-            }
-            $validated['foto_perfil'] = $request->file('foto_perfil')
-                ->storePublicly('fotos_perfil', 'public');
+            ProfilePhotoStorage::delete($user->foto_perfil);
+            $validated['foto_perfil'] = ProfilePhotoStorage::store($request->file('foto_perfil'));
         }
  
         $user->update($validated);
@@ -414,20 +410,5 @@ class UserController extends Controller
         $professores = $query->paginate(20);
 
         return view('users.professores', compact('professores'));
-    }
-
-    private function normalizarCaminhoFoto(?string $caminho): ?string
-    {
-        if (blank($caminho)) {
-            return null;
-        }
-
-        $caminho = ltrim($caminho, '/');
-
-        if (str_starts_with($caminho, 'storage/')) {
-            $caminho = ltrim(substr($caminho, strlen('storage/')), '/');
-        }
-
-        return $caminho;
     }
 }

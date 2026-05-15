@@ -20,7 +20,7 @@ class RelatorioPdfPhotoTest extends TestCase
         Storage::disk('public')->put('fotos_perfil/aluno.jpg', 'foto-fake');
 
         $alunoComFoto = User::factory()->make([
-            'foto_perfil' => 'fotos_perfil/aluno.jpg',
+            'foto_perfil' => 'public:fotos_perfil/aluno.jpg',
             'genero' => 'M',
         ]);
 
@@ -29,15 +29,10 @@ class RelatorioPdfPhotoTest extends TestCase
             'genero' => 'F',
         ]);
 
-        $this->assertSame(
-            Storage::disk('public')->path('fotos_perfil/aluno.jpg'),
-            $alunoComFoto->foto_perfil_pdf_src
-        );
+        $this->assertStringStartsWith('data:image/jpeg;base64,', $alunoComFoto->foto_perfil_pdf_src);
+        $this->assertSame('foto-fake', base64_decode(substr($alunoComFoto->foto_perfil_pdf_src, strlen('data:image/jpeg;base64,'))));
 
-        $this->assertSame(
-            public_path('images/default-female.png'),
-            $alunaSemFoto->foto_perfil_pdf_src
-        );
+        $this->assertStringStartsWith('data:image/png;base64,', $alunaSemFoto->foto_perfil_pdf_src);
     }
 
     public function test_templates_pdf_usam_src_resolvido_sem_duplicar_bloco_da_foto(): void
@@ -48,7 +43,7 @@ class RelatorioPdfPhotoTest extends TestCase
         $aluno = User::factory()->make([
             'name' => 'Aluno PDF',
             'numero_processo' => '2024001',
-            'foto_perfil' => 'fotos_perfil/aluno.jpg',
+            'foto_perfil' => 'public:fotos_perfil/aluno.jpg',
             'genero' => 'M',
         ]);
 

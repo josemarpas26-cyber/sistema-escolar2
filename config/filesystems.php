@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Profile Photo Disk
+    |--------------------------------------------------------------------------
+    |
+    | Profile photos should use cloud storage in production so they are not
+    | lost on ephemeral filesystems such as Laravel Cloud.
+    |
+    */
+
+    'profile_photos_disk' => env('PROFILE_PHOTOS_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -45,6 +57,15 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+        ],
+
+        'cloudinary' => [
+            'driver' => 'cloudinary',
+            'key' => env('CLOUDINARY_KEY'),
+            'secret' => env('CLOUDINARY_SECRET'),
+            'cloud' => env('CLOUDINARY_CLOUD_NAME'),
+            'url' => env('CLOUDINARY_URL'),
+            'secure' => (bool) env('CLOUDINARY_SECURE', true),
         ],
 
         's3' => [

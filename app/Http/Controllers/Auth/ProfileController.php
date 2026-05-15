@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Notifications\EmailAlteradoNotification;
 use App\Http\Controllers\Controller;
+use App\Support\ProfilePhotoStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
@@ -49,12 +49,8 @@ class ProfileController extends Controller
         $emailAlterado = array_key_exists('email', $validated) && $validated['email'] !== $emailAnterior;
 
         if ($request->hasFile('foto_perfil')) {
-            if ($user->foto_perfil) {
-                Storage::disk('public')->delete($this->normalizarCaminhoFoto($user->foto_perfil));
-            }
-
-            $validated['foto_perfil'] = $request->file('foto_perfil')
-                ->storePublicly('fotos_perfil', 'public');
+            ProfilePhotoStorage::delete($user->foto_perfil);
+            $validated['foto_perfil'] = ProfilePhotoStorage::store($request->file('foto_perfil'));
         }
 
         $user->name = $validated['name'];
@@ -118,20 +114,4 @@ class ProfileController extends Controller
 
         return redirect('/');
     }
-    
-    private function normalizarCaminhoFoto(?string $caminho): ?string
-    {
-        if (blank($caminho)) {
-            return null;
-        }
-
-        $caminho = ltrim($caminho, '/');
-
-        if (str_starts_with($caminho, 'storage/')) {
-            $caminho = ltrim(substr($caminho, strlen('storage/')), '/');
-        }
-
-        return $caminho;
-    }
-    
 }

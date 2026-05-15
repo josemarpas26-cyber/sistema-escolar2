@@ -4,11 +4,11 @@ namespace App\Models;
 
 use App\Models\Concerns\HasMaskedRouteKey;
 use App\Notifications\CustomResetPasswordNotification;
+use App\Support\ProfilePhotoStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -164,78 +164,30 @@ class User extends Authenticatable
         return $this->role?->hasPermission($permissionName) ?? false;
     }
 
-        public function sendPasswordResetNotification($token): void
+    public function sendPasswordResetNotification($token): void
     {
         $this->notify(new CustomResetPasswordNotification($token));
     }
 
     /**
-     * Accessor para foto de perfil em base64 (para PDFs e pré-visualizações).
-     * 
+     * Accessor para foto de perfil em base64 (para PDFs e pre-visualizacoes).
+     *
      * Retorna data URI pronto para usar em <img src="...">.
      */
     public function getFotoPerfilPdfSrcAttribute(): string
     {
-        $fotoPath = $this->resolverFotoPerfilLocalPath($this->foto_perfil ?? $this->foto ?? null);
+        $fotoSrc = ProfilePhotoStorage::dataUri($this->foto_perfil ?? $this->foto ?? null);
 
-        if ($fotoPath && file_exists($fotoPath)) {
-            $fotoData = base64_encode(file_get_contents($fotoPath));
-            $fotoMime = mime_content_type($fotoPath);
-            return "data:{$fotoMime};base64,{$fotoData}";
+        if ($fotoSrc) {
+            return $fotoSrc;
         }
 
-        // Fallback: imagem padrão (também em base64)
+        // Fallback: imagem padrao (tambem em base64)
         return $this->fotoPerfilPadraoBase64();
     }
 
     /**
-     * Resolve o caminho absoluto da foto de perfil a partir do caminho relativo.
-     * 
-     * @return string|null Caminho absoluto ou null se não encontrado
-     */
-    private function resolverFotoPerfilLocalPath(?string $fotoRelativa): ?string
-    {
-        if (blank($fotoRelativa)) {
-            return null;
-        }
-
-        $fotoRelativa = ltrim($fotoRelativa, '/');
-        $candidatos   = [];
-
-        // 1. Storage público (storage/app/public)
-        if (Storage::disk('public')->exists($fotoRelativa)) {
-            $candidatos[] = Storage::disk('public')->path($fotoRelativa);
-        }
-
-        // 2. Se vem com prefixo "storage/", remove e tenta de novo
-        if (str_starts_with($fotoRelativa, 'storage/')) {
-            $semPrefixo = ltrim(substr($fotoRelativa, strlen('storage/')), '/');
-
-            if (Storage::disk('public')->exists($semPrefixo)) {
-                $candidatos[] = Storage::disk('public')->path($semPrefixo);
-            }
-        } else {
-            // 3. Tenta via public/storage/...
-            $candidatos[] = public_path('storage/' . $fotoRelativa);
-        }
-
-        // 4. Fallback direto no public/
-        $candidatos[] = public_path($fotoRelativa);
-
-        // Retorna o primeiro caminho que existe
-        foreach (array_unique($candidatos) as $caminho) {
-            if (file_exists($caminho)) {
-                return $caminho;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Retorna a imagem padrão (masculina/feminina) em base64.
-     * 
-     * @return string Data URI
+     * Retorna a imagem padrao (masculina/feminina) em base64.
      */
     private function fotoPerfilPadraoBase64(): string
     {
@@ -245,17 +197,16 @@ class User extends Authenticatable
         if (file_exists($caminho)) {
             $data = base64_encode(file_get_contents($caminho));
             $mime = mime_content_type($caminho);
+
             return "data:{$mime};base64,{$data}";
         }
 
-        // Se nem a imagem padrão existir, retorna um avatar SVG genérico
+        // Se nem a imagem padrao existir, retorna um avatar SVG generico
         return $this->avatarSvgFallback();
     }
 
     /**
-     * Avatar SVG genérico (funciona sempre, sem ficheiros externos).
-     * 
-     * @return string Data URI de SVG
+     * Avatar SVG generico (funciona sempre, sem ficheiros externos).
      */
     private function avatarSvgFallback(): string
     {
@@ -279,37 +230,15 @@ class User extends Authenticatable
 
     public function getFotoPerfilUrlAttribute(): string
     {
-        if ($this->foto_perfil) {
-            $fotoPerfil = trim((string) $this->foto_perfil);
+        $fotoPerfilUrl = ProfilePhotoStorage::url($this->foto_perfil);
 
-            if (str_starts_with($fotoPerfil, 'http://') || str_starts_with($fotoPerfil, 'https://') || str_starts_with($fotoPerfil, 'data:image/')) {
-                return $fotoPerfil;
-            }
-
-            $fotoPerfil = ltrim($fotoPerfil, '/');
-
-            if (str_starts_with($fotoPerfil, 'storage/')) {
-                $fotoPerfil = ltrim(substr($fotoPerfil, strlen('storage/')), '/');
-            }
-
-            if (!Storage::disk('public')->exists($fotoPerfil)) {
-                $fotoPerfil = null;
-            }
-
-            if ($fotoPerfil) {
-                $driver = config('filesystems.disks.public.driver');
-
-                if ($driver === 'local') {
-                    return '/storage/' . $fotoPerfil;
-                }
-
-                return Storage::disk('public')->url($fotoPerfil);
-            }
+        if ($fotoPerfilUrl) {
+            return $fotoPerfilUrl;
         }
 
-        // Imagem padrão baseada no gênero
-        $default = $this->genero === 'F' ? 'default-female.png' : 'default-male.png';
+        // Imagem padrao baseada no genero
+        $default = $this->fotoPerfilPadraoArquivo();
 
-        return asset('images/'.$default);
+        return asset('images/' . $default);
     }
 }
