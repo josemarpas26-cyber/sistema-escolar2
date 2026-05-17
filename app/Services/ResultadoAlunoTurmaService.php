@@ -14,6 +14,7 @@ class ResultadoAlunoTurmaService
     public const STATUS_RECURSO = 'recurso';
     public const STATUS_REPROVADO = 'reprovado';
 
+    private const RESULTADO_NAO_TRANSITA = "N\u{00E3}o Transita";
     private const LIMITE_NEGATIVA_GRAVE = 7.0;
     private const MAX_NEGATIVAS_NAO_TERMINAIS = 2;
 
@@ -23,6 +24,10 @@ class ResultadoAlunoTurmaService
     {
         $notasPorDisciplina = $this->indexarNotas($notasAluno);
         $notaMinima = $this->notaMinimaAprovacao($turma);
+
+        if ((int) $turma->classe === 12) {
+            return $this->avaliarTransicaoParaDecimaTerceira($turma, $disciplinas, $notasPorDisciplina, $notaMinima);
+        }
 
         $temNota = false;
         $temPendente = false;
@@ -78,7 +83,7 @@ class ResultadoAlunoTurmaService
         }
 
         if ($temEEF) {
-            return $this->resultado(self::STATUS_REPROVADO, 'EEF', 'NÃ£o Transita');
+            return $this->resultado(self::STATUS_REPROVADO, 'EEF', self::RESULTADO_NAO_TRANSITA);
         }
 
         if (
@@ -86,11 +91,76 @@ class ResultadoAlunoTurmaService
             || $temNegativaTerminalSemSucessoNoRecurso
             || $negativasNaoTerminais > self::MAX_NEGATIVAS_NAO_TERMINAIS
         ) {
-            return $this->resultado(self::STATUS_REPROVADO, '', 'NÃ£o Transita');
+            return $this->resultado(self::STATUS_REPROVADO, '', self::RESULTADO_NAO_TRANSITA);
         }
 
         if ($temRecurso) {
-            return $this->resultado(self::STATUS_RECURSO, 'Recurso', 'NÃ£o Transita');
+            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
+        }
+
+        return $this->resultado(self::STATUS_TRANSITA, '', 'Transita');
+    }
+
+    private function avaliarTransicaoParaDecimaTerceira(
+        Turma $turma,
+        Collection $disciplinas,
+        array $notasPorDisciplina,
+        float $notaMinima
+    ): array {
+        $disciplinasTerminais = $disciplinas
+            ->filter(fn (Disciplina $disciplina) => $this->disciplinaTerminalNaTurma($disciplina, $turma))
+            ->values();
+
+        if ($disciplinasTerminais->isEmpty()) {
+            return $this->resultado(self::STATUS_PENDENTE, '', '');
+        }
+
+        $temPendente = false;
+        $temRecurso = false;
+        $temTerminalReprovada = false;
+
+        foreach ($disciplinasTerminais as $disciplina) {
+            $nota = $notasPorDisciplina[$disciplina->id] ?? null;
+
+            if ($this->notaEmEEF($nota)) {
+                return $this->resultado(self::STATUS_REPROVADO, 'EEF', self::RESULTADO_NAO_TRANSITA);
+            }
+
+            $valorBase = $this->valorBase($nota);
+            $valorFinal = $this->valorFinal($nota);
+
+            if ($valorFinal === null) {
+                $temPendente = true;
+                continue;
+            }
+
+            if ($valorFinal >= $notaMinima) {
+                continue;
+            }
+
+            if ($valorBase !== null && $valorBase < self::LIMITE_NEGATIVA_GRAVE) {
+                $temTerminalReprovada = true;
+                continue;
+            }
+
+            if ($this->recursoPendente($nota, $notaMinima)) {
+                $temRecurso = true;
+                continue;
+            }
+
+            $temTerminalReprovada = true;
+        }
+
+        if ($temPendente) {
+            return $this->resultado(self::STATUS_PENDENTE, '', '');
+        }
+
+        if ($temTerminalReprovada) {
+            return $this->resultado(self::STATUS_REPROVADO, '', self::RESULTADO_NAO_TRANSITA);
+        }
+
+        if ($temRecurso) {
+            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
         }
 
         return $this->resultado(self::STATUS_TRANSITA, '', 'Transita');

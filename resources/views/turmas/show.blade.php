@@ -13,7 +13,7 @@
         <i class="fas fa-edit mr-2"></i>
         Editar
     </a>
-    @if($turma->classe < 12)
+    @if($turma->classe < 13)
     <form method="POST" action="{{ route('turmas.promover', $turma) }}" class="inline">
         @csrf
         <button type="submit" class="btn btn-success" 

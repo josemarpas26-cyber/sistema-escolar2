@@ -17,6 +17,7 @@ class Disciplina extends Model
         'leciona_10',
         'leciona_11',
         'leciona_12',
+        'leciona_13',
         'disciplina_terminal',
         'ativo',
     ];
@@ -25,6 +26,7 @@ class Disciplina extends Model
         'leciona_10' => 'boolean',
         'leciona_11' => 'boolean',
         'leciona_12' => 'boolean',
+        'leciona_13' => 'boolean',
         'disciplina_terminal' => 'boolean',
         'ativo' => 'boolean',
     ];
@@ -69,6 +71,7 @@ class Disciplina extends Model
             '10' => $this->leciona_10,
             '11' => $this->leciona_11,
             '12' => $this->leciona_12,
+            '13' => $this->leciona_13,
             default => false,
         };
     }

@@ -28,7 +28,7 @@ class Nota extends Model
         'ca',
         'cfd',
         'nota_recurso',
-        'ca_10', 'ca_11',
+        'ca_10', 'ca_11', 'ca_12',
         'status',
         'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
         'bloqueado_pp1', 'bloqueado_pt1', 'bloqueado_pp2', 'bloqueado_pt2', 'bloqueado_pp3', 'bloqueado_pg',
@@ -43,7 +43,7 @@ class Nota extends Model
         'ca' => 'decimal:2',
         'cfd' => 'decimal:2',
         'nota_recurso' => 'decimal:2',
-        'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2',
+        'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2', 'ca_12' => 'decimal:2',
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
         'bloqueado_pp1' => 'boolean', 'bloqueado_pt1' => 'boolean', 'bloqueado_pp2' => 'boolean',
         'bloqueado_pt2' => 'boolean', 'bloqueado_pp3' => 'boolean', 'bloqueado_pg' => 'boolean',
@@ -90,7 +90,7 @@ class Nota extends Model
         $this->calcularMediasTrimestre1e2($configuracaoAvaliacao);
 
         match ($classe) {
-            10, 11, 12 => $this->calcularTrimestre3($classe, $configuracaoAvaliacao),
+            10, 11, 12, 13 => $this->calcularTrimestre3($classe, $configuracaoAvaliacao),
             default => $this->limparCamposFinais(),
         };
     }
@@ -144,6 +144,16 @@ class Nota extends Model
         $this->mt3 = $this->calcularMediaDinamica(3, $configuracaoAvaliacao);
 
         $this->cf = $this->calcularClassificacaoFinalComRegraEspecial();
+
+        if ($classe === 13) {
+            $this->ca = $this->cf !== null
+                ? round((float) $this->cf, 2)
+                : null;
+
+            $this->atualizarCfd($classe);
+
+            return;
+        }
 
         $pesoPg = (float) ($configuracaoAvaliacao->peso_pg ?? 40);
         $pesoCf = 100 - $pesoPg;
@@ -337,6 +347,16 @@ class Nota extends Model
         }
 
         if ($disciplina->leciona_12 && $classeAtual >= 12) {
+            $ca12 = $classeAtual === 12 ? $this->ca : $this->ca_12;
+
+            if ($ca12 === null) {
+                return;
+            }
+
+            $classificacoes[] = $ca12;
+        }
+
+        if ($disciplina->leciona_13 && $classeAtual >= 13) {
             $classificacoes[] = $this->ca;
         }
 
