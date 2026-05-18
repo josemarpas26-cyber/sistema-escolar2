@@ -124,6 +124,22 @@ class ResultadoAlunoTurmaServiceTest extends TestCase
         $this->assertSame('Transita', $resultado['resultado']);
     }
 
+    public function test_infere_disciplina_terminal_da_decima_segunda_sem_relacao_com_curso(): void
+    {
+        $turma = new Turma(['classe' => '12', 'curso_id' => 999]);
+        $disciplina = new Disciplina([
+            'leciona_10' => false,
+            'leciona_11' => false,
+            'leciona_12' => true,
+            'leciona_13' => true,
+            'disciplina_terminal' => true,
+        ]);
+        $disciplina->setRelation('cursos', collect());
+
+        $this->assertTrue($disciplina->ehTerminalNaTurma($turma));
+        $this->assertSame(12, $disciplina->anoTerminalParaCurso($turma->curso_id));
+    }
+
     private function avaliar(Turma $turma, User $aluno): array
     {
         $turma->load('disciplinas.cursos');

@@ -184,35 +184,40 @@ class DemoDataSeeder extends Seeder
         // 4. DISCIPLINAS
         // =============================================
         $disc_data = [
-            ['nome' => 'Matemática',        'codigo' => 'MAT', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Física',            'codigo' => 'FIS', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Química',           'codigo' => 'QUI', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Biologia',          'codigo' => 'BIO', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Língua Portuguesa', 'codigo' => 'LP',  'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Inglês',            'codigo' => 'ING', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'História',          'codigo' => 'HIS', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Geografia',         'codigo' => 'GEO', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Educação Física',   'codigo' => 'EF',  'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'TIC',               'codigo' => 'TIC', 'l10' => true,  'l11' => false, 'l12' => false, 'terminal' => true],
-            ['nome' => 'Filosofia',         'codigo' => 'FIL', 'l10' => false, 'l11' => true,  'l12' => true,  'terminal' => false],
-            ['nome' => 'Empreendedorismo',  'codigo' => 'EMP', 'l10' => false, 'l11' => false, 'l12' => true,  'terminal' => true],
+            ['nome' => 'Matemática',        'codigo' => 'MAT', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Física',            'codigo' => 'FIS', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Química',           'codigo' => 'QUI', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Biologia',          'codigo' => 'BIO', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Língua Portuguesa', 'codigo' => 'LP',  'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Inglês',            'codigo' => 'ING', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'História',          'codigo' => 'HIS', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Geografia',         'codigo' => 'GEO', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Educação Física',   'codigo' => 'EF',  'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'TIC',               'codigo' => 'TIC', 'l10' => true,  'l11' => false, 'l12' => false, 'l13' => false, 'ano_terminal' => 10],
+            ['nome' => 'Filosofia',         'codigo' => 'FIL', 'l10' => false, 'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
+            ['nome' => 'Empreendedorismo',  'codigo' => 'EMP', 'l10' => false, 'l11' => false, 'l12' => true,  'l13' => true,  'ano_terminal' => 12],
         ];
 
         $disciplinas = [];
+        $terminaisPorDisciplina = [];
+
         foreach ($disc_data as $dd) {
-            $disciplinas[$dd['codigo']] = Disciplina::firstOrCreate(
+            $disciplinas[$dd['codigo']] = Disciplina::updateOrCreate(
                 ['codigo' => $dd['codigo']],
                 [
                     'nome'                => $dd['nome'],
                     'leciona_10'          => $dd['l10'],
                     'leciona_11'          => $dd['l11'],
                     'leciona_12'          => $dd['l12'],
-                    'disciplina_terminal' => $dd['terminal'],
+                    'leciona_13'          => $dd['l13'],
+                    'disciplina_terminal' => $dd['ano_terminal'] !== null,
                     'ativo'               => true,
                 ]
             );
+            $terminaisPorDisciplina[$dd['codigo']] = $dd['ano_terminal'];
         }
-        $this->command->info('✅ ' . count($disciplinas) . ' disciplinas criadas');
+        $this->sincronizarDisciplinasDosCursos([$cfb, $cej, $ch], $disciplinas, $terminaisPorDisciplina);
+        $this->command->info('✅ ' . count($disciplinas) . ' disciplinas criadas/atualizadas');
 
         // =============================================
         // 5. TURMAS COM PROGRESSÃO LETIVA
@@ -366,6 +371,25 @@ class DemoDataSeeder extends Seeder
                 'ativo' => true,
             ]
         );
+    }
+
+
+    /**
+     * Associa as disciplinas aos cursos de demo e informa a classe terminal.
+     */
+    private function sincronizarDisciplinasDosCursos(array $cursos, array $disciplinas, array $terminaisPorDisciplina): void
+    {
+        foreach ($cursos as $curso) {
+            $syncData = [];
+
+            foreach ($disciplinas as $codigo => $disciplina) {
+                $syncData[$disciplina->id] = [
+                    'ano_terminal' => $terminaisPorDisciplina[$codigo],
+                ];
+            }
+
+            $curso->disciplinas()->syncWithoutDetaching($syncData);
+        }
     }
 
     /**
