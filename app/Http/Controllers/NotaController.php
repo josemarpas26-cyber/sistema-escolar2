@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AnoLetivo;
 use App\Models\AvaliacaoContinua;
+use App\Models\ClassificacaoEnsinoMedio;
 use App\Models\Disciplina;
 use App\Models\DivisaoAritmeticaSolicitacao;
 use App\Models\Nota;
@@ -183,6 +184,7 @@ class NotaController extends Controller
         $turmaSelecionada = null;
         $disciplinaSelecionada = null;
         $estatisticasPauta = null;
+        $classificacoesEnsinoMedio = collect();
 
         if ($turmaId) {
             $turmaSelecionada = Turma::findOrFail($turmaId);
@@ -216,6 +218,11 @@ class NotaController extends Controller
                         'aluno' => $grupo->first()->aluno,
                         'notas' => $grupo->keyBy('disciplina_id'),
                     ]);
+
+                if ((int) $turmaSelecionada->classe === 13) {
+                    $classificacoesEnsinoMedio = app(\App\Services\ClassificacaoEnsinoMedioService::class)
+                        ->montarResumoDaTurma($turmaSelecionada, $notas);
+                }
             }
         }
 
@@ -226,7 +233,8 @@ class NotaController extends Controller
             'notasAgrupadas',
             'turmaSelecionada',
             'disciplinaSelecionada',
-            'estatisticasPauta'
+            'estatisticasPauta',
+            'classificacoesEnsinoMedio'
         ));
     }
 
@@ -296,13 +304,22 @@ class NotaController extends Controller
             ];
         });
 
+        $classificacaoEnsinoMedioAtual = null;
+
+        if ((int) ($turmaAtual?->classe ?? 0) === 13) {
+            $classificacaoEnsinoMedioAtual = app(\App\Services\ClassificacaoEnsinoMedioService::class)
+                ->montarResumoDaTurma($turmaAtual, $notas)
+                ->firstWhere('aluno.id', $aluno->id);
+        }
+
         return view('notas.aluno', compact(
             'notas',
             'turmaAtual',
             'mediaGeral',
             'aprovacoes',
             'reprovacoes',
-            'disciplinasDetalhadas'
+            'disciplinasDetalhadas',
+            'classificacaoEnsinoMedioAtual'
         ));
     }
 
@@ -711,6 +728,7 @@ class NotaController extends Controller
 
         $rules['ca_10'] = 'nullable|numeric|min:-1|max:20';
         $rules['ca_11'] = 'nullable|numeric|min:-1|max:20';
+        $rules['ca_12'] = 'nullable|numeric|min:-1|max:20';
         $rules['nota_recurso'] = 'nullable|numeric|min:0|max:20';
         $rules['observacoes'] = 'nullable|string';
 
@@ -782,6 +800,71 @@ class NotaController extends Controller
         $this->estadoMatriculaService->sincronizarAlunoNaTurma($nota->turma_id, $nota->aluno_id);
 
         return back()->with('success', 'Nota atualizada com sucesso.');
+    }
+
+    public function salvarClassificacoesEnsinoMedio(Request $request)
+    {
+        $this->checkPermission('notas.editar');
+
+        $dados = $request->validate([
+            'turma_id' => 'required|exists:turmas,id',
+            'classificacoes' => 'required|array',
+            'classificacoes.*.aluno_id' => 'required|exists:users,id',
+            'classificacoes.*.pap' => 'nullable|numeric|min:0|max:20',
+            'classificacoes.*.ecs' => 'nullable|numeric|min:0|max:20',
+            'classificacoes.*.observacoes' => 'nullable|string|max:1000',
+        ]);
+
+        $turma = Turma::with('alunos')->findOrFail($dados['turma_id']);
+
+        if ((int) $turma->classe !== 13) {
+            return back()->with('error', 'A classificação final do ensino médio só se aplica à 13ª classe.');
+        }
+
+        $alunosPermitidos = $turma->alunos->pluck('id')->all();
+
+        DB::transaction(function () use ($dados, $turma, $alunosPermitidos) {
+            foreach ($dados['classificacoes'] as $item) {
+                $alunoId = (int) $item['aluno_id'];
+
+                if (! in_array($alunoId, $alunosPermitidos, true)) {
+                    continue;
+                }
+
+                $payload = [
+                    'pap' => $this->normalizarNotaOpcional($item['pap'] ?? null),
+                    'ecs' => $this->normalizarNotaOpcional($item['ecs'] ?? null),
+                    'observacoes' => filled($item['observacoes'] ?? null)
+                        ? trim((string) $item['observacoes'])
+                        : null,
+                ];
+
+                $semDados = $payload['pap'] === null
+                    && $payload['ecs'] === null
+                    && $payload['observacoes'] === null;
+
+                if ($semDados) {
+                    ClassificacaoEnsinoMedio::query()
+                        ->where('aluno_id', $alunoId)
+                        ->where('turma_id', $turma->id)
+                        ->where('ano_letivo_id', $turma->ano_letivo_id)
+                        ->delete();
+
+                    continue;
+                }
+
+                ClassificacaoEnsinoMedio::updateOrCreate(
+                    [
+                        'aluno_id' => $alunoId,
+                        'turma_id' => $turma->id,
+                        'ano_letivo_id' => $turma->ano_letivo_id,
+                    ],
+                    $payload
+                );
+            }
+        });
+
+        return back()->with('success', 'Classificações finais do ensino médio actualizadas com sucesso.');
     }
 
     // -------------------------------------------------------------------------
@@ -1981,6 +2064,15 @@ class NotaController extends Controller
         return now();
     }
 
+    private function normalizarNotaOpcional(mixed $valor): ?float
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        return round((float) $valor, 2);
+    }
+
     private function resolverTrimestreCorrente(?AnoLetivo $anoLetivo): int
     {
         return $anoLetivo?->trimestreNaData() ?? 1;
@@ -1993,6 +2085,7 @@ class NotaController extends Controller
         return [
             'ca_10' => $classeAtual >= 11 && $this->alunoTemTurmaDaClasseAnterior($nota, 10),
             'ca_11' => $classeAtual >= 12 && $this->alunoTemTurmaDaClasseAnterior($nota, 11),
+            'ca_12' => $classeAtual >= 13 && $this->alunoTemTurmaDaClasseAnterior($nota, 12),
         ];
     }
 

@@ -63,7 +63,8 @@ class DisciplinaController extends Controller
 
         if (! $request->has('leciona_10')
             && ! $request->has('leciona_11')
-            && ! $request->has('leciona_12')) {
+            && ! $request->has('leciona_12')
+            && ! $request->has('leciona_13')) {
             return back()
                 ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina sera lecionada.'])
                 ->withInput();
@@ -72,6 +73,7 @@ class DisciplinaController extends Controller
         $validated['leciona_10'] = $request->has('leciona_10');
         $validated['leciona_11'] = $request->has('leciona_11');
         $validated['leciona_12'] = $request->has('leciona_12');
+        $validated['leciona_13'] = $request->has('leciona_13');
         $validated['disciplina_terminal'] = $request->has('disciplina_terminal');
         $validated['ativo'] = $request->has('ativo');
 
@@ -129,7 +131,8 @@ class DisciplinaController extends Controller
 
         if (! $request->has('leciona_10')
             && ! $request->has('leciona_11')
-            && ! $request->has('leciona_12')) {
+            && ! $request->has('leciona_12')
+            && ! $request->has('leciona_13')) {
             return back()
                 ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina sera lecionada.'])
                 ->withInput();
@@ -138,6 +141,7 @@ class DisciplinaController extends Controller
         $validated['leciona_10'] = $request->has('leciona_10');
         $validated['leciona_11'] = $request->has('leciona_11');
         $validated['leciona_12'] = $request->has('leciona_12');
+        $validated['leciona_13'] = $request->has('leciona_13');
         $validated['disciplina_terminal'] = $request->has('disciplina_terminal');
         $validated['ativo'] = $request->has('ativo');
 
@@ -225,7 +229,7 @@ class DisciplinaController extends Controller
                 },
             ],
             'cursos_terminal' => 'nullable|array',
-            'cursos_terminal.*' => 'nullable|in:10,11,12',
+            'cursos_terminal.*' => 'nullable|in:10,11,12,13',
         ];
     }
 

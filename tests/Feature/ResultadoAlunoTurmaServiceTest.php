@@ -110,6 +110,20 @@ class ResultadoAlunoTurmaServiceTest extends TestCase
         $this->assertSame('Transita', $resultado['resultado']);
     }
 
+    public function test_na_decima_segunda_so_disciplinas_terminais_bloqueiam_acesso_a_decima_terceira(): void
+    {
+        [$turma, $aluno, $disciplinas] = $this->criarCenarioBase(classe: '12', terminalIndex: 2, anoTerminal: 12);
+
+        $this->criarNota($turma, $aluno, $disciplinas[0], 8);
+        $this->criarNota($turma, $aluno, $disciplinas[1], 8);
+        $this->criarNota($turma, $aluno, $disciplinas[2], 14);
+
+        $resultado = $this->avaliar($turma, $aluno);
+
+        $this->assertSame(ResultadoAlunoTurmaService::STATUS_TRANSITA, $resultado['status']);
+        $this->assertSame('Transita', $resultado['resultado']);
+    }
+
     private function avaliar(Turma $turma, User $aluno): array
     {
         $turma->load('disciplinas.cursos');
@@ -117,7 +131,7 @@ class ResultadoAlunoTurmaServiceTest extends TestCase
         $notas = Nota::query()
             ->where('turma_id', $turma->id)
             ->where('aluno_id', $aluno->id)
-            ->get(['disciplina_id', 'cf', 'cfd']);
+            ->get(['disciplina_id', 'cf', 'cfd', 'nota_recurso']);
 
         return app(ResultadoAlunoTurmaService::class)->avaliar($turma, $turma->disciplinas, $notas);
     }

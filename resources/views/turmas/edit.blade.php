@@ -84,6 +84,7 @@
                             <option value="10" {{ old('classe', $turma->classe) == '10' ? 'selected' : '' }}>10ª Classe</option>
                             <option value="11" {{ old('classe', $turma->classe) == '11' ? 'selected' : '' }}>11ª Classe</option>
                             <option value="12" {{ old('classe', $turma->classe) == '12' ? 'selected' : '' }}>12ª Classe</option>
+                            <option value="13" {{ old('classe', $turma->classe) == '13' ? 'selected' : '' }}>13ª Classe</option>
                         </select>
                     </div>
 

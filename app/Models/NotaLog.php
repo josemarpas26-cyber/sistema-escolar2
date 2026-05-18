@@ -131,6 +131,7 @@ class NotaLog extends Model
             'pg' => 'Prova Global',
             'ca_10' => 'CA 10ª Classe',
             'ca_11' => 'CA 11ª Classe',
+            'ca_12' => 'CA 12ª Classe',
             'status' => 'Estado da pauta',
             'bloqueado_t1' => 'Bloqueio 1º Trimestre',
             'bloqueado_t2' => 'Bloqueio 2º Trimestre',
