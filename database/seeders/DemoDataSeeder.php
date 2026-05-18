@@ -352,15 +352,15 @@ class DemoDataSeeder extends Seeder
      */
     private function criarTurmaDemo(string $nome, string $classe, Curso $curso, AnoLetivo $anoLetivo, User $coordenador): Turma
     {
-        return Turma::updateOrCreate(
+        return Turma::firstOrCreate(
             [
                 'nome' => $nome,
                 'classe' => $classe,
                 'curso_id' => $curso->id,
+                'ano_letivo_id' => $anoLetivo->id,
                 'turno' => 'M',
             ],
             [
-                'ano_letivo_id' => $anoLetivo->id,
                 'coordenador_turma_id' => $coordenador->id,
                 'capacidade' => 40,
                 'ativo' => true,
