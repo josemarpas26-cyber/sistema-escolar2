@@ -69,6 +69,34 @@ class NotaServiceImportacaoCATest extends TestCase
         $this->assertSame(16.25, $ca);
     }
 
+    public function test_importa_ca_da_decima_segunda_classe(): void
+    {
+        [$aluno, $disciplina, $turma10, $ano2025] = $this->baseAcademica();
+
+        $turma12 = Turma::create([
+            'nome' => 'B',
+            'classe' => '12',
+            'curso_id' => $turma10->curso_id,
+            'ano_letivo_id' => $ano2025->id,
+            'capacidade' => 40,
+            'ativo' => true,
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma12->id,
+            'disciplina_id' => $disciplina->id,
+            'ano_letivo_id' => $ano2025->id,
+            'ca' => 15.5,
+            'status' => 'finalizado',
+        ]);
+
+        $servico = app(NotaService::class);
+        $ca = $servico->importarCAAnterior($aluno, $disciplina, '12');
+
+        $this->assertSame(15.5, $ca);
+    }
+
     private function baseAcademica(): array
     {
         $roleAluno = Role::create([

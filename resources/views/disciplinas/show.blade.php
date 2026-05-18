@@ -65,7 +65,10 @@
                     @if($disciplina->leciona_12)
                         <x-badge type="info">12a Classe</x-badge>
                     @endif
-                    @if(!$disciplina->leciona_10 && !$disciplina->leciona_11 && !$disciplina->leciona_12)
+                    @if($disciplina->leciona_13)
+                        <x-badge type="info">13a Classe</x-badge>
+                    @endif
+                    @if(!$disciplina->leciona_10 && !$disciplina->leciona_11 && !$disciplina->leciona_12 && !$disciplina->leciona_13)
                         <x-badge type="gray">Nenhuma classe configurada</x-badge>
                     @endif
                 </div>

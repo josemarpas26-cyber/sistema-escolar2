@@ -115,6 +115,7 @@
                             <option value="10" data-numero="10" {{ old('classe') == '10' ? 'selected' : '' }}>10ª Classe</option>
                             <option value="11" data-numero="11" {{ old('classe') == '11' ? 'selected' : '' }}>11ª Classe</option>
                             <option value="12" data-numero="12" {{ old('classe') == '12' ? 'selected' : '' }}>12ª Classe</option>
+                            <option value="13" data-numero="13" {{ old('classe') == '13' ? 'selected' : '' }}>13ª Classe</option>
                         </select>
                         @error('classe')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>

@@ -11,6 +11,7 @@
     $disciplinas           = $disciplinas           ?? collect();
     $notas                 = $notas                 ?? collect();
     $notasAgrupadas        = $notasAgrupadas        ?? collect();
+    $classificacoesEnsinoMedio = $classificacoesEnsinoMedio ?? collect();
     $turmaSelecionada      = $turmaSelecionada      ?? null;
     $disciplinaSelecionada = $disciplinaSelecionada ?? null;
 
@@ -281,6 +282,103 @@
             <div class="nr-stat nr-stat-amber">
                 <div class="nr-stat-ico"><i class="fas fa-clock"></i></div>
                 <div><div class="nr-stat-val">{{ $totalPendentes }}</div><div class="nr-stat-lbl">Pendentes</div></div>
+            </div>
+        </div>
+        @endif
+
+        @if(($turmaSelecionada?->classe ?? null) == 13 && !$disciplinaSelecionada)
+        <div class="nr-card nr-mb">
+            <div class="nr-card-head">
+                <i class="fas fa-graduation-cap nr-head-icon"></i>
+                <span>Classificação Final do Ensino Médio</span>
+            </div>
+            <div class="nr-card-body">
+                @if($classificacoesEnsinoMedio->isNotEmpty())
+                <form method="POST" action="{{ route('notas.classificacoes-ensino-medio') }}">
+                    @csrf
+                    <input type="hidden" name="turma_id" value="{{ $turmaSelecionada->id }}">
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[980px] border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-100 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
+                                    <th class="px-4 py-3 text-left font-semibold">Nº</th>
+                                    <th class="px-4 py-3 text-left font-semibold">Aluno</th>
+                                    <th class="px-4 py-3 text-center font-semibold">PC</th>
+                                    <th class="px-4 py-3 text-center font-semibold">E. C.S</th>
+                                    <th class="px-4 py-3 text-center font-semibold">PAP</th>
+                                    <th class="px-4 py-3 text-center font-semibold">Média Final</th>
+                                    <th class="px-4 py-3 text-center font-semibold">Resultado</th>
+                                    <th class="px-4 py-3 text-left font-semibold">Observações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($classificacoesEnsinoMedio as $idx => $item)
+                                @php
+                                    $registo = $item['classificacao'];
+                                    $resultado = $item['resultado'];
+                                    $badgeClass = match($resultado) {
+                                        'Aprovado' => 'bg-green-100 text-green-700 border-green-300',
+                                        'Reprovado' => 'bg-red-100 text-red-700 border-red-300',
+                                        default => 'bg-amber-100 text-amber-700 border-amber-300',
+                                    };
+                                @endphp
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="px-4 py-3 text-center">{{ $loop->iteration }}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-gray-900">{{ $item['aluno']->name }}</div>
+                                        <div class="text-xs text-gray-500">{{ $item['aluno']->numero_processo ?? '—' }}</div>
+                                        <input type="hidden" name="classificacoes[{{ $idx }}][aluno_id]" value="{{ $item['aluno']->id }}">
+                                    </td>
+                                    <td class="px-4 py-3 text-center font-bold">{{ $item['pc'] !== null ? number_format($item['pc'], 0, ',', '.') : '—' }}</td>
+                                    <td class="px-4 py-3 text-center">
+                                        <input type="number"
+                                               name="classificacoes[{{ $idx }}][ecs]"
+                                               value="{{ old("classificacoes.$idx.ecs", $registo?->ecs) }}"
+                                               step="0.01" min="0" max="20"
+                                               class="nr-input" style="width:96px;margin:0 auto">
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <input type="number"
+                                               name="classificacoes[{{ $idx }}][pap]"
+                                               value="{{ old("classificacoes.$idx.pap", $registo?->pap) }}"
+                                               step="0.01" min="0" max="20"
+                                               class="nr-input" style="width:96px;margin:0 auto">
+                                    </td>
+                                    <td class="px-4 py-3 text-center font-bold">{{ $item['media_final'] !== null ? number_format($item['media_final'], 0, ',', '.') : '—' }}</td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold {{ $badgeClass }}">
+                                            {{ $resultado }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="text"
+                                               name="classificacoes[{{ $idx }}][observacoes]"
+                                               value="{{ old("classificacoes.$idx.observacoes", $registo?->observacoes) }}"
+                                               class="nr-input"
+                                               placeholder="Opcional">
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between gap-3 flex-wrap">
+                        <p class="text-xs text-gray-500">
+                            PC = média dos CFDs da 13ª classe. Média Final = (4 × PC + E.C.S + PAP) / 6.
+                        </p>
+                        <button type="submit" class="nr-btn nr-btn-primary">
+                            <i class="fas fa-save"></i> Guardar PAP / E.C.S
+                        </button>
+                    </div>
+                </form>
+                @else
+                <div class="nr-empty">
+                    <i class="fas fa-clipboard-list" style="font-size:2rem;color:#cbd5e1;display:block;margin-bottom:10px"></i>
+                    Nenhum aluno encontrado para a 13ª classe.
+                </div>
+                @endif
             </div>
         </div>
         @endif

@@ -117,7 +117,7 @@ class TurmaController extends Controller
                         ->where('turno', $request->input('turno'));
                 }),
             ],
-            'classe' => 'required|in:10,11,12',
+            'classe' => 'required|in:10,11,12,13',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
             'coordenador_turma_id' => [
@@ -141,6 +141,14 @@ class TurmaController extends Controller
         ]);
 
             $validated['nome'] = strtoupper(trim($validated['nome']));
+
+        $erroDisciplinas = $this->validarDisciplinasDaClasse($validated['classe'], $request->input('disciplinas', []));
+
+        if ($erroDisciplinas !== null) {
+            return back()
+                ->withInput()
+                ->withErrors(['disciplinas' => $erroDisciplinas]);
+        }
 
         // 3️⃣ Garantir que o ano selecionado é o ativo
         if ($validated['ano_letivo_id'] != $anoAtivo->id) {
@@ -247,7 +255,7 @@ class TurmaController extends Controller
                             ->where('turno', $request->input('turno'));
                     }),
             ],
-            'classe' => 'required|in:10,11,12',
+            'classe' => 'required|in:10,11,12,13',
             'curso_id' => 'required|exists:cursos,id',
             'ano_letivo_id' => 'required|exists:anos_letivos,id',
             'coordenador_turma_id' => [
@@ -274,6 +282,14 @@ class TurmaController extends Controller
         ]);
 
             $validated['nome'] = strtoupper(trim($validated['nome']));
+
+        $erroDisciplinas = $this->validarDisciplinasDaClasse($validated['classe'], $request->input('disciplinas', []));
+
+        if ($erroDisciplinas !== null) {
+            return back()
+                ->withInput()
+                ->withErrors(['disciplinas' => $erroDisciplinas]);
+        }
 
         $turmaExiste = Turma::where('nome', $validated['nome'])
             ->where('curso_id', $validated['curso_id'])
@@ -492,8 +508,8 @@ class TurmaController extends Controller
 
         $novaClasse = (int) $turma->classe + 1;
 
-        if ($novaClasse > 12) {
-            return back()->with('error', 'Alunos da 12ª classe não podem ser promovidos.');
+        if ($novaClasse > 13) {
+            return back()->with('error', 'Alunos da 13ª classe não podem ser promovidos.');
         }
 
         $turmaExistente = Turma::where('curso_id', $turma->curso_id)
@@ -521,7 +537,7 @@ class TurmaController extends Controller
         // Guarda: turma sem disciplinas
         // ----------------------------------------------------------------
 
-        $turma->loadMissing('disciplinas.cursos');
+        $turma->loadMissing(['disciplinas.cursos', 'curso.disciplinas.cursos']);
 
         $disciplinas      = $turma->disciplinas;
         $disciplinaIds    = $disciplinas->pluck('id');
@@ -606,8 +622,14 @@ class TurmaController extends Controller
         // Transacção: criar turma + mover alunos aprovados
         // ----------------------------------------------------------------
 
+        $disciplinasDestino = $this->disciplinasParaClasseSeguinte($turma, (string) $novaClasse);
+
+        if ($disciplinasDestino->isEmpty()) {
+            return back()->with('error', 'Não há disciplinas configuradas para a classe seguinte neste curso.');
+        }
+
         $novaTurma = DB::transaction(function () use (
-        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $disciplinaIds
+        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $disciplinaIds, $disciplinasDestino
         ) {
             $novaTurma = Turma::create([
                 'nome'                 => $turma->nome,
@@ -616,10 +638,11 @@ class TurmaController extends Controller
                 'ano_letivo_id'        => $proximoAno->id,
                 'coordenador_turma_id' => $turma->coordenador_turma_id,
                 'capacidade'           => $turma->capacidade,
+                'turno'                => $turma->turno,
                 'ativo'                => true,
             ]);
 
-            $novaTurma->disciplinas()->attach($turma->disciplinas->pluck('id'));
+            $novaTurma->disciplinas()->attach($disciplinasDestino->pluck('id'));
 
             $notasFinais = Nota::where('turma_id', $turma->id)
                 ->where('ano_letivo_id', $turma->ano_letivo_id)
@@ -719,6 +742,39 @@ class TurmaController extends Controller
         ]);
 
         return back()->with('success', $mensagemSucesso);
+    }
+
+    private function validarDisciplinasDaClasse(string $classe, array $disciplinasIds): ?string
+    {
+        if (empty($disciplinasIds)) {
+            return null;
+        }
+
+        $disciplinasInvalidas = Disciplina::query()
+            ->whereIn('id', $disciplinasIds)
+            ->get()
+            ->filter(fn (Disciplina $disciplina) => ! $disciplina->isLecionadaEm($classe))
+            ->pluck('nome')
+            ->values();
+
+        if ($disciplinasInvalidas->isEmpty()) {
+            return null;
+        }
+
+        return 'As seguintes disciplinas não estão configuradas para a '.$classe.'ª classe: '
+            .$disciplinasInvalidas->implode(', ').'.';
+    }
+
+    private function disciplinasParaClasseSeguinte(Turma $turma, string $classe): \Illuminate\Support\Collection
+    {
+        $disciplinas = $turma->curso->disciplinas
+            ->merge($turma->disciplinas)
+            ->unique('id')
+            ->values();
+
+        return $disciplinas
+            ->filter(fn (Disciplina $disciplina) => $disciplina->isLecionadaEm($classe))
+            ->values();
     }
 
     private function montarNomeCompleto(array $dados): string
