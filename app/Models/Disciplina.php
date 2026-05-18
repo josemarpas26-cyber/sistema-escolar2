@@ -85,7 +85,7 @@ class Disciplina extends Model
             $relacaoCurso = $this->cursos->firstWhere('id', $cursoId);
 
             if (! $relacaoCurso) {
-                return $this->disciplina_terminal && $classeAtual === 10;
+                return $this->disciplinaTerminalInferida() === $classeAtual;
             }
 
             $anoTerminal = $relacaoCurso->pivot->ano_terminal;
@@ -107,11 +107,32 @@ class Disciplina extends Model
             ->first();
 
         if (! $relacao) {
-            return $this->disciplina_terminal ? 10 : null;
+            return $this->disciplinaTerminalInferida();
         }
 
         return $relacao->pivot->ano_terminal !== null
             ? (int) $relacao->pivot->ano_terminal
             : null;
+    }
+
+    private function disciplinaTerminalInferida(): ?int
+    {
+        if (! $this->disciplina_terminal) {
+            return null;
+        }
+
+        if ($this->leciona_13 && ! $this->leciona_10 && ! $this->leciona_11 && ! $this->leciona_12) {
+            return 13;
+        }
+
+        if ($this->leciona_12 && ! $this->leciona_10 && ! $this->leciona_11) {
+            return 12;
+        }
+
+        if ($this->leciona_11 && ! $this->leciona_10) {
+            return 11;
+        }
+
+        return 10;
     }
 }
