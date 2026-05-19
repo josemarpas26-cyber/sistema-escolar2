@@ -190,6 +190,16 @@ class NotaController extends Controller
             'disciplina_id' => $disciplinaId,
         ]);
 
+        if (($turmaToken && $turmaId === null) || ($disciplinaToken && $disciplinaId === null)) {
+            abort(404);
+        }
+
+        $request->merge([
+            'turma_id' => $turmaId,
+            'disciplina_id' => $disciplinaId,
+        ]);
+
+        
         $notas = null;
         $notasAgrupadas = null;
         $turmaSelecionada = null;
