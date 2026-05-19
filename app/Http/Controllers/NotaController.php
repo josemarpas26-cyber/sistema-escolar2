@@ -121,7 +121,7 @@ class NotaController extends Controller
             $turma = Turma::findOrFail($turmaId);
             $disciplina = Disciplina::findOrFail($disciplinaId);
             $alunos = $turma->alunos()
-                ->wherePivot('status', 'matriculado')
+                ->wherePivotIn('status', ['matriculado', 'recurso'])
                 ->orderBy('users.name')
                 ->get();
 
@@ -180,6 +180,15 @@ class NotaController extends Controller
         $disciplinaToken = $request->query('disciplina_id');
         $turmaId = IdMask::decode($turmaToken);
         $disciplinaId = IdMask::decode($disciplinaToken);
+
+        if (($turmaToken && $turmaId === null) || ($disciplinaToken && $disciplinaId === null)) {
+            abort(404);
+        }
+
+        $request->merge([
+            'turma_id' => $turmaId,
+            'disciplina_id' => $disciplinaId,
+        ]);
 
         if (($turmaToken && $turmaId === null) || ($disciplinaToken && $disciplinaId === null)) {
             abort(404);
