@@ -21,7 +21,7 @@ class NotaService
 
     public function criarNotasParaTurma(Turma $turma, Disciplina $disciplina): int
     {
-        $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+        $alunos = $turma->alunos()->wherePivotIn('status', ['matriculado', 'recurso'])->get();
         $contador = 0;
 
         foreach ($alunos as $aluno) {
@@ -98,7 +98,7 @@ class NotaService
             ];
         }
 
-        $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+        $alunos = $turma->alunos()->wherePivotIn('status', ['matriculado', 'recurso'])->get();
         $sucesso = 0;
         $erro = 0;
         $bloqueadas = 0;

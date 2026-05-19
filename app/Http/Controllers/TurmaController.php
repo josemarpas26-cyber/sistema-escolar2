@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Disciplina;
 use App\Models\Nota;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Models\HistoricoAcademico;
@@ -555,11 +556,11 @@ class TurmaController extends Controller
         // ----------------------------------------------------------------
 
         $todosAlunos = $turma->alunos()
-            ->wherePivot('status', 'matriculado')
+            ->wherePivotIn('status', ['matriculado', ResultadoAlunoTurmaService::STATUS_RECURSO])
             ->get();
 
         if ($todosAlunos->isEmpty()) {
-            return back()->with('warning', 'A turma não tem alunos matriculados.');
+            return back()->with('warning', 'A turma não tem alunos matriculados ou em recurso.');
         }
 
         // Buscar contagens de aprovação por aluno — UMA query
@@ -601,6 +602,10 @@ class TurmaController extends Controller
         }
 
         if ($aprovados->isEmpty()) {
+            if ($emRecurso->isNotEmpty()) {
+                $this->marcarAlunosEmRecurso($turma, $emRecurso);
+            }
+
             $mensagem = 'Nenhum aluno cumpre os critérios de aprovação.';
 
             if ($incompletos->isNotEmpty()) {
@@ -629,7 +634,7 @@ class TurmaController extends Controller
         }
 
         $novaTurma = DB::transaction(function () use (
-        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $disciplinaIds, $disciplinasDestino
+        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $emRecurso, $disciplinaIds, $disciplinasDestino
         ) {
             $novaTurma = Turma::create([
                 'nome'                 => $turma->nome,
@@ -687,6 +692,8 @@ class TurmaController extends Controller
                 ]);
             }
 
+            $this->marcarAlunosEmRecurso($turma, $emRecurso);
+
             return $novaTurma;
         });
 
@@ -714,6 +721,15 @@ class TurmaController extends Controller
                 'success',
                 "Turma promovida para {$novaClasse}ª classe. " . implode(' ', $partes)
             );
+    }
+
+    private function marcarAlunosEmRecurso(Turma $turma, Collection $alunos): void
+    {
+        foreach ($alunos as $aluno) {
+            $turma->alunos()->updateExistingPivot($aluno->id, [
+                'status' => ResultadoAlunoTurmaService::STATUS_RECURSO,
+            ]);
+        }
     }
 
     private function atualizarStatusAluno(Turma $turma, User $aluno, string $status, string $mensagemSucesso)
