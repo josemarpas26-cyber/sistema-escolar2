@@ -15,6 +15,7 @@ php artisan route:clear
 php artisan view:clear
 
 php artisan migrate --force --no-interaction
+php artisan db:seed --force --no-interaction || true
 
 php artisan config:cache
 php artisan route:cache || true
