@@ -58,7 +58,7 @@
          class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-5">
         @csrf
 
-        <select name="turma_id" class="form-input" required>
+        <select name="turma_id" id="turma_id_boletim_massa" class="form-input" required>
             <option value="">Turma</option>
             @foreach($turmas as $turma)
                 <option value="{{ $turma->id }}">
@@ -67,10 +67,10 @@
             @endforeach
         </select>
 
-        <select name="aluno_id" class="form-input">
+        <select name="aluno_id" id="aluno_id_boletim_massa" class="form-input">
             <option value="">Todos os alunos </option>
             @foreach($alunos as $aluno)
-                <option value="{{ $aluno->id }}">
+                <option value="{{ $aluno->id }}" data-turmas="{{ $aluno->turmas->pluck('id')->implode(',') }}">
                     {{ $aluno->name }} ({{ $aluno->numero_processo }})
                 </option>
             @endforeach
@@ -300,6 +300,38 @@
             window.location.href = url.toString();
         });
     });
+    // Filtro aluno/turma do boletim em massa
+
+    const turmaBoletimMassa = document.getElementById('turma_id_boletim_massa');
+    const alunoBoletimMassa = document.getElementById('aluno_id_boletim_massa');
+
+    function filtrarAlunosBoletimMassa() {
+        if (!turmaBoletimMassa || !alunoBoletimMassa) return;
+
+        const turmaId = turmaBoletimMassa.value;
+        const options = Array.from(alunoBoletimMassa.options);
+
+        options.forEach((option, idx) => {
+            if (idx === 0) {
+                option.hidden = false;
+                return;
+            }
+
+            const turmas = (option.dataset.turmas || '').split(',').filter(Boolean);
+            const pertence = !turmaId || turmas.includes(turmaId);
+            option.hidden = !pertence;
+
+            if (!pertence && option.selected) {
+                alunoBoletimMassa.value = '';
+            }
+        });
+    }
+
+    if (turmaBoletimMassa) {
+        turmaBoletimMassa.addEventListener('change', filtrarAlunosBoletimMassa);
+        filtrarAlunosBoletimMassa();
+    }
+
     // Form da pauta geral
 
 </script>

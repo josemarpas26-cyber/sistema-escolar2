@@ -39,6 +39,8 @@ class RelatorioController extends Controller
             ->get();
 
         $alunos = User::alunos()
+            ->with(['turmas' => fn ($q) => $q->select('turmas.id', 'ano_letivo_id')
+                ->when($anoLetivoSelecionadoId, fn ($qq) => $qq->where('ano_letivo_id', $anoLetivoSelecionadoId))])
             ->when($anoLetivoSelecionadoId, fn ($q) => $q->whereHas('turmas', fn ($qq) => $qq
                 ->where('ano_letivo_id', $anoLetivoSelecionadoId)
                 ->where('turma_aluno.status', 'matriculado')))
@@ -123,6 +125,8 @@ class RelatorioController extends Controller
                 ->get();
 
             $alunos = User::alunos()
+                ->with(['turmas' => fn ($q) => $q->select('turmas.id', 'ano_letivo_id')
+                    ->whereIn('turmas.id', $turmaIdsPermitidas)])
                 ->whereHas('turmas', fn ($q) => $q->whereIn('turmas.id', $turmaIdsPermitidas))
                 ->orderBy('name')
                 ->get();
