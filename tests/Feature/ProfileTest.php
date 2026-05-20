@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Notifications\EmailAlteradoNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -67,6 +70,32 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         Notification::assertNothingSent();
+    }
+
+    public function test_profile_photo_is_uploaded_to_the_configured_disk(): void
+    {
+        Storage::fake('cloudinary');
+        config()->set('filesystems.profile_photos_disk', 'cloudinary');
+
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile', [
+                'name' => 'Test User',
+                'email' => $user->email,
+                'foto_perfil' => UploadedFile::fake()->image('avatar.jpg'),
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+
+        $this->assertStringStartsWith('cloudinary:fotos_perfil/', $user->foto_perfil);
+        Storage::disk('cloudinary')->assertExists(Str::after($user->foto_perfil, 'cloudinary:'));
     }
 
     public function test_user_can_delete_their_account(): void

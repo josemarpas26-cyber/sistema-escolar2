@@ -218,7 +218,18 @@ CACHE_DRIVER=file
 SESSION_DRIVER=file
 SESSION_LIFETIME=120
 QUEUE_CONNECTION=sync
+
+# —— Fotos de perfil (recomendado no Laravel Cloud) ————————————————
+PROFILE_PHOTOS_DISK=cloudinary
+CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+# Alternativa ao CLOUDINARY_URL, se preferir separar:
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_KEY=
+CLOUDINARY_SECRET=
+CLOUDINARY_SECURE=true
 ```
+
+No Laravel Cloud, defina `PROFILE_PHOTOS_DISK=cloudinary` para que as fotos de perfil nao dependam do disco local efemero da hospedagem.
 
 ---
 

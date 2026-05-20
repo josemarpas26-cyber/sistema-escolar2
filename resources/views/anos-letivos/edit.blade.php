@@ -155,11 +155,11 @@
             <x-card title="Estatísticas" icon="fas fa-chart-bar">
                 <div class="space-y-3">
                     <div class="text-center p-3 bg-primary-50 rounded-lg">
-                        <div class="text-2xl font-bold text-primary-600">{{ $anoLetivo->turmas->count() }}</div>
+                        <div class="text-xl lg:text-2xl font-bold text-primary-600">{{ $anoLetivo->turmas->count() }}</div>
                         <div class="text-xs text-gray-600">Turmas</div>
                     </div>
                     <div class="text-center p-3 bg-green-50 rounded-lg">
-                        <div class="text-2xl font-bold text-green-600">{{ $anoLetivo->turmas->sum('total_alunos') }}</div>
+                        <div class="text-xl lg:text-2xl font-bold text-green-600">{{ $anoLetivo->turmas->sum('total_alunos') }}</div>
                         <div class="text-xs text-gray-600">Total de Alunos</div>
                     </div>
                 </div>

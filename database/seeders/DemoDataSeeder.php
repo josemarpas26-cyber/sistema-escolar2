@@ -146,7 +146,7 @@ class DemoDataSeeder extends Seeder
             ['nome' => '2025/2026'],
             [
                 'data_inicio' => '2025-04-20',
-                'data_fim'    => '2026-05-30',
+                'data_fim'    => '2026-12-19',
                 'ativo'       => true,
                 'encerrado'   => false,
             ]
