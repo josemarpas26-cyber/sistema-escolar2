@@ -8,7 +8,7 @@
     $podeReabrirNota = auth()->user()?->hasPermission('notas.reabrir') ?? false;
     $somenteLeitura = $notaFinalizada && !$podeReabrirNota;
     $bloquearMacDireta = auth()->user()?->isAdmin() || auth()->user()?->isSecretaria();
-    $camposCaSomenteLeitura = $camposCaSomenteLeitura ?? ['ca_10' => false, 'ca_11' => false];
+    $camposCaSomenteLeitura = $camposCaSomenteLeitura ?? ['ca_10' => false, 'ca_11' => false, 'ca_12' => false];
 @endphp
 
 <div class="max-w-4xl mx-auto">
@@ -125,12 +125,14 @@
                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pp3')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
+                @if($nota->turma->classe != 13)
                 <div>
                     <label class="label">PG (Prova Global)</label>
                     <input type="number" name="pg" value="{{ old('pg', $nota->pg) }}" 
                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pg')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
+                @endif
             </div>
 
         </x-card>
@@ -158,7 +160,7 @@
                 </div>
                 @endif
 
-                @if($nota->turma->classe == 12)
+                @if($nota->turma->classe >= 12)
                 <div>
                     <label class="label">CA da 11ª <span class="text-blue-700 font-semibold">(Destaque)</span></label>
                     <input type="number" name="ca_11" value="{{ old('ca_11', $nota->ca_11) }}"
@@ -168,6 +170,20 @@
                         <p class="text-xs text-gray-500 mt-1">Somente leitura: aluno já associado a turma da 11ª no ano anterior.</p>
                     @else
                         <p class="text-xs text-gray-500 mt-1">Preencher manualmente para transferido sem histórico interno da 11ª. Alterações ficam auditadas nos logs.</p>
+                    @endif
+                </div>
+                @endif
+
+                @if($nota->turma->classe >= 13)
+                <div>
+                    <label class="label">CA da 12ª <span class="text-blue-700 font-semibold">(Destaque)</span></label>
+                    <input type="number" name="ca_12" value="{{ old('ca_12', $nota->ca_12) }}"
+                           step="0.01" min="-1" max="20" class="input border-blue-300 focus:ring-blue-400"
+                           onblur="formatNota(this)" {{ ($somenteLeitura || $camposCaSomenteLeitura['ca_12']) ? 'disabled' : '' }}>
+                    @if($camposCaSomenteLeitura['ca_12'])
+                        <p class="text-xs text-gray-500 mt-1">Somente leitura: aluno já associado a turma da 12ª no ano anterior.</p>
+                    @else
+                        <p class="text-xs text-gray-500 mt-1">Preencher manualmente para transferido sem histórico interno da 12ª. Alterações ficam auditadas nos logs.</p>
                     @endif
                 </div>
                 @endif

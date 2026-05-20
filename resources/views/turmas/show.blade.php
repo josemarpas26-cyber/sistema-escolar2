@@ -13,7 +13,7 @@
         <i class="fas fa-edit mr-2"></i>
         Editar
     </a>
-    @if($turma->classe < 12)
+    @if($turma->classe < 13)
     <form method="POST" action="{{ route('turmas.promover', $turma) }}" class="inline">
         @csrf
         <button type="submit" class="btn btn-success" 
@@ -119,8 +119,8 @@
                                         {{ \Carbon\Carbon::parse($aluno->pivot->data_matricula)->format('d/m/Y') }}
                                     </td>
                                     <td class="px-6 py-4 text-center">
-                                                                                <x-badge type="{{ $aluno->pivot->status === 'matriculado' ? 'success' : ($aluno->pivot->status === 'aprovado' ? 'primary' : ($aluno->pivot->status === 'reprovado' ? 'danger' : 'gray')) }}">
-                                            {{ ucfirst($aluno->pivot->status) }}
+                                                                                <x-badge type="{{ $aluno->pivot->status === 'matriculado' ? 'success' : ($aluno->pivot->status === 'aprovado' ? 'primary' : ($aluno->pivot->status === 'reprovado' ? 'danger' : ($aluno->pivot->status === 'recurso' ? 'warning' : 'gray'))) }}">
+                                            {{ $aluno->pivot->status === 'recurso' ? 'Recurso' : ucfirst($aluno->pivot->status) }}
                                         </x-badge>
 
                                     </td>

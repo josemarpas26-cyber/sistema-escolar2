@@ -115,8 +115,8 @@
                             <td class="px-6 py-4">{{ $turma->curso->nome }}</td>
                             <td class="px-6 py-4">{{ $turma->anoLetivo->nome }}</td>
                             <td class="px-6 py-4 text-center">
-                                <x-badge type="{{ $turma->pivot->status === 'matriculado' ? 'success' : 'gray' }}">
-                                    {{ ucfirst($turma->pivot->status) }}
+                                <x-badge type="{{ $turma->pivot->status === 'matriculado' ? 'success' : ($turma->pivot->status === 'recurso' ? 'warning' : 'gray') }}">
+                                    {{ $turma->pivot->status === 'recurso' ? 'Recurso' : ucfirst($turma->pivot->status) }}
                                 </x-badge>
                             </td>
                             <td class="px-6 py-4">

@@ -89,6 +89,8 @@ Route::middleware(['auth'])->group(function () {
         ->whereIn('trimestre', ['1', '2', '3']);
     Route::post('notas/recurso', [NotaController::class, 'lancarRecurso'])
         ->name('notas.lancarRecurso');
+    Route::post('notas/classificacoes-ensino-medio', [NotaController::class, 'salvarClassificacoesEnsinoMedio'])
+        ->name('notas.classificacoes-ensino-medio');
     Route::post('notas/inicializar-pauta', [NotaController::class, 'inicializarPauta'])
         ->name('notas.inicializar-pauta');
     Route::post('notas/importar-cas', [NotaController::class, 'importarCAs'])

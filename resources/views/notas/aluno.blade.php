@@ -14,6 +14,7 @@
     $formatNota = function ($valor, $fallback = 'Sem dado') {
         return $valor !== null ? number_format((float) $valor, 2) : $fallback;
     };
+    $classificacaoEnsinoMedioAtual = $classificacaoEnsinoMedioAtual ?? null;
 @endphp
 
 @if($turmaAtual)
@@ -63,6 +64,41 @@
             color="red"
         />
     </div>
+
+    @if(($turmaAtual->classe ?? null) == 13 && $classificacaoEnsinoMedioAtual)
+    <x-card class="mb-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h4 class="text-lg font-semibold text-gray-900">Classificação Final do Ensino Médio</h4>
+                <p class="text-sm text-gray-600">PC = média dos CFDs da 13ª classe. Média Final = (4 × PC + E.C.S + PAP) / 6.</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-600">Resultado</div>
+                <div class="text-xl font-bold {{ $classificacaoEnsinoMedioAtual['resultado'] === 'Aprovado' ? 'text-green-600' : ($classificacaoEnsinoMedioAtual['resultado'] === 'Reprovado' ? 'text-red-600' : 'text-amber-600') }}">
+                    {{ $classificacaoEnsinoMedioAtual['resultado'] }}
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div class="rounded-xl border border-gray-200 p-4">
+                <div class="text-xs uppercase tracking-wide text-gray-500">PC</div>
+                <div class="mt-2 text-2xl font-bold text-gray-900">{{ $classificacaoEnsinoMedioAtual['pc'] !== null ? number_format($classificacaoEnsinoMedioAtual['pc'], 0) : '-' }}</div>
+            </div>
+            <div class="rounded-xl border border-gray-200 p-4">
+                <div class="text-xs uppercase tracking-wide text-gray-500">E. C.S</div>
+                <div class="mt-2 text-2xl font-bold text-gray-900">{{ $classificacaoEnsinoMedioAtual['classificacao']?->ecs !== null ? number_format($classificacaoEnsinoMedioAtual['classificacao']->ecs, 2) : '-' }}</div>
+            </div>
+            <div class="rounded-xl border border-gray-200 p-4">
+                <div class="text-xs uppercase tracking-wide text-gray-500">PAP</div>
+                <div class="mt-2 text-2xl font-bold text-gray-900">{{ $classificacaoEnsinoMedioAtual['classificacao']?->pap !== null ? number_format($classificacaoEnsinoMedioAtual['classificacao']->pap, 2) : '-' }}</div>
+            </div>
+            <div class="rounded-xl border border-gray-200 p-4">
+                <div class="text-xs uppercase tracking-wide text-gray-500">Média Final</div>
+                <div class="mt-2 text-2xl font-bold text-gray-900">{{ $classificacaoEnsinoMedioAtual['media_final'] !== null ? number_format($classificacaoEnsinoMedioAtual['media_final'], 0) : '-' }}</div>
+            </div>
+        </div>
+    </x-card>
+    @endif
 
     <!-- Tabela de Notas -->
     <x-card title="Notas por Disciplina" icon="fas fa-clipboard-list">

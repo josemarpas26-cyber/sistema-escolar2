@@ -21,7 +21,7 @@ class NotaService
 
     public function criarNotasParaTurma(Turma $turma, Disciplina $disciplina): int
     {
-        $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+        $alunos = $turma->alunos()->wherePivotIn('status', ['matriculado', 'recurso'])->get();
         $contador = 0;
 
         foreach ($alunos as $aluno) {
@@ -45,7 +45,7 @@ class NotaService
 
     public function importarCAAnterior(User $aluno, Disciplina $disciplina, string $classeBuscada): ?float
     {
-        if ((int) $classeBuscada < 10 || (int) $classeBuscada > 11) {
+        if ((int) $classeBuscada < 10 || (int) $classeBuscada > 12) {
             return null;
         }
 
@@ -98,7 +98,7 @@ class NotaService
             ];
         }
 
-        $alunos = $turma->alunos()->wherePivot('status', 'matriculado')->get();
+        $alunos = $turma->alunos()->wherePivotIn('status', ['matriculado', 'recurso'])->get();
         $sucesso = 0;
         $erro = 0;
         $bloqueadas = 0;
@@ -184,7 +184,7 @@ class NotaService
                 2 => $nota->mac2 !== null && $nota->pp2 !== null && $nota->pt2 !== null && $nota->mt2 !== null,
                 3 => $nota->mac3 !== null
                     && $nota->pp3 !== null
-                    && $nota->pg !== null
+                    && ((int) $nota->turma->classe === 13 || $nota->pg !== null)
                     && $nota->mt3 !== null
                     && $nota->cf !== null
                     && $nota->ca !== null,
@@ -285,11 +285,19 @@ class NotaService
             $nota->ca_11 = $this->importarCAAnterior($nota->aluno, $nota->disciplina, '11');
         }
 
+        if ($classeAtual >= 13 && $nota->disciplina->leciona_12 && $nota->ca_12 === null) {
+            $nota->ca_12 = $this->importarCAAnterior($nota->aluno, $nota->disciplina, '12');
+        }
+
         if ($classeAtual >= 11 && $nota->disciplina->leciona_10 && $nota->ca_10 === null) {
             return false;
         }
 
         if ($classeAtual >= 12 && $nota->disciplina->leciona_11 && $nota->ca_11 === null) {
+            return false;
+        }
+
+        if ($classeAtual >= 13 && $nota->disciplina->leciona_12 && $nota->ca_12 === null) {
             return false;
         }
 

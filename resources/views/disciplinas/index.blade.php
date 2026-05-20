@@ -55,6 +55,9 @@
                             @if($disciplina->leciona_12)
                             <x-badge type="info">12a</x-badge>
                             @endif
+                            @if($disciplina->leciona_13)
+                            <x-badge type="info">13a</x-badge>
+                            @endif
                         </div>
                     </td>
                     <td class="px-6 py-4 text-center">

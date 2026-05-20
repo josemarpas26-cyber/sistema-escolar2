@@ -101,6 +101,55 @@ class NotaRecalculoDinamicoTest extends TestCase
         $this->assertEquals(15.40, (float) $nota->ca);
     }
 
+    public function test_recalcula_decima_terceira_sem_pg_e_com_ca_da_decima_segunda(): void
+    {
+        $nota = new Nota([
+            'ano_letivo_id' => 1,
+            'mac1' => 15,
+            'pp1' => 15,
+            'pt1' => 15,
+            'mac2' => 15,
+            'pp2' => 15,
+            'pt2' => 15,
+            'mac3' => 16,
+            'pp3' => 14,
+            'ca_12' => 15,
+        ]);
+
+        $nota->setRelation('turma', new Turma(['classe' => 13]));
+        $nota->setRelation('disciplina', new Disciplina([
+            'leciona_10' => false,
+            'leciona_11' => false,
+            'leciona_12' => true,
+            'leciona_13' => true,
+        ]));
+
+        $config = $this->configuracao([
+            1 => [
+                ['codigo' => 'mac1', 'peso' => 1, 'ativo' => true],
+                ['codigo' => 'pp1', 'peso' => 1, 'ativo' => true],
+                ['codigo' => 'pt1', 'peso' => 1, 'ativo' => true],
+            ],
+            2 => [
+                ['codigo' => 'mac2', 'peso' => 1, 'ativo' => true],
+                ['codigo' => 'pp2', 'peso' => 1, 'ativo' => true],
+                ['codigo' => 'pt2', 'peso' => 1, 'ativo' => true],
+            ],
+            3 => [
+                ['codigo' => 'mac3', 'peso' => 1, 'ativo' => true],
+                ['codigo' => 'pp3', 'peso' => 1, 'ativo' => true],
+            ],
+        ], 40);
+
+        $nota->recalcular($config);
+
+        $this->assertEquals(15.00, (float) $nota->mft2);
+        $this->assertEquals(15.00, (float) $nota->mt3);
+        $this->assertEquals(15.00, (float) $nota->cf);
+        $this->assertEquals(15.00, (float) $nota->ca);
+        $this->assertEquals(15.00, (float) $nota->cfd);
+    }
+
     private function configuracao(array $provasPorPeriodo, float $pesoPg): ConfiguracaoAvaliacao
     {
         $config = new ConfiguracaoAvaliacao([

@@ -105,6 +105,14 @@
                                    class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
                             <span class="ml-2 group-hover:text-gray-900 transition-colors">12a Classe</span>
                         </label>
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="checkbox"
+                                   name="leciona_13"
+                                   value="1"
+                                   {{ old('leciona_13', isset($disciplina) ? (bool) $disciplina->leciona_13 : false) ? 'checked' : '' }}
+                                   class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
+                            <span class="ml-2 group-hover:text-gray-900 transition-colors">13a Classe</span>
+                        </label>
                     </div>
 
                     @error('leciona_10')
@@ -174,6 +182,9 @@
                                                 </option>
                                                 <option value="12" {{ ($terminaisPorCurso[$curso->id] ?? '') === '12' ? 'selected' : '' }}>
                                                     12ª classe
+                                                </option>
+                                                <option value="13" {{ ($terminaisPorCurso[$curso->id] ?? '') === '13' ? 'selected' : '' }}>
+                                                    13ª classe
                                                 </option>
                                             </select>
                                         </td>
