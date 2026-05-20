@@ -15,7 +15,7 @@
 
 {{-- Filtros --}}
 <x-card class="mb-6">
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
          @csrf
         <input type="text" name="search" value="{{ request('search') }}"
             placeholder="Pesquisar por nome ou n.º de processo..." class="input">
@@ -101,7 +101,7 @@
 <x-card>
     @if($alunos->count() > 0)
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
+         <table class="w-full min-w-[900px] divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
                     @if(auth()->user()->isAdmin() || auth()->user()->isSecretaria())

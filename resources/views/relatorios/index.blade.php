@@ -7,7 +7,7 @@
 
     {{-- ================= BOLETIM ================= --}}
     <x-card title="Boletim do Aluno" icon="fas fa-file-pdf">
-        <form method="GET" action="{{ route('relatorios.boletim') }}" class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-5">
+        <form method="GET" action="{{ route('relatorios.boletim') }}" class="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             @csrf
             <select name="aluno_id" class="form-input" required>
                 <option value="">Aluno</option>
@@ -55,7 +55,7 @@
 {{-- ================= BOLETINS EM MASSA ================= --}}
 <x-card title="Boletins em Massa (turma completa)" icon="fas fa-file-excel">
     <form method="GET" action="{{ route('relatorios.boletins-massa') }}"
-         class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-5">
+        class="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         @csrf
 
         <select name="turma_id" id="turma_id_boletim_massa" class="form-input" required>
@@ -113,7 +113,7 @@
         <form method="GET"
               id="form-pauta"
               action="{{ route('relatorios.pauta', ['turma' => $turmas->first()?->id ?? 1]) }}"
-              class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-5">
+              class="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
     @csrf
 
             <select name="turma_id" id="turma_id" class="form-input" required>
@@ -162,7 +162,7 @@
     <form method="GET"
           id="form-pauta-geral"
           action="{{ route('relatorios.pauta-geral', ['turma' => $turmas->first()?->id ?? 1]) }}"
-          class="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
+          class="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @csrf
 
         <select name="turma_id" id="turma_id_geral" class="form-input" required>
@@ -199,7 +199,7 @@
 </x-card>
 
     {{-- ================= HISTÓRICOS ================= --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
         <x-card title="Histórico Académico do Aluno" icon="fas fa-history">
             <form method="GET" action="{{ route('relatorios.historico') }}" class="mt-1 space-y-4">

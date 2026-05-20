@@ -11,7 +11,7 @@
 @endphp
 
 @section('header-actions')
-<div class="flex space-x-2">
+<div class="flex flex-wrap items-center gap-2">
     <a href="{{ route('logs.index') }}" class="btn btn-outline">
         <i class="fas fa-list mr-2"></i>
         Ver Lista
@@ -24,7 +24,7 @@
 @endsection
 
 @section('content')
-<div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+<div class="mb-6 grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
     <x-stat-card title="Total de Logs" :value="$totalLogs" icon="fas fa-clipboard-list" color="primary" />
     <x-stat-card title="Hoje" :value="$logsHoje" icon="fas fa-calendar-day" color="green" />
     <x-stat-card title="Esta Semana" :value="$logsSemana" icon="fas fa-calendar-week" color="blue" />

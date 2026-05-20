@@ -765,6 +765,8 @@
 
 /* ─── Botões ─── */
 .nr-btn {
+    font-size: .75rem;
+    padding: 0 12px;
     display: inline-flex; align-items: center; gap: 6px;
     height: 38px; padding: 0 16px; border-radius: 6px;
     font-size: .82rem; font-weight: 600; text-decoration: none;
@@ -812,6 +814,7 @@
 }
 
 .nr-op-form {
+    width: 100%;
     display: inline-flex;
     flex-wrap: wrap;
     gap: 6px;

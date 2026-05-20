@@ -459,18 +459,27 @@
 
         .topbar-title { flex: 1; min-width: 0; }
         .topbar-page-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             font-size: 20px; font-weight: 700;
             color: var(--tx-1);
             letter-spacing: -.4px; line-height: 1.2;
             word-break: break-word;
         }
         .topbar-breadcrumb {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             display: none; align-items: center; gap: 6px;
             font-size: 11.5px; color: var(--tx-4);
             margin-top: 1px;
         }
-        @media (min-width: 640px) { .topbar-breadcrumb { display: flex; } }
-        .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        @media (min-width: 640px) { .topbar-breadcrumb {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; display: flex; } }
+        .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 
         .theme-toggle {
             width: 36px; height: 36px;
@@ -526,6 +535,9 @@
                 padding-inline: 14px;
             }
             .topbar-page-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
                 font-size: 18px;
             }
             .topbar-actions {

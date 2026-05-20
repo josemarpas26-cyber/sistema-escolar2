@@ -13,7 +13,7 @@
 
     @if($turmas->count() > 0)
     <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;">
+         <table style="width:100%;min-width:900px;border-collapse:collapse;">
             <thead>
                 <tr style="background:var(--gray-50);border-bottom:1px solid var(--surface-border);">
                     <th style="padding:10px 20px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Turma</th>

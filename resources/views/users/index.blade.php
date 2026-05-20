@@ -13,7 +13,8 @@
 
 <!-- Filters -->
 <div style="background:var(--surface-card);border:1px solid var(--surface-border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;box-shadow:var(--shadow-sm);">
-    <form method="GET" action="{{ route('users.index') }}" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+    <form method="GET" action="{{ route('users.index') }}" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;">
+        <style>@media(max-width:1024px){form[method="GET"][action*="users"]{grid-template-columns:1fr 1fr!important}}@media(max-width:640px){form[method="GET"][action*="users"]{grid-template-columns:1fr!important}}</style>
         @csrf
         <div>
             <label class="label">Pesquisar</label>
@@ -57,7 +58,7 @@
 
     @if($users->count() > 0)
     <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;">
+        <table style="width:100%;min-width:640px;border-collapse:collapse;">
             <thead>
                 <tr style="background:var(--gray-50);border-bottom:1px solid var(--surface-border);">
                     <th style="padding:10px 20px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Utilizador</th>

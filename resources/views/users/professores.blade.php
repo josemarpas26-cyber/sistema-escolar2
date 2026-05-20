@@ -14,7 +14,7 @@
 <x-card>
     @if($professores->count() > 0)
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
+         <table class="w-full min-w-[640px] divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Professor</th>
