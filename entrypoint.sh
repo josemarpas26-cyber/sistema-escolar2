@@ -1,12 +1,24 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-PORT=${PORT:-8000}
+PORT="${PORT:-8080}"
 
+if [ ! -f .env ]; then
+  cp .env.example .env
+fi
 
+php artisan key:generate --force --no-interaction || true
+php artisan storage:link || true
 
-php artisan migrate:fresh --seed --force
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
 
-php artisan storage:link --force 2>/dev/null || true
+php artisan migrate --force --no-interaction
+php artisan db:seed --force --no-interaction || true
 
-php artisan serve --host=0.0.0.0 --port=$PORT
+php artisan config:cache
+php artisan route:cache || true
+php artisan view:cache
+
+exec php artisan serve --host=0.0.0.0 --port="${PORT}"
