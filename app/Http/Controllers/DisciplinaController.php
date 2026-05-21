@@ -10,9 +10,6 @@ use Illuminate\Validation\Rule;
 
 class DisciplinaController extends Controller
 {
-    /**
-     * Listar disciplinas
-     */
     public function index(Request $request)
     {
         $this->checkPermission('disciplinas.view');
@@ -36,9 +33,6 @@ class DisciplinaController extends Controller
         return view('disciplinas.index', compact('disciplinas'));
     }
 
-    /**
-     * Formulario de criacao
-     */
     public function create()
     {
         $this->checkPermission('disciplinas.create');
@@ -49,46 +43,26 @@ class DisciplinaController extends Controller
         return view('disciplinas.form', compact('cursos', 'professores'));
     }
 
-    /**
-     * Salvar nova disciplina
-     */
     public function store(Request $request)
     {
         $this->checkPermission('disciplinas.create');
 
-        $validated = $request->validate(
-            $this->disciplinaRules(),
-            $this->disciplinaMessages()
-        );
+        $validated = $request->validate($this->disciplinaRules(), $this->disciplinaMessages());
 
-        if (! $request->has('leciona_10')
-            && ! $request->has('leciona_11')
-            && ! $request->has('leciona_12')
-            && ! $request->has('leciona_13')) {
-            return back()
-                ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina sera lecionada.'])
-                ->withInput();
-        }
-
-        $validated['leciona_10'] = $request->has('leciona_10');
-        $validated['leciona_11'] = $request->has('leciona_11');
-        $validated['leciona_12'] = $request->has('leciona_12');
-        $validated['leciona_13'] = $request->has('leciona_13');
-        $validated['disciplina_terminal'] = $request->has('disciplina_terminal');
+        $validated['leciona_10'] = false;
+        $validated['leciona_11'] = false;
+        $validated['leciona_12'] = false;
+        $validated['leciona_13'] = false;
+        $validated['disciplina_terminal'] = false;
         $validated['ativo'] = $request->has('ativo');
 
         $disciplina = Disciplina::create($validated);
 
         $this->syncTerminalPorCurso($disciplina, $request->input('cursos_terminal', []));
 
-        return redirect()
-            ->route('disciplinas.show', $disciplina)
-            ->with('success', 'Disciplina criada com sucesso!');
+        return redirect()->route('disciplinas.show', $disciplina)->with('success', 'Disciplina criada com sucesso!');
     }
 
-    /**
-     * Exibir disciplina
-     */
     public function show(Disciplina $disciplina)
     {
         $this->checkPermission('disciplinas.view');
@@ -103,9 +77,6 @@ class DisciplinaController extends Controller
         return view('disciplinas.show', compact('disciplina'));
     }
 
-    /**
-     * Formulario de edicao
-     */
     public function edit(Disciplina $disciplina)
     {
         $this->checkPermission('disciplinas.edit');
@@ -117,46 +88,26 @@ class DisciplinaController extends Controller
         return view('disciplinas.form', compact('disciplina', 'cursos', 'professores'));
     }
 
-    /**
-     * Atualizar disciplina
-     */
     public function update(Request $request, Disciplina $disciplina)
     {
         $this->checkPermission('disciplinas.edit');
 
-        $validated = $request->validate(
-            $this->disciplinaRules($disciplina),
-            $this->disciplinaMessages()
-        );
+        $validated = $request->validate($this->disciplinaRules($disciplina), $this->disciplinaMessages());
 
-        if (! $request->has('leciona_10')
-            && ! $request->has('leciona_11')
-            && ! $request->has('leciona_12')
-            && ! $request->has('leciona_13')) {
-            return back()
-                ->withErrors(['leciona_10' => 'Selecione pelo menos uma classe onde a disciplina sera lecionada.'])
-                ->withInput();
-        }
-
-        $validated['leciona_10'] = $request->has('leciona_10');
-        $validated['leciona_11'] = $request->has('leciona_11');
-        $validated['leciona_12'] = $request->has('leciona_12');
-        $validated['leciona_13'] = $request->has('leciona_13');
-        $validated['disciplina_terminal'] = $request->has('disciplina_terminal');
+        $validated['leciona_10'] = false;
+        $validated['leciona_11'] = false;
+        $validated['leciona_12'] = false;
+        $validated['leciona_13'] = false;
+        $validated['disciplina_terminal'] = false;
         $validated['ativo'] = $request->has('ativo');
 
         $disciplina->update($validated);
 
         $this->syncTerminalPorCurso($disciplina, $request->input('cursos_terminal', []));
 
-        return redirect()
-            ->route('disciplinas.show', $disciplina)
-            ->with('success', 'Disciplina atualizada com sucesso!');
+        return redirect()->route('disciplinas.show', $disciplina)->with('success', 'Disciplina atualizada com sucesso!');
     }
 
-    /**
-     * Deletar disciplina
-     */
     public function destroy(Disciplina $disciplina)
     {
         $this->checkPermission('disciplinas.delete');
@@ -171,14 +122,9 @@ class DisciplinaController extends Controller
 
         $disciplina->delete();
 
-        return redirect()
-            ->route('disciplinas.index')
-            ->with('success', 'Disciplina deletada com sucesso!');
+        return redirect()->route('disciplinas.index')->with('success', 'Disciplina deletada com sucesso!');
     }
 
-    /**
-     * Ativar/Desativar disciplina
-     */
     public function toggleStatus(Disciplina $disciplina)
     {
         $this->checkPermission('disciplinas.edit');
@@ -192,10 +138,7 @@ class DisciplinaController extends Controller
 
     private function professoresCoordenadores()
     {
-        return User::professores()
-            ->ativos()
-            ->orderBy('name')
-            ->get();
+        return User::professores()->ativos()->orderBy('name')->get();
     }
 
     private function disciplinaRules(?Disciplina $disciplina = null): array
@@ -218,10 +161,7 @@ class DisciplinaController extends Controller
                         return;
                     }
 
-                    $professorValido = User::professores()
-                        ->ativos()
-                        ->whereKey($value)
-                        ->exists();
+                    $professorValido = User::professores()->ativos()->whereKey($value)->exists();
 
                     if (! $professorValido) {
                         $fail('Selecione um professor ativo para coordenar a disciplina.');
@@ -241,15 +181,6 @@ class DisciplinaController extends Controller
         ];
     }
 
-    /**
-     * Sincroniza a configuracao de ano terminal por curso.
-     *
-     * Agora processa todos os cursos recebidos no form, mantendo ano_terminal = null
-     * quando nao foi especificado, e so faz sync() se houver dados.
-     *
-     * @param  Disciplina  $disciplina
-     * @param  array  $cursosTerminal  Array [curso_id => ano_terminal]
-     */
     private function syncTerminalPorCurso(Disciplina $disciplina, array $cursosTerminal): void
     {
         $syncData = [];

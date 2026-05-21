@@ -74,74 +74,6 @@
                     @enderror
                 </div>
 
-                <div>
-                    <p class="label">Lecionada nas Classes *</p>
-                    <p class="text-xs text-gray-500 mb-2">Selecione em que classes esta disciplina e lecionada</p>
-
-                    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
-                        <label class="flex items-center cursor-pointer group">
-                            <input type="checkbox"
-                                   name="leciona_10"
-                                   value="1"
-                                   {{ old('leciona_10', isset($disciplina) ? (bool) $disciplina->leciona_10 : false) ? 'checked' : '' }}
-                                   class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
-                            <span class="ml-2 group-hover:text-gray-900 transition-colors">10a Classe</span>
-                        </label>
-
-                        <label class="flex items-center cursor-pointer group">
-                            <input type="checkbox"
-                                   name="leciona_11"
-                                   value="1"
-                                   {{ old('leciona_11', isset($disciplina) ? (bool) $disciplina->leciona_11 : false) ? 'checked' : '' }}
-                                   class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
-                            <span class="ml-2 group-hover:text-gray-900 transition-colors">11a Classe</span>
-                        </label>
-
-                        <label class="flex items-center cursor-pointer group">
-                            <input type="checkbox"
-                                   name="leciona_12"
-                                   value="1"
-                                   {{ old('leciona_12', isset($disciplina) ? (bool) $disciplina->leciona_12 : false) ? 'checked' : '' }}
-                                   class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
-                            <span class="ml-2 group-hover:text-gray-900 transition-colors">12a Classe</span>
-                        </label>
-                        <label class="flex items-center cursor-pointer group">
-                            <input type="checkbox"
-                                   name="leciona_13"
-                                   value="1"
-                                   {{ old('leciona_13', isset($disciplina) ? (bool) $disciplina->leciona_13 : false) ? 'checked' : '' }}
-                                   class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
-                            <span class="ml-2 group-hover:text-gray-900 transition-colors">13a Classe</span>
-                        </label>
-                    </div>
-
-                    @error('leciona_10')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
-                    <label class="flex items-center cursor-pointer group">
-                        <input type="checkbox"
-                               name="disciplina_terminal"
-                               value="1"
-                               {{ old('disciplina_terminal', isset($disciplina) ? (bool) $disciplina->disciplina_terminal : false) ? 'checked' : '' }}
-                               class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
-                        <span class="ml-2 group-hover:text-gray-900 transition-colors">
-                            Disciplina Terminal (legado)
-                        </span>
-                    </label>
-
-                    <label class="flex items-center cursor-pointer group">
-                        <input type="checkbox"
-                               name="ativo"
-                               value="1"
-                               {{ old('ativo', isset($disciplina) ? (bool) $disciplina->ativo : true) ? 'checked' : '' }}
-                               class="rounded text-primary-600 focus:ring-primary-500 border-gray-300">
-                        <span class="ml-2 group-hover:text-gray-900 transition-colors">Ativa</span>
-                    </label>
-                </div>
-
                 @php
                     $terminaisPorCurso = old('cursos_terminal');
 
@@ -156,7 +88,7 @@
                     <p class="label">Ano Terminal por Curso</p>
                     <p class="text-xs text-gray-500 mb-2">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Defina em que ano esta disciplina termina para cada curso.
+                        Defina manualmente em que ano esta disciplina termina para cada curso.
                     </p>
 
                     <div class="overflow-x-auto border rounded-lg shadow-sm">
@@ -174,18 +106,10 @@
                                         <td class="px-4 py-3">
                                             <select name="cursos_terminal[{{ $curso->id }}]" class="input">
                                                 <option value="">Nao terminal neste curso</option>
-                                                <option value="10" {{ ($terminaisPorCurso[$curso->id] ?? '') === '10' ? 'selected' : '' }}>
-                                                    10ª classe
-                                                </option>
-                                                <option value="11" {{ ($terminaisPorCurso[$curso->id] ?? '') === '11' ? 'selected' : '' }}>
-                                                    11ª classe
-                                                </option>
-                                                <option value="12" {{ ($terminaisPorCurso[$curso->id] ?? '') === '12' ? 'selected' : '' }}>
-                                                    12ª classe
-                                                </option>
-                                                <option value="13" {{ ($terminaisPorCurso[$curso->id] ?? '') === '13' ? 'selected' : '' }}>
-                                                    13ª classe
-                                                </option>
+                                                <option value="10" {{ ($terminaisPorCurso[$curso->id] ?? '') === '10' ? 'selected' : '' }}>10ª classe</option>
+                                                <option value="11" {{ ($terminaisPorCurso[$curso->id] ?? '') === '11' ? 'selected' : '' }}>11ª classe</option>
+                                                <option value="12" {{ ($terminaisPorCurso[$curso->id] ?? '') === '12' ? 'selected' : '' }}>12ª classe</option>
+                                                <option value="13" {{ ($terminaisPorCurso[$curso->id] ?? '') === '13' ? 'selected' : '' }}>13ª classe</option>
                                             </select>
                                         </td>
                                     </tr>
