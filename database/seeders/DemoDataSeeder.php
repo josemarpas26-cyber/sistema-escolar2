@@ -140,14 +140,18 @@ class DemoDataSeeder extends Seeder
         $this->command->info('✅ ' . count($alunos) . ' alunos criados');
 
         // =============================================
-        // 2. ANOS LETIVOS
+        // 2. ANO LETIVO
         // =============================================
-        $anosLetivos = [
-            '2023/2024' => $this->criarAnoLetivoDemo('2023/2024', '2023-04-20', '2024-12-19', false, true),
-            '2024/2025' => $this->criarAnoLetivoDemo('2024/2025', '2024-04-20', '2025-12-19', false, true),
-            '2025/2026' => $this->criarAnoLetivoDemo('2025/2026', '2025-04-20', '2026-12-19', true, false),
-        ];
-        $this->command->info('✅ 3 anos letivos criados (2023/2024, 2024/2025 e 2025/2026)');
+        $anoLetivo = AnoLetivo::firstOrCreate(
+            ['nome' => '2025/2026'],
+            [
+                'data_inicio' => '2025-04-20',
+                'data_fim'    => '2026-12-19',
+                'ativo'       => true,
+                'encerrado'   => false,
+            ]
+        );
+        $this->command->info('✅ Ano letivo criado');
 
         // =============================================
         // 3. CURSOS
@@ -184,126 +188,118 @@ class DemoDataSeeder extends Seeder
         // 4. DISCIPLINAS
         // =============================================
         $disc_data = [
-            ['nome' => 'Matemática',        'codigo' => 'MAT', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Física',            'codigo' => 'FIS', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Química',           'codigo' => 'QUI', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Biologia',          'codigo' => 'BIO', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Língua Portuguesa', 'codigo' => 'LP',  'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Inglês',            'codigo' => 'ING', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'História',          'codigo' => 'HIS', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Geografia',         'codigo' => 'GEO', 'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Educação Física',   'codigo' => 'EF',  'l10' => true,  'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'TIC',               'codigo' => 'TIC', 'l10' => true,  'l11' => false, 'l12' => false, 'l13' => false, 'ano_terminal' => 10],
-            ['nome' => 'Filosofia',         'codigo' => 'FIL', 'l10' => false, 'l11' => true,  'l12' => true,  'l13' => true,  'ano_terminal' => null],
-            ['nome' => 'Empreendedorismo',  'codigo' => 'EMP', 'l10' => false, 'l11' => false, 'l12' => true,  'l13' => true,  'ano_terminal' => 12],
+            ['nome' => 'Matemática',        'codigo' => 'MAT', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Física',            'codigo' => 'FIS', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Química',           'codigo' => 'QUI', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Biologia',          'codigo' => 'BIO', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Língua Portuguesa', 'codigo' => 'LP',  'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Inglês',            'codigo' => 'ING', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'História',          'codigo' => 'HIS', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Geografia',         'codigo' => 'GEO', 'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Educação Física',   'codigo' => 'EF',  'l10' => true,  'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'TIC',               'codigo' => 'TIC', 'l10' => true,  'l11' => false, 'l12' => false, 'terminal' => true],
+            ['nome' => 'Filosofia',         'codigo' => 'FIL', 'l10' => false, 'l11' => true,  'l12' => true,  'terminal' => false],
+            ['nome' => 'Empreendedorismo',  'codigo' => 'EMP', 'l10' => false, 'l11' => false, 'l12' => true,  'terminal' => true],
         ];
 
         $disciplinas = [];
-        $terminaisPorDisciplina = [];
-
         foreach ($disc_data as $dd) {
-            $disciplinas[$dd['codigo']] = Disciplina::updateOrCreate(
+            $disciplinas[$dd['codigo']] = Disciplina::firstOrCreate(
                 ['codigo' => $dd['codigo']],
                 [
                     'nome'                => $dd['nome'],
                     'leciona_10'          => $dd['l10'],
                     'leciona_11'          => $dd['l11'],
                     'leciona_12'          => $dd['l12'],
-                    'leciona_13'          => $dd['l13'],
-                    'disciplina_terminal' => $dd['ano_terminal'] !== null,
+                    'disciplina_terminal' => $dd['terminal'],
                     'ativo'               => true,
                 ]
             );
-            $terminaisPorDisciplina[$dd['codigo']] = $dd['ano_terminal'];
         }
-        $this->sincronizarDisciplinasDosCursos([$cfb, $cej, $ch], $disciplinas, $terminaisPorDisciplina);
-        $this->command->info('✅ ' . count($disciplinas) . ' disciplinas criadas/atualizadas');
+        $this->command->info('✅ ' . count($disciplinas) . ' disciplinas criadas');
 
         // =============================================
-        // 5. TURMAS COM PROGRESSÃO LETIVA
+        // 5. TURMAS
         // =============================================
 
         // Mapeamento professor -> disciplina (índice no array $professores)
-        // 0=MAT, 1=FIS, 2=QUI, 3=BIO, 4=LP, 5=ING, 6=HIS, 7=GEO, 8=EF, 9=TIC/FIL/EMP
-        $professorPorDisciplina = [
-            'MAT' => 0,
-            'FIS' => 1,
-            'QUI' => 2,
-            'BIO' => 3,
-            'LP'  => 4,
-            'ING' => 5,
-            'HIS' => 6,
-            'GEO' => 7,
-            'EF'  => 8,
-            'TIC' => 9,
-            'FIL' => 6,
-            'EMP' => 4,
+        // 0=MAT, 1=FIS, 2=QUI, 3=BIO, 4=LP, 5=ING, 6=HIS, 7=GEO, 8=EF, 9=TIC
+
+        // ---- Turma 10ª A - CFB (15 primeiros alunos) ----
+        $turma10A = Turma::firstOrCreate(
+            ['nome' => 'A', 'classe' => '10', 'curso_id' => $cfb->id, 'ano_letivo_id' => $anoLetivo->id],
+            [
+                'coordenador_turma_id' => $professores[0]->id,
+                'capacidade'           => 40,
+                'ativo'                => true,
+            ]
+        );
+
+        // Disciplinas da 10ª A
+        $discs10 = ['MAT','FIS','QUI','BIO','LP','ING','HIS','GEO','EF','TIC'];
+        $turma10A->disciplinas()->syncWithoutDetaching(
+            collect($discs10)->map(fn($c) => $disciplinas[$c]->id)->toArray()
+        );
+
+        // Atribuições de professores para 10ª A
+        $prof_disc_10A = [
+            ['prof' => 0, 'disc' => 'MAT'],
+            ['prof' => 1, 'disc' => 'FIS'],
+            ['prof' => 2, 'disc' => 'QUI'],
+            ['prof' => 3, 'disc' => 'BIO'],
+            ['prof' => 4, 'disc' => 'LP'],
+            ['prof' => 5, 'disc' => 'ING'],
+            ['prof' => 6, 'disc' => 'HIS'],
+            ['prof' => 7, 'disc' => 'GEO'],
+            ['prof' => 8, 'disc' => 'EF'],
+            ['prof' => 9, 'disc' => 'TIC'],
         ];
+        $this->atribuirProfessores($turma10A, $prof_disc_10A, $professores, $disciplinas, $anoLetivo->id);
 
-        $cursos = [
-            ['modelo' => $cfb, 'alunos' => array_slice($alunos, 0, 10),  'coordenador' => 0],
-            ['modelo' => $cej, 'alunos' => array_slice($alunos, 10, 10), 'coordenador' => 4],
-            ['modelo' => $ch,  'alunos' => array_slice($alunos, 20, 10), 'coordenador' => 6],
-        ];
-
-        $planosProgressao = [
-            // Coorte A: atualmente na 12ª; tem 10ª em 2023/2024 e 11ª em 2024/2025.
-            ['nome' => 'A', 'alunos_inicio' => 0, 'alunos_total' => 4, 'percurso' => ['2023/2024' => '10', '2024/2025' => '11', '2025/2026' => '12']],
-            // Coorte B: atualmente na 11ª; tem 10ª em 2024/2025.
-            ['nome' => 'B', 'alunos_inicio' => 4, 'alunos_total' => 3, 'percurso' => ['2024/2025' => '10', '2025/2026' => '11']],
-            // Coorte C: atualmente na 10ª; não precisa de turma anterior.
-            ['nome' => 'C', 'alunos_inicio' => 7, 'alunos_total' => 3, 'percurso' => ['2025/2026' => '10']],
-        ];
-
-        $turmasComNotas = [];
-
-        foreach ($cursos as $cursoConfig) {
-            foreach ($planosProgressao as $plano) {
-                $alunosDaCoorte = array_slice($cursoConfig['alunos'], $plano['alunos_inicio'], $plano['alunos_total']);
-
-                foreach ($plano['percurso'] as $nomeAnoLetivo => $classe) {
-                    $anoDaTurma = $anosLetivos[$nomeAnoLetivo];
-                    $turma = $this->criarTurmaDemo(
-                        $plano['nome'],
-                        $classe,
-                        $cursoConfig['modelo'],
-                        $anoDaTurma,
-                        $professores[$cursoConfig['coordenador']]
-                    );
-
-                    $codigosDisciplinas = $this->codigosDisciplinasPorClasse($classe, $disciplinas);
-                    $turma->disciplinas()->syncWithoutDetaching(
-                        collect($codigosDisciplinas)->map(fn ($codigo) => $disciplinas[$codigo]->id)->toArray()
-                    );
-
-                    $atribuicoes = collect($codigosDisciplinas)
-                        ->map(fn ($codigo) => ['prof' => $professorPorDisciplina[$codigo], 'disc' => $codigo])
-                        ->all();
-                    $this->atribuirProfessores($turma, $atribuicoes, $professores, $disciplinas, $anoDaTurma->id);
-
-                    foreach ($alunosDaCoorte as $aluno) {
-                        $this->matricularAluno($turma, $aluno, $anoDaTurma->data_inicio->toDateString());
-                    }
-
-                    $turmasComNotas[] = ['turma' => $turma, 'alunos' => $alunosDaCoorte];
-                }
-            }
+        // Matricular os 15 primeiros alunos na 10ª A
+        foreach (array_slice($alunos, 0, 15) as $aluno) {
+            $this->matricularAluno($turma10A, $aluno, '2024-09-02');
         }
 
-        $this->command->info('✅ ' . count($turmasComNotas) . ' turmas criadas com progressão 10ª→11ª→12ª e alunos matriculados');
+        // ---- Turma 10ª B - CEJ (15 últimos alunos) ----
+        $turma10B = Turma::firstOrCreate(
+            ['nome' => 'B', 'classe' => '10', 'curso_id' => $cej->id, 'ano_letivo_id' => $anoLetivo->id],
+            [
+                'coordenador_turma_id' => $professores[4]->id,
+                'capacidade'           => 40,
+                'ativo'                => true,
+            ]
+        );
+
+        $turma10B->disciplinas()->syncWithoutDetaching(
+            collect($discs10)->map(fn($c) => $disciplinas[$c]->id)->toArray()
+        );
+
+        $this->atribuirProfessores($turma10B, $prof_disc_10A, $professores, $disciplinas, $anoLetivo->id);
+
+        foreach (array_slice($alunos, 15, 15) as $aluno) {
+            $this->matricularAluno($turma10B, $aluno, '2024-09-02');
+        }
+
+        $this->command->info('✅ 2 turmas criadas (10ªA-CFB, 10ªB-CEJ) com alunos matriculados');
 
         // =============================================
-        // 6. NOTAS (1º, 2º e 3º trimestres lançados)
+        // 6. NOTAS (1º e 2º trimestre lançados)
         // =============================================
         $this->command->info('📝 Lançando notas...');
 
+        $turmasComNotas = [
+            ['turma' => $turma10A, 'alunos' => array_slice($alunos, 0, 15)],
+            ['turma' => $turma10B, 'alunos' => array_slice($alunos, 15, 15)],
+        ];
+
         foreach ($turmasComNotas as $tc) {
-            $turma = $tc['turma'];
-            $disciplinasDaTurma = $turma->disciplinas()->get();
+            $turma    = $tc['turma'];
+            $discsIds = $turma->disciplinas()->pluck('disciplinas.id')->toArray();
 
             foreach ($tc['alunos'] as $aluno) {
-                foreach ($disciplinasDaTurma as $disciplina) {
-                    $this->criarNota($aluno->id, $turma, $disciplina);
+                foreach ($discsIds as $discId) {
+                    $this->criarNota($aluno->id, $turma->id, $discId, $anoLetivo->id);
                 }
             }
         }
@@ -333,76 +329,6 @@ class DemoDataSeeder extends Seeder
     // =============================================
     // HELPERS PRIVADOS
     // =============================================
-
-    /**
-     * Cria ou atualiza um ano letivo de demonstração, preservando o estado esperado da linha temporal.
-     */
-    private function criarAnoLetivoDemo(string $nome, string $dataInicio, string $dataFim, bool $ativo, bool $encerrado): AnoLetivo
-    {
-        $anoLetivo = AnoLetivo::updateOrCreate(
-            ['nome' => $nome],
-            [
-                'data_inicio' => $dataInicio,
-                'data_fim'    => $dataFim,
-                'ativo'       => $ativo,
-                'encerrado'   => $encerrado,
-            ]
-        );
-
-        return $anoLetivo->fresh();
-    }
-
-    /**
-     * Cria uma turma de demonstração sem repetir o mesmo nome completo em diferentes anos.
-     */
-    private function criarTurmaDemo(string $nome, string $classe, Curso $curso, AnoLetivo $anoLetivo, User $coordenador): Turma
-    {
-        return Turma::firstOrCreate(
-            [
-                'nome' => $nome,
-                'classe' => $classe,
-                'curso_id' => $curso->id,
-                'ano_letivo_id' => $anoLetivo->id,
-                'turno' => 'M',
-            ],
-            [
-                'coordenador_turma_id' => $coordenador->id,
-                'capacidade' => 40,
-                'ativo' => true,
-            ]
-        );
-    }
-
-
-    /**
-     * Associa as disciplinas aos cursos de demo e informa a classe terminal.
-     */
-    private function sincronizarDisciplinasDosCursos(array $cursos, array $disciplinas, array $terminaisPorDisciplina): void
-    {
-        foreach ($cursos as $curso) {
-            $syncData = [];
-
-            foreach ($disciplinas as $codigo => $disciplina) {
-                $syncData[$disciplina->id] = [
-                    'ano_terminal' => $terminaisPorDisciplina[$codigo],
-                ];
-            }
-
-            $curso->disciplinas()->syncWithoutDetaching($syncData);
-        }
-    }
-
-    /**
-     * Retorna apenas disciplinas lecionadas na classe informada.
-     */
-    private function codigosDisciplinasPorClasse(string $classe, array $disciplinas): array
-    {
-        return collect($disciplinas)
-            ->filter(fn (Disciplina $disciplina) => $disciplina->isLecionadaEm($classe))
-            ->keys()
-            ->values()
-            ->all();
-    }
 
     /**
      * Atribui professores a disciplinas numa turma (sem duplicar)
@@ -456,61 +382,52 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * Cria notas com valores realistas para uma turma.
-     * Para 11ª e 12ª classes, importa as CA das classes anteriores já semeadas.
+     * Cria notas com valores realistas para 1º e 2º trimestres.
+     * Usa intervalo com ligeira variação para parecer natural.
      */
-    private function criarNota(int $alunoId, Turma $turma, Disciplina $disciplina): void
+    private function criarNota(int $alunoId, int $turmaId, int $discId, int $anoLetivoId): void
     {
-        $existe = Nota::where('aluno_id', $alunoId)
-            ->where('turma_id', $turma->id)
-            ->where('disciplina_id', $disciplina->id)
-            ->where('ano_letivo_id', $turma->ano_letivo_id)
-            ->exists();
+        $existe = Nota::where('aluno_id',     $alunoId)
+                      ->where('turma_id',     $turmaId)
+                      ->where('disciplina_id',$discId)
+                      ->where('ano_letivo_id',$anoLetivoId)
+                      ->exists();
 
-        if ($existe) {
-            return;
-        }
+        if ($existe) return;
 
         // Gerar notas com distribuição realista (maioria entre 10-16, alguns <10, poucos >17)
         $base = $this->notaAleatoria();
 
         // 1º Trimestre
         $mac1 = $this->variar($base, 2);
-        $pp1 = $this->variar($base, 3);
-        $pt1 = $this->variar($base, 4);
-        $mt1 = round(($mac1 * 0.3 + $pp1 * 0.3 + $pt1 * 0.4), 2);
+        $pp1  = $this->variar($base, 3);
+        $pt1  = $this->variar($base, 4);
+        $mt1  = round(($mac1 * 0.3 + $pp1 * 0.3 + $pt1 * 0.4), 2);
 
         // 2º Trimestre
         $mac2 = $this->variar($base, 2);
-        $pp2 = $this->variar($base, 3);
-        $pt2 = $this->variar($base, 4);
-        $mt2 = round(($mac2 * 0.3 + $pp2 * 0.3 + $pt2 * 0.4), 2);
+        $pp2  = $this->variar($base, 3);
+        $pt2  = $this->variar($base, 4);
+        $mt2  = round(($mac2 * 0.3 + $pp2 * 0.3 + $pt2 * 0.4), 2);
 
         // MFT2 = média entre MT1 e MT2
         $mft2 = round(($mt1 + $mt2) / 2, 2);
 
-        // 3º Trimestre + finais
-        $mac3 = $this->variar($base, 2);
-        $pp3 = $this->variar($base, 3);
-        $pg = $this->variar($base, 4);
-        $mt3 = round(($mac3 + $pp3) / 2, 2);
-        $cf = round(($mft2 + $mt3) / 2, 2);
-        $ca = round((0.6 * $cf) + (0.4 * $pg), 2);
 
-        $classeAtual = (int) $turma->classe;
-        $ca10 = $classeAtual >= 11 && $disciplina->leciona_10
-            ? $this->caAnterior($alunoId, $disciplina->id, '10')
-            : null;
-        $ca11 = $classeAtual >= 12 && $disciplina->leciona_11
-            ? $this->caAnterior($alunoId, $disciplina->id, '11')
-            : null;
-        $cfd = $this->calcularCfdDemo($disciplina, $classeAtual, $ca, $ca10, $ca11);
+                // 3º Trimestre
+        $mac3 = $this->variar($base, 2);
+        $pp3  = $this->variar($base, 3);
+        $pg   = $this->variar($base, 4);
+        $mt3  = round(($mac3 + $pp3) / 2, 2);
+        $cf   = round(($mft2 + $mt3) / 2, 2);
+        $ca   = round((0.6 * $cf) + (0.4 * $pg), 2);
+
 
         Nota::create([
-            'aluno_id' => $alunoId,
-            'turma_id' => $turma->id,
-            'disciplina_id' => $disciplina->id,
-            'ano_letivo_id' => $turma->ano_letivo_id,
+            'aluno_id'     => $alunoId,
+            'turma_id'     => $turmaId,
+            'disciplina_id'=> $discId,
+            'ano_letivo_id'=> $anoLetivoId,
 
             // 1º Trimestre
             'mac1' => $mac1,
@@ -525,6 +442,7 @@ class DemoDataSeeder extends Seeder
             'mt2'  => $mt2,
             'mft2' => $mft2,
 
+            // 3º Trimestre ainda não lançado
             // 3º Trimestre + finais
             'mac3' => $mac3,
             'pp3'  => $pp3,
@@ -532,66 +450,11 @@ class DemoDataSeeder extends Seeder
             'cf'   => $cf,
             'pg'   => $pg,
             'ca'   => $ca,
-            'ca_10' => $ca10,
-            'ca_11' => $ca11,
-            'cfd'  => $cfd,
+            // Como o seed atual usa turmas da 10ª classe, CFD coincide com CA.
+            'cfd'  => $ca,
 
             'status' => 'em_lancamento',
         ]);
-    }
-
-    /**
-     * Busca a CA de uma disciplina numa classe anterior do mesmo aluno.
-     */
-    private function caAnterior(int $alunoId, int $disciplinaId, string $classe): ?float
-    {
-        $notaAnterior = Nota::where('aluno_id', $alunoId)
-            ->where('disciplina_id', $disciplinaId)
-            ->whereHas('turma', fn ($query) => $query->where('classe', $classe))
-            ->whereNotNull('ca')
-            ->orderByDesc('ano_letivo_id')
-            ->orderByDesc('id')
-            ->first();
-
-        return $notaAnterior?->ca !== null ? (float) $notaAnterior->ca : null;
-    }
-
-    /**
-     * Calcula a CFD seguindo a mesma regra das CA disponíveis por classe.
-     */
-    private function calcularCfdDemo(Disciplina $disciplina, int $classeAtual, float $ca, ?float $ca10, ?float $ca11): ?float
-    {
-        $classificacoes = [];
-
-        if ($disciplina->leciona_10 && $classeAtual >= 10) {
-            if ($classeAtual === 10) {
-                $classificacoes[] = $ca;
-            } elseif ($ca10 !== null) {
-                $classificacoes[] = $ca10;
-            } else {
-                return null;
-            }
-        }
-
-        if ($disciplina->leciona_11 && $classeAtual >= 11) {
-            if ($classeAtual === 11) {
-                $classificacoes[] = $ca;
-            } elseif ($ca11 !== null) {
-                $classificacoes[] = $ca11;
-            } else {
-                return null;
-            }
-        }
-
-        if ($disciplina->leciona_12 && $classeAtual >= 12) {
-            $classificacoes[] = $ca;
-        }
-
-        if (empty($classificacoes)) {
-            $classificacoes[] = $ca;
-        }
-
-        return round(array_sum($classificacoes) / count($classificacoes), 2);
     }
 
 
