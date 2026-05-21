@@ -3,6 +3,7 @@
 @section('page-title', 'Ano Letivo: ' . $anoLetivo->nome)
 
 @section('header-actions')
+@php($podeGerirEstadoAnoLetivo = auth()->user()?->isProgramador())
 <div class="flex items-center gap-2">
 
     {{-- Voltar inteligente --}}
@@ -13,7 +14,7 @@
     </a>
 
     {{-- Encerrar Ano Letivo --}}
-        @if($anoLetivo->ativo && !$anoLetivo->encerrado)
+        @if($podeGerirEstadoAnoLetivo && $anoLetivo->ativo && !$anoLetivo->encerrado)
         <form action="{{ route('anos-letivos.encerrar', $anoLetivo) }}" 
               method="POST"
               onsubmit="return confirm('Tem a certeza de que deseja encerrar este ano letivo? Esta ação não poderá ser desfeita.')">
@@ -29,7 +30,7 @@
 
 
         {{-- Ativar Ano Letivo --}}
-    @if(!$anoLetivo->ativo)
+    @if($podeGerirEstadoAnoLetivo && !$anoLetivo->ativo)
         <form action="{{ route('anos-letivos.reativar', $anoLetivo) }}"
               method="POST"
               onsubmit="return confirm('Deseja reativar este ano letivo? O ano atualmente ativo será desativado.')">
@@ -211,6 +212,44 @@
                 </table>
             </div>
         @endforeach
+    </x-card>
+    @endif
+
+    @if(!$anoLetivo->ativo)
+    <x-card title="Histórico detalhado do ano letivo" icon="fas fa-history">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div><span class="text-gray-600 text-sm">Turmas</span><p class="font-semibold text-lg">{{ $stats['total_turmas'] }}</p></div>
+            <div><span class="text-gray-600 text-sm">Alunos matriculados</span><p class="font-semibold text-lg">{{ $stats['total_alunos'] }}</p></div>
+            <div><span class="text-gray-600 text-sm">Notas lançadas</span><p class="font-semibold text-lg">{{ $stats['total_notas'] }}</p></div>
+            <div><span class="text-gray-600 text-sm">Última atualização</span><p class="font-semibold text-lg">{{ $anoLetivo->updated_at?->format('d/m/Y H:i') }}</p></div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left">Turma</th>
+                        <th class="px-4 py-2 text-left">Curso</th>
+                        <th class="px-4 py-2 text-center">Alunos</th>
+                        <th class="px-4 py-2 text-center">Disciplinas</th>
+                        <th class="px-4 py-2 text-center">Notas</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($turmasDetalhadas as $turma)
+                        <tr>
+                            <td class="px-4 py-2">{{ $turma->nome_completo ?? $turma->nome }}</td>
+                            <td class="px-4 py-2">{{ $turma->curso->nome ?? '-' }}</td>
+                            <td class="px-4 py-2 text-center">{{ $turma->alunos_matriculados_count }}</td>
+                            <td class="px-4 py-2 text-center">{{ $turma->disciplinas_count }}</td>
+                            <td class="px-4 py-2 text-center">{{ $turma->notas_count }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">Sem turmas neste ano letivo.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </x-card>
     @endif
 

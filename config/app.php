@@ -53,6 +53,7 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'programador_email' => env('PROGRAMADOR_EMAIL'),
 
     /*
     |--------------------------------------------------------------------------

@@ -131,7 +131,17 @@ class AnoLetivoController extends Controller
             'total_notas'  => $anoLetivo->notas()->count(),
         ];
 
-        return view('anos-letivos.show', compact('anoLetivo', 'stats'));
+        $turmasDetalhadas = $anoLetivo->turmas()
+            ->with('curso')
+            ->withCount([
+                'alunos as alunos_matriculados_count' => fn ($query) => $query->wherePivot('status', 'matriculado'),
+                'disciplinas',
+                'notas',
+            ])
+            ->orderBy('nome')
+            ->get();
+
+        return view('anos-letivos.show', compact('anoLetivo', 'stats', 'turmasDetalhadas'));
     }
 
     public function edit(AnoLetivo $anoLetivo)
@@ -161,6 +171,7 @@ class AnoLetivoController extends Controller
     public function encerrar(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.encerrar');
+        abort_unless(auth()->user()?->isProgramador(), 403, 'Apenas o programador pode encerrar anos letivos.');
 
         if ($anoLetivo->encerrado) {
             return back()->with('error', 'Este ano letivo já está encerrado!');
@@ -213,6 +224,7 @@ class AnoLetivoController extends Controller
     public function reativar(AnoLetivo $anoLetivo)
     {
         $this->checkPermission('anos.create');
+        abort_unless(auth()->user()?->isProgramador(), 403, 'Apenas o programador pode reativar anos letivos.');
 
         if ($anoLetivo->ativo && ! $anoLetivo->encerrado) {
             return back()->with('error', 'Este ano letivo já está ativo!');
