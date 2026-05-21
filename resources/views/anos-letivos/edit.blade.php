@@ -3,6 +3,7 @@
 @section('page-title', 'Editar Ano Letivo')
 
 @section('content')
+@php($podeGerirEstadoAnoLetivo = auth()->user()?->isProgramador())
 
 <form method="POST" action="{{ route('anos-letivos.update', $anoLetivo) }}">
     @csrf
@@ -110,10 +111,9 @@
             </x-card>
 
             <!-- Ações de Status -->
-            <x-card title="Gerenciar Status" icon="fas fa-cog">
+            <x-card title="{{ $podeGerirEstadoAnoLetivo ? 'Gerenciar Status' : 'Estado do Ano Letivo' }}" icon="fas fa-cog">
                 <div class="space-y-3">
-                    
-                @if(!$anoLetivo->ativo)
+                @if($podeGerirEstadoAnoLetivo && !$anoLetivo->ativo)
                     <form method="POST" action="{{ route('anos-letivos.reativar', $anoLetivo) }}">
                         @csrf
                         <button type="submit" class="btn btn-success w-full"
@@ -124,7 +124,7 @@
                     </form>
                     @endif
 
-                    @if($anoLetivo->ativo && !$anoLetivo->encerrado)
+                    @if($podeGerirEstadoAnoLetivo && $anoLetivo->ativo && !$anoLetivo->encerrado)
                     <form method="POST" action="{{ route('anos-letivos.encerrar', $anoLetivo) }}">
                         @csrf
                         <button type="submit" class="btn btn-danger w-full"
@@ -144,6 +144,11 @@
                                 <p class="mt-1">Ao reativar, ele volta a ficar ativo e deixa de estar encerrado.</p>
                             </div>
                         </div>
+                    </div>
+                    @endif
+                    @if(!$podeGerirEstadoAnoLetivo)
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                        Para alterações de estado (reativar/encerrar), consulte os detalhes completos deste ano letivo na página de visualização.
                     </div>
                     @endif
 

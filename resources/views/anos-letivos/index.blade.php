@@ -4,6 +4,7 @@
 <a href="{{ route('anos-letivos.create') }}" class="btn btn-primary"><i class="fas fa-plus mr-2"></i>Novo Ano Letivo</a>
 @endsection
 @section('content')
+@php($podeGerirEstadoAnoLetivo = auth()->user()?->isProgramador())
 <x-card>
     @if($anosLetivos->count() > 0)
     <div class="overflow-x-auto">
@@ -64,7 +65,7 @@
     @endif
 
     {{-- Encerrar --}}
-    @if($ano->ativo && !$ano->encerrado)
+    @if($podeGerirEstadoAnoLetivo && $ano->ativo && !$ano->encerrado)
     <form action="{{ route('anos-letivos.encerrar', $ano) }}"
           method="POST"
           class="inline">
@@ -78,7 +79,7 @@
     @endif
 
     {{-- Ativar (anos inativos, encerrados ou não) --}}
-    @if(!$ano->ativo)
+    @if($podeGerirEstadoAnoLetivo && !$ano->ativo)
     <form action="{{ route('anos-letivos.reativar', $ano) }}"
           method="POST"
           class="inline">

@@ -142,6 +142,12 @@ class User extends Authenticatable
         return $this->role?->name === 'aluno';
     }
 
+    public function isProgramador(): bool
+    {
+        return $this->role?->name === 'programador'
+            || $this->email === config('app.programador_email');
+    }
+
     public function isCoordenadorCurso(): bool
     {
         return $this->cursoCoordenado()->exists();
