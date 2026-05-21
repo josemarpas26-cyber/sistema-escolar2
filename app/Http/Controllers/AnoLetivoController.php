@@ -131,7 +131,30 @@ class AnoLetivoController extends Controller
             'total_notas'  => $anoLetivo->notas()->count(),
         ];
 
-        return view('anos-letivos.show', compact('anoLetivo', 'stats'));
+        $anosAnteriores = AnoLetivo::with([
+            'turmas.curso',
+            'configuracaoAvaliacao.provas',
+        ])
+            ->where('id', '!=', $anoLetivo->id)
+            ->whereDate('data_fim', '<', $anoLetivo->data_inicio)
+            ->orderByDesc('data_fim')
+            ->get()
+            ->map(function (AnoLetivo $ano) {
+                $turmaIds = $ano->turmas->pluck('id');
+
+                $ano->detalhes = [
+                    'total_turmas' => $ano->turmas->count(),
+                    'total_alunos' => DB::table('turma_aluno')
+                        ->whereIn('turma_id', $turmaIds)
+                        ->where('status', 'matriculado')
+                        ->count(),
+                    'total_notas' => $ano->notas()->count(),
+                ];
+
+                return $ano;
+            });
+
+        return view('anos-letivos.show', compact('anoLetivo', 'stats', 'anosAnteriores'));
     }
 
     public function edit(AnoLetivo $anoLetivo)

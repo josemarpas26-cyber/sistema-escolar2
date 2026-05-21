@@ -77,20 +77,6 @@
     </form>
     @endif
 
-    {{-- Ativar (anos inativos, encerrados ou não) --}}
-    @if(!$ano->ativo)
-    <form action="{{ route('anos-letivos.reativar', $ano) }}"
-          method="POST"
-          class="inline">
-        @csrf
-        <button type="submit"
-                class="text-green-600 hover:text-green-800 transition"
-                onclick="return confirm('Deseja reativar este ano letivo?')">
-            <i class="fas fa-play"></i>
-        </button>
-    </form>
-    @endif
-
 </td>
 
                     </tr>
