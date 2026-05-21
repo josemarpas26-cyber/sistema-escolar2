@@ -6,7 +6,7 @@
 <div class="space-y-6">
     <x-card title="Meu histórico académico" icon="fas fa-history">
         <p class="text-sm text-slate-600">
-            Nesta página pode consultar o resumo do seu histórico e abrir o documento completo.
+            Nesta página podes consultar o resumo do seu histórico e abrir o documento completo.
         </p>
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
