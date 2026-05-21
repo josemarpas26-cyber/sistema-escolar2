@@ -429,7 +429,7 @@ class ExportacoesXlsxTest extends TestCase
         $spreadsheet = IOFactory::load($path);
 
         $this->assertSame('Resumo', $spreadsheet->getSheet(0)->getTitle());
-        $this->assertSame('Logs Recentes', $spreadsheet->getSheet(1)->getTitle());
+        $this->assertSame('Registro Recentes', $spreadsheet->getSheet(1)->getTitle());
         $this->assertSame('DASHBOARD DE LOGS', $spreadsheet->getSheet(0)->getCell('A1')->getValue());
         $this->assertSame('Data/Hora', $spreadsheet->getSheet(1)->getCell('A1')->getValue());
         $this->assertSame('Aluno Dashboard', $spreadsheet->getSheet(1)->getCell('D2')->getValue());

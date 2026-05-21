@@ -315,7 +315,7 @@ class EstatisticasAcademicasService
         return [
             'tipo' => 'admin',
             'titulo' => 'Visão administrativa',
-            'descricao' => 'As notas sao agregadas por disciplina em todas as turmas activas do ano letivo.',
+            'descricao' => 'As notas são agregadas por disciplina em todas as turmas activas do ano letivo.',
             'resumo' => $this->resumirTrimestres(
                 $itens->flatMap(fn ($item) => $item['estatisticas']->flatMap(fn ($disc) => $disc['trimestres']))->values()
             ),

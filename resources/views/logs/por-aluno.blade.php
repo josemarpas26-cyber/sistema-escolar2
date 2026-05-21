@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('page-title', 'Logs - ' . $aluno->name)
+@section('page-title', 'Registro - ' . $aluno->name)
 
 @section('content')
-<x-card title="Logs do Aluno: {{ $aluno->name }}" icon="fas fa-user">
+<x-card title="Registro do Aluno: {{ $aluno->name }}" icon="fas fa-user">
     @if($logs->count() > 0)
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">

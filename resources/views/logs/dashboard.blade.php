@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('page-title', 'Dashboard de Logs')
+@section('page-title', 'Dashboard de Registros de Atividade')
 
 @php
     $metaAcao = [
-        'criacao' => ['label' => 'Criacoes', 'dot' => 'bg-green-500', 'bar' => 'bg-green-500', 'icon' => 'plus', 'chip' => 'bg-green-100 text-green-600'],
-        'edicao' => ['label' => 'Edicoes', 'dot' => 'bg-blue-500', 'bar' => 'bg-blue-500', 'icon' => 'edit', 'chip' => 'bg-blue-100 text-blue-600'],
-        'exclusao' => ['label' => 'Exclusoes', 'dot' => 'bg-red-500', 'bar' => 'bg-red-500', 'icon' => 'trash', 'chip' => 'bg-red-100 text-red-600'],
+        'criacao' => ['label' => 'Criações', 'dot' => 'bg-green-500', 'bar' => 'bg-green-500', 'icon' => 'plus', 'chip' => 'bg-green-100 text-green-600'],
+        'edicao' => ['label' => 'Edições', 'dot' => 'bg-blue-500', 'bar' => 'bg-blue-500', 'icon' => 'edit', 'chip' => 'bg-blue-100 text-blue-600'],
+        'exclusao' => ['label' => 'Exclusões', 'dot' => 'bg-red-500', 'bar' => 'bg-red-500', 'icon' => 'trash', 'chip' => 'bg-red-100 text-red-600'],
     ];
 @endphp
 
@@ -25,14 +25,14 @@
 
 @section('content')
 <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
-    <x-stat-card title="Total de Logs" :value="$totalLogs" icon="fas fa-clipboard-list" color="primary" />
+    <x-stat-card title="Total de Registros" :value="$totalLogs" icon="fas fa-clipboard-list" color="primary" />
     <x-stat-card title="Hoje" :value="$logsHoje" icon="fas fa-calendar-day" color="green" />
     <x-stat-card title="Esta Semana" :value="$logsSemana" icon="fas fa-calendar-week" color="blue" />
-    <x-stat-card title="Este Mes" :value="$logsMes" icon="fas fa-calendar-alt" color="purple" />
+    <x-stat-card title="Este Mês" :value="$logsMes" icon="fas fa-calendar-alt" color="purple" />
 </div>
 
 <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <x-card title="Logs por Acao" icon="fas fa-chart-pie">
+    <x-card title="Registros por Ação" icon="fas fa-chart-pie">
         <div class="space-y-3">
             @foreach($logsPorAcao as $acao => $quantidade)
                 @php
@@ -69,7 +69,7 @@
                     </div>
                     <div class="text-right">
                         <div class="text-2xl font-bold text-primary-600">{{ $usuarioData->total }}</div>
-                        <div class="text-xs text-gray-500">alteracoes</div>
+                        <div class="text-xs text-gray-500">alterações</div>
                     </div>
                 </div>
             @empty
@@ -88,7 +88,7 @@
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
                 <i class="fas fa-clock text-sm"></i>
             </span>
-            <h3 class="text-sm font-bold uppercase tracking-[0.08em] text-slate-700">Alteracoes Recentes</h3>
+            <h3 class="text-sm font-bold uppercase tracking-[0.08em] text-slate-700">Alterações Recentes</h3>
         </div>
         <div>
             @forelse($logsRecentes as $log)
@@ -155,7 +155,7 @@
     </x-card>
 </div>
 
-<x-card title="Atividade dos Ultimos 7 Dias" icon="fas fa-chart-line">
+<x-card title="Atividade dos Últimos 7 Dias" icon="fas fa-chart-line">
     <canvas id="atividadeChart" width="400" height="200"></canvas>
 </x-card>
 
@@ -203,35 +203,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-    <a href="{{ route('logs.index', ['acao' => 'criacao']) }}" class="rounded-lg border border-green-200 bg-green-50 p-5 transition-colors hover:bg-green-100">
-        <div class="flex items-center justify-between">
-            <div>
-                <div class="font-semibold text-green-800">Notas Criadas</div>
-                <div class="text-sm text-green-600">Ver todas as criacoes</div>
-            </div>
-            <i class="fas fa-plus-circle text-3xl text-green-500"></i>
-        </div>
-    </a>
-
-    <a href="{{ route('logs.index', ['acao' => 'edicao']) }}" class="rounded-lg border border-blue-200 bg-blue-50 p-5 transition-colors hover:bg-blue-100">
-        <div class="flex items-center justify-between">
-            <div>
-                <div class="font-semibold text-blue-800">Notas Editadas</div>
-                <div class="text-sm text-blue-600">Ver todas as edicoes</div>
-            </div>
-            <i class="fas fa-edit text-3xl text-blue-500"></i>
-        </div>
-    </a>
-
-     <a href="{{ route('logs.index', ['acao' => 'exclusao']) }}" class="rounded-lg border border-red-200 bg-red-50 p-5 transition-colors hover:bg-red-100">
-        <div class="flex items-center justify-between">
-            <div>
-                <div class="font-semibold text-red-800">Notas Removidas</div>
-                <div class="text-sm text-red-600">Ver todas as exclusoes</div>
-            </div>
-            <i class="fas fa-trash-alt text-3xl text-red-500"></i>
-        </div>
-    </a>
-</div>
 @endsection

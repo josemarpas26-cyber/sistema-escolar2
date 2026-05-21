@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('page-title', 'Logs de Alterações')
+@section('page-title', 'Registro de Alterações')
 @section('header-actions')
 <a href="{{ route('logs.dashboard') }}" class="btn btn-outline">
     <i class="fas fa-chart-bar mr-2"></i>

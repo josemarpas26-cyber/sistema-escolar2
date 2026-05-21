@@ -932,7 +932,7 @@
 
             <a href="{{ route('logs.index') }}"
                class="nav-item {{ request()->routeIs('logs.*') ? 'active' : '' }}">
-                <span class="nav-item-icon"><i class="fas fa-history"></i></span>Logs
+                <span class="nav-item-icon"><i class="fas fa-history"></i></span>Registros
             </a>
 
             @if(auth()->user()->isAdmin())

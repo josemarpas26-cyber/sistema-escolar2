@@ -220,13 +220,29 @@
 .est-empty-sub { font-size: .8rem; margin-top: 4px; }
 
 /* ── Disciplina header (admin/coord) ── */
+/* ── Disciplina header (admin/coord) ── */
+.est-disc-block {
+    border-top: 2px solid #e2e8f0;
+    margin-top: 4px;
+}
+.est-disc-block:first-child {
+    border-top: none;
+    margin-top: 0;
+}
 .est-disc-header {
-    padding: 8px 20px;
-    background: #eff6ff;
-    border-top: 1px solid #bfdbfe;
+    padding: 10px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
     display: flex; align-items: center; gap: 10px;
     font-size: .78rem;
 }
+.est-disc-name { font-weight: 700; color: #1e40af; }
+.est-disc-code {
+    color: #3b82f6; font-size: .7rem;
+    background: #eff6ff; padding: 2px 7px;
+    border-radius: 10px; border: 1px solid #bfdbfe;
+}
+
 .est-disc-name { font-weight: 700; color: #1e40af; }
 .est-disc-code { color: #3b82f6; font-size: .7rem; }
 </style>
@@ -867,7 +883,7 @@
 
         </div>{{-- /est-item-body --}}
     </div>{{-- /est-item --}}
-    <br><br>
+
     @endforeach
 
     @endif{{-- /itens --}}
