@@ -110,7 +110,7 @@
                 </form>
             @else
                 <div class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                    Os seus dados principais são geridos internamente. Aqui pode consultar as informações e alterar apenas a palavra-passe.
+                    Os seus dados são geridos internamente. Aqui pode consultar as informações e alterar apenas a palavra-passe.
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">

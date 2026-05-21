@@ -290,7 +290,10 @@
         <div class="grid grid-cols-1 gap-4 text-sm text-blue-800 md:grid-cols-2">
             <div><strong>MT1, MT2, MT3:</strong> Médias dos Trimestres 1, 2 e 3</div>
             <div><strong>MFT2:</strong> Média dos Primeiro e Segundo Trimestres</div>
+            <div><strong>PP:</strong> Prova do professor</div>
+            <div><strong>CF:</strong> Classificação da disciplina (antes da prova global)</div>
             <div><strong>PG:</strong> Prova Global</div>
+            <div><strong>CA:</strong> Classificação da anual da disciplina</div>
             <div><strong>CFD:</strong> Classificação Final da Disciplina</div>
             <div class="md:col-span-2">
                 <strong>Aprovação:</strong> CFD ≥ 10 valores
