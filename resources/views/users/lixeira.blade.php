@@ -38,7 +38,7 @@
         <div class="text-sm text-amber-800">
             <p class="font-semibold mb-1">Sobre a restauração</p>
             <p>Ao restaurar um utilizador, as suas matrículas e dados académicos são preservados automaticamente
-            porque o sistema usa eliminação suave (soft delete). O utilizador volta ao estado anterior à eliminação.</p>
+            . O utilizador volta ao estado anterior à eliminação.</p>
         </div>
     </div>
 
