@@ -28,7 +28,7 @@
     @endif
 
 
-        {{-- Ativar Ano Letivo --}}
+        {{-- Ativar Ano Letivo
     @if(!$anoLetivo->ativo)
         <form action="{{ route('anos-letivos.reativar', $anoLetivo) }}"
               method="POST"
@@ -41,7 +41,7 @@
             </button>
         </form>
     @endif
-
+ --}}
 
     {{-- Editar --}}
     @if(!$anoLetivo->encerrado)

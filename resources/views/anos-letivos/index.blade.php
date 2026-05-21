@@ -77,7 +77,7 @@
     </form>
     @endif
 
-    {{-- Ativar (anos inativos, encerrados ou não) --}}
+    {{-- Ativar (anos inativos, encerrados ou não) 
     @if(!$ano->ativo)
     <form action="{{ route('anos-letivos.reativar', $ano) }}"
           method="POST"
@@ -90,7 +90,7 @@
         </button>
     </form>
     @endif
-
+        --}}
 </td>
 
                     </tr>
