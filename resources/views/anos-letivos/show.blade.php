@@ -28,22 +28,6 @@
         </form>
     @endif
 
-
-        {{-- Ativar Ano Letivo --}}
-    @if($podeGerirEstadoAnoLetivo && !$anoLetivo->ativo)
-        <form action="{{ route('anos-letivos.reativar', $anoLetivo) }}"
-              method="POST"
-              onsubmit="return confirm('Deseja reativar este ano letivo? O ano atualmente ativo será desativado.')">
-            @csrf
-
-            <button type="submit" class="btn btn-success">
-                <i class="fas fa-play mr-2"></i>
-                Reativar
-            </button>
-        </form>
-    @endif
-
-
     {{-- Editar --}}
     @if(!$anoLetivo->encerrado)
         <a href="{{ route('anos-letivos.edit', $anoLetivo) }}" 
@@ -249,6 +233,54 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    </x-card>
+    @endif
+
+
+    @if($anosAnterioresDetalhados->isNotEmpty())
+    <x-card title="Anos letivos anteriores (histórico completo)" icon="fas fa-archive">
+        <p class="text-sm text-gray-600 mb-4">Resumo completo para consulta rápida, sem necessidade de reativar anos letivos antigos.</p>
+        <div class="space-y-6">
+            @foreach($anosAnterioresDetalhados as $item)
+                @php($anoAnterior = $item['ano'])
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4 text-sm">
+                        <div><span class="text-gray-500">Ano</span><p class="font-semibold">{{ $anoAnterior->nome }}</p></div>
+                        <div><span class="text-gray-500">Período</span><p class="font-semibold">{{ $anoAnterior->data_inicio->format('d/m/Y') }} - {{ $anoAnterior->data_fim->format('d/m/Y') }}</p></div>
+                        <div><span class="text-gray-500">Turmas</span><p class="font-semibold">{{ $item['total_turmas'] }}</p></div>
+                        <div><span class="text-gray-500">Alunos</span><p class="font-semibold">{{ $item['total_alunos'] }}</p></div>
+                        <div><span class="text-gray-500">Notas</span><p class="font-semibold">{{ $item['total_notas'] }}</p></div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">Turma</th>
+                                    <th class="px-3 py-2 text-left">Curso</th>
+                                    <th class="px-3 py-2 text-center">Alunos</th>
+                                    <th class="px-3 py-2 text-center">Disciplinas</th>
+                                    <th class="px-3 py-2 text-center">Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @forelse($anoAnterior->turmas as $turmaAnterior)
+                                    <tr>
+                                        <td class="px-3 py-2">{{ $turmaAnterior->nome_completo ?? $turmaAnterior->nome }}</td>
+                                        <td class="px-3 py-2">{{ $turmaAnterior->curso->nome ?? '-' }}</td>
+                                        <td class="px-3 py-2 text-center">{{ $turmaAnterior->alunos_matriculados_count }}</td>
+                                        <td class="px-3 py-2 text-center">{{ $turmaAnterior->disciplinas_count }}</td>
+                                        <td class="px-3 py-2 text-center">{{ $turmaAnterior->notas_count }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" class="px-3 py-4 text-center text-gray-500">Sem turmas.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endforeach
         </div>
     </x-card>
     @endif

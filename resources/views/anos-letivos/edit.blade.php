@@ -113,16 +113,6 @@
             <!-- Ações de Status -->
             <x-card title="{{ $podeGerirEstadoAnoLetivo ? 'Gerenciar Status' : 'Estado do Ano Letivo' }}" icon="fas fa-cog">
                 <div class="space-y-3">
-                @if($podeGerirEstadoAnoLetivo && !$anoLetivo->ativo)
-                    <form method="POST" action="{{ route('anos-letivos.reativar', $anoLetivo) }}">
-                        @csrf
-                        <button type="submit" class="btn btn-success w-full"
-                                onclick="return confirm('Deseja reativar este ano letivo? O ano ativo atual será desativado.')">
-                            <i class="fas fa-play mr-2"></i>
-                            Reativar Ano Letivo
-                        </button>
-                    </form>
-                    @endif
 
                     @if($podeGerirEstadoAnoLetivo && $anoLetivo->ativo && !$anoLetivo->encerrado)
                     <form method="POST" action="{{ route('anos-letivos.encerrar', $anoLetivo) }}">
@@ -141,14 +131,14 @@
                             <i class="fas fa-lock text-red-600 mt-1 mr-3"></i>
                             <div class="text-sm text-red-800">
                                 <p class="font-semibold">Ano Encerrado</p>
-                                <p class="mt-1">Ao reativar, ele volta a ficar ativo e deixa de estar encerrado.</p>
+                                <p class="mt-1">Este ano foi encerrado e permanece apenas para consulta histórica.</p>
                             </div>
                         </div>
                     </div>
                     @endif
                     @if(!$podeGerirEstadoAnoLetivo)
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                        Para alterações de estado (reativar/encerrar), consulte os detalhes completos deste ano letivo na página de visualização.
+                        A página de visualização apresenta o histórico completo deste ano letivo para consulta administrativa.
                     </div>
                     @endif
 

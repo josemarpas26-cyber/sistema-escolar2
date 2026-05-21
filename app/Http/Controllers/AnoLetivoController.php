@@ -141,7 +141,36 @@ class AnoLetivoController extends Controller
             ->orderBy('nome')
             ->get();
 
-        return view('anos-letivos.show', compact('anoLetivo', 'stats', 'turmasDetalhadas'));
+        $anosAnterioresDetalhados = AnoLetivo::query()
+            ->where('id', '!=', $anoLetivo->id)
+            ->whereDate('data_fim', '<', $anoLetivo->data_inicio)
+            ->orderByDesc('data_inicio')
+            ->with([
+                'turmas' => fn ($query) => $query
+                    ->with('curso')
+                    ->withCount([
+                        'alunos as alunos_matriculados_count' => fn ($alunos) => $alunos->wherePivot('status', 'matriculado'),
+                        'disciplinas',
+                        'notas',
+                    ])
+                    ->orderBy('nome'),
+            ])
+            ->get()
+            ->map(function (AnoLetivo $ano) {
+                $turmaIds = $ano->turmas->pluck('id');
+
+                return [
+                    'ano' => $ano,
+                    'total_turmas' => $ano->turmas->count(),
+                    'total_alunos' => DB::table('turma_aluno')
+                        ->whereIn('turma_id', $turmaIds)
+                        ->where('status', 'matriculado')
+                        ->count(),
+                    'total_notas' => $ano->notas()->count(),
+                ];
+            });
+
+        return view('anos-letivos.show', compact('anoLetivo', 'stats', 'turmasDetalhadas', 'anosAnterioresDetalhados'));
     }
 
     public function edit(AnoLetivo $anoLetivo)
