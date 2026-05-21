@@ -28,21 +28,6 @@
     @endif
 
 
-        {{-- Ativar Ano Letivo --}}
-    @if(!$anoLetivo->ativo)
-        <form action="{{ route('anos-letivos.reativar', $anoLetivo) }}"
-              method="POST"
-              onsubmit="return confirm('Deseja reativar este ano letivo? O ano atualmente ativo será desativado.')">
-            @csrf
-
-            <button type="submit" class="btn btn-success">
-                <i class="fas fa-play mr-2"></i>
-                Reativar
-            </button>
-        </form>
-    @endif
-
-
     {{-- Editar --}}
     @if(!$anoLetivo->encerrado)
         <a href="{{ route('anos-letivos.edit', $anoLetivo) }}" 
@@ -211,6 +196,54 @@
                 </table>
             </div>
         @endforeach
+    </x-card>
+    @endif
+
+    @if(isset($anosAnteriores) && $anosAnteriores->isNotEmpty())
+    <x-card title="Histórico Detalhado de Anos Letivos Anteriores" icon="fas fa-history">
+        <p class="text-sm text-gray-600 mb-4">
+            Consulte abaixo todos os dados relevantes dos anos anteriores para apoio à tomada de decisão, sem necessidade de reativação manual.
+        </p>
+        <div class="space-y-4">
+            @foreach($anosAnteriores as $anoAnterior)
+                <details class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <summary class="cursor-pointer font-semibold text-gray-800 flex items-center justify-between">
+                        <span>{{ $anoAnterior->nome }} ({{ optional($anoAnterior->data_inicio)->format('d/m/Y') }} - {{ optional($anoAnterior->data_fim)->format('d/m/Y') }})</span>
+                    </summary>
+                    <div class="mt-4 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div class="p-3 bg-white rounded border"><span class="text-gray-600">Status:</span> <strong>{{ $anoAnterior->encerrado ? 'Encerrado' : ($anoAnterior->ativo ? 'Ativo' : 'Inativo') }}</strong></div>
+                            <div class="p-3 bg-white rounded border"><span class="text-gray-600">Turmas:</span> <strong>{{ $anoAnterior->detalhes['total_turmas'] ?? 0 }}</strong></div>
+                            <div class="p-3 bg-white rounded border"><span class="text-gray-600">Alunos Matriculados:</span> <strong>{{ $anoAnterior->detalhes['total_alunos'] ?? 0 }}</strong></div>
+                        </div>
+                        <div class="p-3 bg-white rounded border text-sm">
+                            <span class="text-gray-600">Total de Notas:</span>
+                            <strong>{{ $anoAnterior->detalhes['total_notas'] ?? 0 }}</strong>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm divide-y divide-gray-200">
+                                <thead class="bg-white">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left">Turma</th>
+                                        <th class="px-3 py-2 text-left">Curso</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    @forelse($anoAnterior->turmas as $turmaAnterior)
+                                        <tr>
+                                            <td class="px-3 py-2">{{ $turmaAnterior->nome_completo ?? $turmaAnterior->nome }}</td>
+                                            <td class="px-3 py-2">{{ $turmaAnterior->curso->nome ?? '-' }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr><td class="px-3 py-3 text-gray-500" colspan="2">Sem turmas registadas.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
+            @endforeach
+        </div>
     </x-card>
     @endif
 

@@ -113,17 +113,6 @@
             <x-card title="Gerenciar Status" icon="fas fa-cog">
                 <div class="space-y-3">
                     
-                @if(!$anoLetivo->ativo)
-                    <form method="POST" action="{{ route('anos-letivos.reativar', $anoLetivo) }}">
-                        @csrf
-                        <button type="submit" class="btn btn-success w-full"
-                                onclick="return confirm('Deseja reativar este ano letivo? O ano ativo atual será desativado.')">
-                            <i class="fas fa-play mr-2"></i>
-                            Reativar Ano Letivo
-                        </button>
-                    </form>
-                    @endif
-
                     @if($anoLetivo->ativo && !$anoLetivo->encerrado)
                     <form method="POST" action="{{ route('anos-letivos.encerrar', $anoLetivo) }}">
                         @csrf
@@ -141,7 +130,7 @@
                             <i class="fas fa-lock text-red-600 mt-1 mr-3"></i>
                             <div class="text-sm text-red-800">
                                 <p class="font-semibold">Ano Encerrado</p>
-                                <p class="mt-1">Ao reativar, ele volta a ficar ativo e deixa de estar encerrado.</p>
+                                <p class="mt-1">Este ano letivo está fechado para alterações operacionais.</p>
                             </div>
                         </div>
                     </div>
