@@ -37,6 +37,25 @@ class DashboardController extends Controller
             $dias_restantes = (int) now()->diffInDays($anoLetivoAtivo->data_fim, false);
         }
 
+        $turmasDoAno = Turma::query()
+            ->when($anoLetivoAtivo, fn ($q) => $q->where('ano_letivo_id', $anoLetivoAtivo->id))
+            ->with(['curso', 'alunos' => fn ($q) => $q->wherePivot('status', 'matriculado')])
+            ->get();
+
+        $matriculasPorTurma = $turmasDoAno
+            ->sortBy('nome_completo')
+            ->map(fn ($turma) => [
+                'label' => $turma->nome_completo,
+                'value' => $turma->alunos->count(),
+            ])->values();
+
+        $distribuicaoPorCurso = $turmasDoAno
+            ->groupBy(fn ($turma) => $turma->curso->nome ?? 'Sem curso')
+            ->map(fn ($itens, $curso) => [
+                'label' => $curso,
+                'value' => $itens->sum(fn ($turma) => $turma->alunos->count()),
+            ])->sortByDesc('value')->values();
+
         $stats = [
             'total_usuarios'   => User::count(),
             'total_alunos'     => User::alunos()->count(),
@@ -44,6 +63,8 @@ class DashboardController extends Controller
             'total_turmas'     => Turma::count(),
             'ano_letivo_ativo' => $anoLetivoAtivo,
             'dias_restantes'   => $dias_restantes,
+            'matriculas_por_turma' => $matriculasPorTurma,
+            'distribuicao_por_curso' => $distribuicaoPorCurso,
             'logs_recentes'    => NotaLog::with(['usuario', 'aluno', 'disciplina'])
                 ->latest('data_alteracao')
                 ->take(10)
@@ -124,12 +145,31 @@ class DashboardController extends Controller
                 ->count();
         }
 
+        $matriculasPorTurma = $turmas
+            ->map(function ($atribuicoes) {
+                $turma = $atribuicoes->first()->turma;
+
+                return [
+                    'label' => $turma->nome_completo,
+                    'value' => $turma->alunos->count(),
+                ];
+            })->sortBy('label')->values();
+
+        $distribuicaoPorCurso = $turmas
+            ->groupBy(fn ($atribuicoes) => $atribuicoes->first()->turma->curso->nome ?? 'Sem curso')
+            ->map(fn ($atribuicoesPorCurso, $curso) => [
+                'label' => $curso,
+                'value' => $atribuicoesPorCurso->sum(fn ($atribuicoes) => $atribuicoes->first()->turma->alunos->count()),
+            ])->sortByDesc('value')->values();
+
         $stats = [
             'total_turmas'    => $turmas->count(),
             'total_alunos'    => $totalAlunos,
             'notas_pendentes' => $notasPendentes,
             'turmas'          => $turmas,
             'ano_letivo'      => $anoLetivo,
+            'matriculas_por_turma' => $matriculasPorTurma,
+            'distribuicao_por_curso' => $distribuicaoPorCurso,
         ];
 
         return view('dashboard.professor', $stats);

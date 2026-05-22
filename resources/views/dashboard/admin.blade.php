@@ -410,6 +410,20 @@
     </a>
 </div>
 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;">
+    <div class="db-cal" style="padding:16px;">
+        <div class="db-logs-title" style="margin-bottom:10px;">Matrículas por Turma</div>
+        <div style="height:260px;"><canvas id="adminBarChart"></canvas></div>
+    </div>
+    <div class="db-cal" style="padding:16px;">
+        <div class="db-logs-title" style="margin-bottom:10px;">Distribuição por Curso</div>
+        <div style="height:260px;"><canvas id="adminPieChart"></canvas></div>
+    </div>
+</div>
+
 <!-- ── DUAS COLUNAS ── -->
 <div class="db-two-col">
 
@@ -556,6 +570,40 @@
 
 @push('scripts')
 <script>
+
+const adminBarData = @json($matriculas_por_turma);
+const adminPieData = @json($distribuicao_por_curso);
+
+if (document.getElementById('adminBarChart')) {
+    new Chart(document.getElementById('adminBarChart'), {
+        type: 'bar',
+        data: {
+            labels: adminBarData.map((item) => item.label),
+            datasets: [{
+                label: 'Alunos matriculados',
+                data: adminBarData.map((item) => item.value),
+                backgroundColor: '#2563eb',
+                borderRadius: 8,
+            }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+}
+
+if (document.getElementById('adminPieChart')) {
+    new Chart(document.getElementById('adminPieChart'), {
+        type: 'pie',
+        data: {
+            labels: adminPieData.map((item) => item.label),
+            datasets: [{
+                data: adminPieData.map((item) => item.value),
+                backgroundColor: ['#2563eb', '#16a34a', '#7c3aed', '#f59e0b', '#db2777', '#0d9488'],
+            }],
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+}
+
 function schoolCalendar() {
     return {
         currentMonth: new Date().getMonth(),
