@@ -950,8 +950,8 @@
             @php $deletedCount = \App\Models\User::onlyTrashed()->count(); @endphp
             <a href="{{ route('users.lixeira') }}"
                class="nav-item {{ request()->routeIs('users.lixeira') ? 'active' : '' }}">
-                <span class="nav-item-icon"><i class="fas fa-trash-alt"></i></span>
-                Lixeira
+                <span class="nav-item-icon"><i class="fas fa-box-archive mr-1"></i></span>
+                Arquivo
                 @if($deletedCount > 0)
                 <span class="nav-item-count">{{ $deletedCount }}</span>
                 @endif

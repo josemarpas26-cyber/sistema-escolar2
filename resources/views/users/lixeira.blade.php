@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page-title', 'Lixeira — Utilizadores Eliminados')
+@section('page-title', 'Arquivo — Utilizadores Eliminados')
 
 @section('header-actions')
 <a href="{{ route('users.index') }}" class="btn btn-outline">
@@ -108,9 +108,9 @@
     @else
     <div class="text-center py-16">
         <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-trash-alt text-3xl text-gray-300"></i>
+            <i class="fas fa-box-archive text-3xl text-gray-300"></i>
         </div>
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Lixeira vazia</h3>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">Arquivo vazio</h3>
         <p class="text-gray-500 text-sm">Nenhum utilizador foi eliminado.</p>
     </div>
     @endif
