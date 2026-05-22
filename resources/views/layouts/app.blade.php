@@ -876,6 +876,10 @@
                        class="nav-sub-item {{ request()->routeIs('users.professores') ? 'active' : '' }}">
                         <span class="nav-sub-dot"></span>Professores
                     </a>
+                    <a href="{{ route('users.secretarias') }}"
+                       class="nav-sub-item {{ request()->routeIs('users.secretarias') ? 'active' : '' }}">
+                        <span class="nav-sub-dot"></span>Secretária
+                    </a>
                 </div>
             </div>
 
