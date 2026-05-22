@@ -371,8 +371,7 @@ class UserController extends Controller
         $this->checkPermission('users.view');
 
         $query = User::alunos()
-            ->with(['role', 'turmas.curso'])
-            ->orderBy('name');
+            ->with(['role', 'turmas.curso']);
 
         // 🔎 Pesquisa
         if ($request->filled('search')) {
@@ -394,6 +393,16 @@ class UserController extends Controller
         // ✅ Filtro por status
         if ($request->filled('status')) {
             $query->where('ativo', $request->status === 'ativo');
+        }
+
+        if ($request->filled('genero')) {
+            $query->where('genero', $request->genero);
+        }
+
+        if ($request->input('ordem') === 'recentes') {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderBy('name');
         }
 
         $alunos = $query->paginate(20);
@@ -418,16 +427,65 @@ class UserController extends Controller
         $this->checkPermission('users.view');
 
         $query = User::professores()
-            ->with(['role', 'atribuicoes.turma', 'atribuicoes.disciplina'])
-            ->orderBy('name');
+            ->with(['role', 'atribuicoes.turma', 'atribuicoes.disciplina']);
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where('name', 'like', "%{$search}%");
         }
 
+        if ($request->filled('genero')) {
+            $query->where('genero', $request->genero);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('ativo', $request->status === 'ativo');
+        }
+
+        if ($request->input('ordem') === 'recentes') {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderBy('name');
+        }
+
         $professores = $query->paginate(20);
 
         return view('users.professores', compact('professores'));
+    }
+
+    public function secretarias(Request $request)
+    {
+        $this->checkPermission('users.view');
+
+        $query = User::query()
+            ->whereHas('role', fn ($q) => $q->where('name', 'secretaria'))
+            ->with('role');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('bi', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('genero')) {
+            $query->where('genero', $request->genero);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('ativo', $request->status === 'ativo');
+        }
+
+        if ($request->input('ordem') === 'recentes') {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderBy('name');
+        }
+
+        $secretarias = $query->paginate(20);
+
+        return view('users.secretarias', compact('secretarias'));
     }
 }
