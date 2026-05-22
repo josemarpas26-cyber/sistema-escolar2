@@ -223,9 +223,10 @@
 ═══════════════════════════════════════════════════════════════ */
 .np-layout {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   gap: 20px;
   align-items: start;
+  min-width: 0;
 }
 @media (max-width: 1100px) {
   .np-layout { grid-template-columns: 1fr; }
@@ -362,6 +363,8 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* Unsaved warning */
@@ -624,8 +627,10 @@
 
 /* ═══ TABLE WRAPPER ═══ */
 .np-tbl-scroll {
+  width: 100%;
+  min-width: 0;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
 }
 .np-tbl-scroll::-webkit-scrollbar { height: 8px; }
@@ -635,6 +640,7 @@
 /* ═══ TABLE ═══ */
 .np-tbl {
   width: 100%;
+  min-width: 900px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13px;
