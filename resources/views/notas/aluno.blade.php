@@ -259,22 +259,54 @@
                                  {{ !$bloco['disponivel'] ? 'Não aplicável' : (!$nota ? 'Sem lançamento' : 'Dados completos') }}
                             </span>
                         </div>
-                        <div class="p-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-                            @foreach($bloco['campos'] as $campo)
-                            <div class="rounded-xl p-3" style="background:var(--surface); border:1px solid var(--border);">
-                                <div class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">{{ $campo['label'] }}</div>
-                                <div class="mt-2 text-base font-extrabold" style="color:{{ $campo['valor'] === null ? 'var(--tx-4)' : 'var(--tx-1)' }};">
-                                    @if(!$bloco['disponivel'] && $campo['label'] !== 'Estado')
-                                       Não aplicável
-                                    @elseif($campo['label'] === 'Estado')
-                                        {{ $campo['valor'] ?? ($nota ? 'Em andamento' : 'Sem lançamento') }}
-                                    @else
-                                        {{ $formatNota($campo['valor']) }}
-                                    @endif
+                        @if($bloco['titulo'] === 'Fecho final')
+                            <div class="p-4 flex flex-wrap gap-3">
+                                @foreach($bloco['campos'] as $campo)
+                                <div
+                                    @class([
+                                        'rounded-xl p-3',
+                                        'min-w-[72px]' => $campo['label'] !== 'Estado',
+                                        'min-w-[100px] flex-1 sm:flex-none' => $campo['label'] === 'Estado',
+                                    ])
+                                    style="background:var(--surface); border:1px solid var(--border);"
+                                >
+                                    <div class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">{{ $campo['label'] }}</div>
+                                    <div
+                                        @class([
+                                            'mt-2 text-base font-extrabold',
+                                            'whitespace-nowrap' => $campo['label'] === 'Estado',
+                                        ])
+                                        style="color:{{ $campo['valor'] === null ? 'var(--tx-4)' : 'var(--tx-1)' }};"
+                                    >
+                                        @if(!$bloco['disponivel'] && $campo['label'] !== 'Estado')
+                                           Não aplicável
+                                        @elseif($campo['label'] === 'Estado')
+                                            {{ $campo['valor'] ?? ($nota ? 'Em andamento' : 'Sem lançamento') }}
+                                        @else
+                                            {{ $formatNota($campo['valor']) }}
+                                        @endif
+                                    </div>
                                 </div>
+                                @endforeach
                             </div>
-                            @endforeach
-                        </div>
+                        @else
+                            <div class="p-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+                                @foreach($bloco['campos'] as $campo)
+                                <div class="rounded-xl p-3" style="background:var(--surface); border:1px solid var(--border);">
+                                    <div class="text-xs font-bold uppercase tracking-[0.14em]" style="color:var(--tx-4);">{{ $campo['label'] }}</div>
+                                    <div class="mt-2 text-base font-extrabold" style="color:{{ $campo['valor'] === null ? 'var(--tx-4)' : 'var(--tx-1)' }};">
+                                        @if(!$bloco['disponivel'] && $campo['label'] !== 'Estado')
+                                           Não aplicável
+                                        @elseif($campo['label'] === 'Estado')
+                                            {{ $campo['valor'] ?? ($nota ? 'Em andamento' : 'Sem lançamento') }}
+                                        @else
+                                            {{ $formatNota($campo['valor']) }}
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </section>
                     @endforeach
                 </div>
