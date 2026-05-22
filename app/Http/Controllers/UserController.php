@@ -41,6 +41,17 @@ class UserController extends Controller
         }
     }
 
+
+    /**
+     * Secretária não pode criar/editar utilizadores com papel de administrador.
+     */
+    private function assertPodeAtribuirRole(?Role $role): void
+    {
+        if ($role?->name === 'admin' && !auth()->user()->isAdmin()) {
+            abort(403, 'Secretária não pode criar um admin.');
+        }
+    }
+
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
@@ -68,7 +79,9 @@ class UserController extends Controller
         }
 
         $users = $query->paginate(20);
-        $roles = Role::all();
+        $roles = auth()->user()->isAdmin()
+            ? Role::all()
+            : Role::query()->where('name', '!=', 'admin')->get();
 
         return view('users.index', compact('users', 'roles'));
     }
@@ -77,7 +90,9 @@ class UserController extends Controller
     {
         $this->checkPermission('users.create');
 
-        $roles = Role::all();
+        $roles = auth()->user()->isAdmin()
+            ? Role::all()
+            : Role::query()->where('name', '!=', 'admin')->get();
         return view('users.create', compact('roles'));
     }
 
@@ -93,6 +108,7 @@ class UserController extends Controller
         $this->checkPermission('users.create');
  
         $selectedRole = Role::find($request->input('role_id'));
+        $this->assertPodeAtribuirRole($selectedRole);
         $isAluno      = optional($selectedRole)->name === 'aluno';
  
         $autoPasswordRequested = $request->boolean('auto_password');
@@ -187,7 +203,9 @@ class UserController extends Controller
     {
         $this->checkPermission('users.edit');
 
-        $roles = Role::all();
+        $roles = auth()->user()->isAdmin()
+            ? Role::all()
+            : Role::query()->where('name', '!=', 'admin')->get();
         return view('users.edit', compact('user', 'roles'));
     }
 
@@ -199,6 +217,7 @@ class UserController extends Controller
         $this->checkPermission('users.edit');
  
         $selectedRole = Role::find($request->input('role_id'));
+        $this->assertPodeAtribuirRole($selectedRole);
         $isAluno      = optional($selectedRole)->name === 'aluno';
  
         // Regra de email
