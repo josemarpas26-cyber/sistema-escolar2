@@ -745,10 +745,14 @@
 .np-tbl tbody td.td-sticky {
   position: sticky;
   left: 0;
-  background: inherit;
+  background: var(--surface-1);
   z-index: 2;
   box-shadow: 2px 0 4px rgba(0,0,0,.05);
 }
+.np-tbl tbody tr:nth-child(even) td.td-sticky { background: var(--ink-50); }
+.np-tbl tbody tr:hover td.td-sticky { background: var(--blue-50) !important; }
+.np-tbl tbody tr.np-row-readonly td.td-sticky { background: var(--ink-50) !important; }
+.np-tbl tbody tr.np-row-readonly:hover td.td-sticky { background: var(--ink-100) !important; }
 
 /* Aluno cell */
 .np-aluno-cell {
