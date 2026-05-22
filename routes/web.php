@@ -47,6 +47,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('users.alunos');
     Route::get('professores', [UserController::class, 'professores'])
         ->name('users.professores');
+    Route::get('secretarias', [UserController::class, 'secretarias'])
+        ->name('users.secretarias');
 
     Route::resource('cursos', CursoController::class);
     Route::post('cursos/{curso}/toggle-status', [CursoController::class, 'toggleStatus'])

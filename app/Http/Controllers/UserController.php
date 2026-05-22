@@ -41,6 +41,17 @@ class UserController extends Controller
         }
     }
 
+
+    /**
+     * Secretária não pode criar/editar utilizadores com papel de administrador.
+     */
+    private function assertPodeAtribuirRole(?Role $role): void
+    {
+        if ($role?->name === 'admin' && !auth()->user()->isAdmin()) {
+            abort(403, 'Secretária não pode criar um admin.');
+        }
+    }
+
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
@@ -68,7 +79,9 @@ class UserController extends Controller
         }
 
         $users = $query->paginate(20);
-        $roles = Role::all();
+        $roles = auth()->user()->isAdmin()
+            ? Role::all()
+            : Role::query()->where('name', '!=', 'admin')->get();
 
         return view('users.index', compact('users', 'roles'));
     }
@@ -77,7 +90,9 @@ class UserController extends Controller
     {
         $this->checkPermission('users.create');
 
-        $roles = Role::all();
+        $roles = auth()->user()->isAdmin()
+            ? Role::all()
+            : Role::query()->where('name', '!=', 'admin')->get();
         return view('users.create', compact('roles'));
     }
 
@@ -93,6 +108,7 @@ class UserController extends Controller
         $this->checkPermission('users.create');
  
         $selectedRole = Role::find($request->input('role_id'));
+        $this->assertPodeAtribuirRole($selectedRole);
         $isAluno      = optional($selectedRole)->name === 'aluno';
  
         $autoPasswordRequested = $request->boolean('auto_password');
@@ -187,7 +203,9 @@ class UserController extends Controller
     {
         $this->checkPermission('users.edit');
 
-        $roles = Role::all();
+        $roles = auth()->user()->isAdmin()
+            ? Role::all()
+            : Role::query()->where('name', '!=', 'admin')->get();
         return view('users.edit', compact('user', 'roles'));
     }
 
@@ -199,6 +217,7 @@ class UserController extends Controller
         $this->checkPermission('users.edit');
  
         $selectedRole = Role::find($request->input('role_id'));
+        $this->assertPodeAtribuirRole($selectedRole);
         $isAluno      = optional($selectedRole)->name === 'aluno';
  
         // Regra de email
@@ -352,8 +371,7 @@ class UserController extends Controller
         $this->checkPermission('users.view');
 
         $query = User::alunos()
-            ->with(['role', 'turmas.curso'])
-            ->orderBy('name');
+            ->with(['role', 'turmas.curso']);
 
         // 🔎 Pesquisa
         if ($request->filled('search')) {
@@ -375,6 +393,16 @@ class UserController extends Controller
         // ✅ Filtro por status
         if ($request->filled('status')) {
             $query->where('ativo', $request->status === 'ativo');
+        }
+
+        if ($request->filled('genero')) {
+            $query->where('genero', $request->genero);
+        }
+
+        if ($request->input('ordem') === 'recentes') {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderBy('name');
         }
 
         $alunos = $query->paginate(20);
@@ -399,16 +427,65 @@ class UserController extends Controller
         $this->checkPermission('users.view');
 
         $query = User::professores()
-            ->with(['role', 'atribuicoes.turma', 'atribuicoes.disciplina'])
-            ->orderBy('name');
+            ->with(['role', 'atribuicoes.turma', 'atribuicoes.disciplina']);
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where('name', 'like', "%{$search}%");
         }
 
+        if ($request->filled('genero')) {
+            $query->where('genero', $request->genero);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('ativo', $request->status === 'ativo');
+        }
+
+        if ($request->input('ordem') === 'recentes') {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderBy('name');
+        }
+
         $professores = $query->paginate(20);
 
         return view('users.professores', compact('professores'));
+    }
+
+    public function secretarias(Request $request)
+    {
+        $this->checkPermission('users.view');
+
+        $query = User::query()
+            ->whereHas('role', fn ($q) => $q->where('name', 'secretaria'))
+            ->with('role');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('bi', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('genero')) {
+            $query->where('genero', $request->genero);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('ativo', $request->status === 'ativo');
+        }
+
+        if ($request->input('ordem') === 'recentes') {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderBy('name');
+        }
+
+        $secretarias = $query->paginate(20);
+
+        return view('users.secretarias', compact('secretarias'));
     }
 }

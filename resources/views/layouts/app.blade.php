@@ -876,6 +876,10 @@
                        class="nav-sub-item {{ request()->routeIs('users.professores') ? 'active' : '' }}">
                         <span class="nav-sub-dot"></span>Professores
                     </a>
+                    <a href="{{ route('users.secretarias') }}"
+                       class="nav-sub-item {{ request()->routeIs('users.secretarias') ? 'active' : '' }}">
+                        <span class="nav-sub-dot"></span>Secretária
+                    </a>
                 </div>
             </div>
 
@@ -891,10 +895,12 @@
                class="nav-item {{ request()->routeIs('turmas.*') ? 'active' : '' }}">
                 <span class="nav-item-icon"><i class="fas fa-chalkboard"></i></span>Turmas
             </a>
+            @if(auth()->user()->isAdmin())
             <a href="{{ route('anos-letivos.index') }}"
                class="nav-item {{ request()->routeIs('anos-letivos.*') ? 'active' : '' }}">
                 <span class="nav-item-icon"><i class="fas fa-calendar-alt"></i></span>Anos Letivos
             </a>
+            @endif  {{-- fecha isAdmin --}}
             @endif
 
             <div class="nav-section-label">Académico</div>

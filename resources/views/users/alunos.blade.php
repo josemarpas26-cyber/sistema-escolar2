@@ -15,7 +15,7 @@
 
 {{-- Filtros --}}
 <x-card class="mb-6">
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
          @csrf
         <input type="text" name="search" value="{{ request('search') }}"
             placeholder="Pesquisar por nome ou n.º de processo..." class="input">
@@ -31,6 +31,15 @@
             <option value="">Todos os status</option>
             <option value="ativo"   {{ request('status') == 'ativo'   ? 'selected' : '' }}>Ativo</option>
             <option value="inativo" {{ request('status') == 'inativo' ? 'selected' : '' }}>Inativo</option>
+        </select>
+        <select name="genero" class="input">
+            <option value="">Todos os sexos</option>
+            <option value="M" {{ request('genero') == 'M' ? 'selected' : '' }}>Masculino</option>
+            <option value="F" {{ request('genero') == 'F' ? 'selected' : '' }}>Feminino</option>
+        </select>
+        <select name="ordem" class="input">
+            <option value="alfabetica" {{ request('ordem', 'alfabetica') == 'alfabetica' ? 'selected' : '' }}>Ordem alfabética</option>
+            <option value="recentes" {{ request('ordem') == 'recentes' ? 'selected' : '' }}>Data de adição (mais recentes)</option>
         </select>
         <button type="submit" class="btn btn-primary">
             <i class="fas fa-search mr-2"></i>
