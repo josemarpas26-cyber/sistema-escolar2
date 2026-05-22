@@ -78,6 +78,10 @@ class ResultadoAlunoTurmaService
             $negativasNaoTerminais++;
         }
 
+        if ($temRecurso) {
+            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
+        }
+
         if (! $temNota || $temPendente) {
             return $this->resultado(self::STATUS_PENDENTE, '', '');
         }
@@ -92,10 +96,6 @@ class ResultadoAlunoTurmaService
             || $negativasNaoTerminais > self::MAX_NEGATIVAS_NAO_TERMINAIS
         ) {
             return $this->resultado(self::STATUS_REPROVADO, '', self::RESULTADO_NAO_TRANSITA);
-        }
-
-        if ($temRecurso) {
-            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
         }
 
         return $this->resultado(self::STATUS_TRANSITA, '', 'Transita');
@@ -151,6 +151,10 @@ class ResultadoAlunoTurmaService
             $temTerminalReprovada = true;
         }
 
+        if ($temRecurso) {
+            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
+        }
+
         if ($temPendente) {
             return $this->resultado(self::STATUS_PENDENTE, '', '');
         }
@@ -159,9 +163,7 @@ class ResultadoAlunoTurmaService
             return $this->resultado(self::STATUS_REPROVADO, '', self::RESULTADO_NAO_TRANSITA);
         }
 
-        if ($temRecurso) {
-            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
-        }
+
 
         return $this->resultado(self::STATUS_TRANSITA, '', 'Transita');
     }

@@ -524,10 +524,11 @@ class NotaController extends Controller
         $naoAplicaveis = 0;
         $semAlteracao = 0;
         $naoEncontradas = [];
+        $alunosAlterados = [];
 
         DB::transaction(function () use (
             $validated, $notasMap, $campos, $trimestre, $user,
-            &$salvas, &$bloqueadas, &$naoAplicaveis, &$semAlteracao, &$naoEncontradas
+            &$salvas, &$bloqueadas, &$naoAplicaveis, &$semAlteracao, &$naoEncontradas, &$alunosAlterados
         ) {
             foreach ($validated['notas'] as $notaData) {
                 $nota = $notasMap->get($notaData['id']);
@@ -588,9 +589,17 @@ class NotaController extends Controller
                 \App\Observers\NotaObserver::$suprimirLogs = false;
                 $nota->save();
                 $salvas++;
+                $alunosAlterados[$nota->turma_id.'-'.$nota->aluno_id] = [
+                    'turma_id' => (int) $nota->turma_id,
+                    'aluno_id' => (int) $nota->aluno_id,
+                ];
             }
         });
 
+        foreach ($alunosAlterados as $dadosAluno) {
+            $this->estadoMatriculaService->sincronizarAlunoNaTurma($dadosAluno['turma_id'], $dadosAluno['aluno_id']);
+        }
+        
         [$tipo, $mensagem] = $this->buildFeedbackLancamento(
             $trimestre, $salvas, $bloqueadas, $naoAplicaveis, $semAlteracao, $naoEncontradas
         );
