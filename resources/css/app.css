@@ -1455,3 +1455,43 @@ img,
 svg {
     transition: none;
 }
+/* Mobile overflow guards for topbar and page content */
+.topbar {
+    overflow: hidden;
+}
+
+.topbar-title {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.topbar-title h1,
+.topbar-page-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.main-wrap,
+.main-content {
+    min-width: 0;
+}
+
+.main-content {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+        overflow-x: hidden;
+    }
+
+    .main-content > * {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}

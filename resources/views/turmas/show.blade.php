@@ -35,6 +35,28 @@
 
 @section('content')
 
+<div class="flex items-center justify-between gap-3 min-w-0 mb-4">
+    <div class="min-w-0">
+        <h1 class="text-lg sm:text-2xl font-bold truncate text-gray-900 dark:text-white">
+            {{ $turma->nome_completo }}
+        </h1>
+        <p class="text-xs text-gray-500 truncate mt-0.5">
+            SIGA › Turmas › {{ $turma->nome_completo }}
+        </p>
+    </div>
+    @if($canManageTurma)
+    <a href="{{ route('turmas.edit', $turma) }}"
+       class="flex-shrink-0 inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span class="hidden sm:inline">Editar</span>
+        <span class="sm:hidden">✎</span>
+    </a>
+    @endif
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- Conteúdo Principal -->
@@ -45,7 +67,8 @@
             
             <!-- Tab Headers -->
             <div class="border-b border-gray-200">
-                <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                <div class="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                <nav class="flex gap-1 px-2 sm:px-6 min-w-max sm:min-w-0" aria-label="Tabs">
                     <button @click="tab = 'alunos'" 
                             :class="tab === 'alunos' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
@@ -71,6 +94,7 @@
                         Estatísticas
                     </button>
                 </nav>
+                </div>
             </div>
 
             <!-- Tab Content -->
@@ -92,7 +116,7 @@
 
                                         @if($turma->alunos->whereNotIn('pivot.status', ['transferido', 'desistente'])->count() > 0)
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
+                        <table class="w-full min-w-[280px] divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Nº</th>
@@ -109,7 +133,7 @@
                                                                 @foreach($turma->alunos as $aluno)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 text-center text-sm font-semibold text-gray-700">{{ $loop->iteration }}</td>
-                                    <td class="px-6 py-4">
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <a href="{{ route('users.show', $aluno) }}" class="font-medium text-primary-600 hover:text-primary-900">
                                             {{ $aluno->name }}
                                         </a>

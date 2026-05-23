@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt" class="{{ (session('theme', 'light') === 'dark') ? 'dark' : '' }}">
+<html lang="pt" class="{{ (session('theme', 'light') === 'dark') ? 'dark' : '' }}" style="overflow-x: hidden;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -444,8 +444,9 @@
             height: var(--topbar-h);
             background: var(--surface);
             border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 16px;
-            padding: 0 var(--page-gutter, 24px);
+            display: flex; align-items: center; gap: 12px;
+            padding: 0 1rem;
+            overflow: hidden;
         }
         .topbar-menu-btn {
             background: none; border: none;
@@ -459,10 +460,11 @@
 
         .topbar-title { flex: 1; min-width: 0; }
         .topbar-page-title {
-            font-size: 20px; font-weight: 700;
+            font-size: 1rem; font-weight: 700;
             color: var(--tx-1);
             letter-spacing: -.4px; line-height: 1.2;
-            word-break: break-word;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 100%;
         }
         .topbar-breadcrumb {
             display: none; align-items: center; gap: 6px;
@@ -470,6 +472,7 @@
             margin-top: 1px;
         }
         @media (min-width: 640px) { .topbar-breadcrumb { display: flex; } }
+        @media (min-width: 769px) { .topbar-page-title { font-size: 1.25rem; } }
         .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
         .theme-toggle {
@@ -526,7 +529,7 @@
                 padding-inline: 14px;
             }
             .topbar-page-title {
-                font-size: 18px;
+                font-size: 1rem;
             }
             .topbar-actions {
                 gap: 8px;
@@ -822,7 +825,7 @@
     @stack('styles')
     @stack('head-scripts')
 </head>
-<body>
+<body style="overflow-x: hidden;">
 
 <div class="layout">
 
@@ -997,7 +1000,7 @@
     <div class="main-wrap">
 
         <header class="topbar">
-            <button class="topbar-menu-btn" onclick="openSidebar()" aria-label="Menu">
+            <button id="menuToggle" class="topbar-menu-btn flex-shrink-0" onclick="openSidebar()" aria-label="Menu">
                 <i class="fas fa-bars"></i>
             </button>
 
