@@ -269,9 +269,15 @@
                             <td>{{ $row->disciplina->nome ?? '—' }}</td>
                             <td class="td-center">{{ isset($row->classificacao_final) ? number_format($row->classificacao_final, 2, ',', '.') : '—' }}</td>
                             <td class="td-center">
-                                @php $r = strtolower($row->resultado ?? ''); @endphp
+                                @php
+                                    $r = strtolower($row->resultado ?? '');
+                                    $obs = strtolower($row->observacoes ?? '');
+                                    $emRecurso = str_contains($obs, 'recurso');
+                                @endphp
                                 @if(str_contains($r, 'aprovado') && !str_contains($r, 'reprovado'))
                                     <span class="badge-aprovado">Aprovado</span>
+                                @elseif($emRecurso)
+                                    <span class="badge-transito">Recurso</span>
                                 @elseif(str_contains($r, 'reprovado'))
                                     <span class="badge-reprovado">Reprovado</span>
                                 @elseif(str_contains($r, 'recurso'))
