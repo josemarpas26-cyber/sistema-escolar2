@@ -599,7 +599,7 @@ class NotaController extends Controller
                     [
                         'classe' => (string) ($nota->turma?->classe ?? ''),
                         'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->cfd ?? 0),
-                        'resultado' => $nota->recursoMelhoraClassificacaoFinal() ? 'aprovado' : 'recurso',
+                        'resultado' => $nota->recursoMelhoraClassificacaoFinal() ? 'aprovado' : 'reprovado',
                         'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.',
                         'data_conclusao' => now(),
                     ]
@@ -704,7 +704,7 @@ class NotaController extends Controller
                     [
                         'classe' => (string) ($nota->turma?->classe ?? ''),
                         'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->cfd ?? 0),
-                        'resultado' => $nota->recursoMelhoraClassificacaoFinal() ? 'aprovado' : 'recurso',
+                        'resultado' => $nota->recursoMelhoraClassificacaoFinal() ? 'aprovado' : 'reprovado',
                         'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.',
                         'data_conclusao' => now(),
                     ]
