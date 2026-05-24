@@ -246,27 +246,38 @@
         <table>
             <thead>
                 <tr>
-                    <th>Ano Letivo</th>
                     <th>Disciplina</th>
-                    <th>Turma</th>
-                    <th class="td-center">Classe</th>
                     <th class="td-center">CFD</th>
                     <th class="td-center">Resultado</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($historico as $registros)
+                @foreach($historico as $anoId => $registros)
+                    @php
+                        $primeiro = $registros->first();
+                        $anoNome = $primeiro?->anoLetivo?->nome ?? '—';
+                        $turmaNome = $primeiro?->turma?->nome_completo ?? $primeiro?->turma?->nome ?? '—';
+                        $classeNome = $primeiro?->classe ?? '—';
+                    @endphp
+                    <tr>
+                        <td colspan="3" style="font-weight:700; background:#f3f4f6;">
+                            Ano letivo: {{ $anoNome }} | Turma: {{ $turmaNome }} | Classe: {{ $classeNome }}
+                        </td>
+                    </tr>
                     @foreach($registros as $row)
                         <tr>
-                            <td>{{ $row->anoLetivo->nome ?? '—' }}</td>
                             <td>{{ $row->disciplina->nome ?? '—' }}</td>
-                            <td>{{ $row->turma->nome_completo ?? $row->turma->nome ?? '—' }}</td>
-                            <td class="td-center">{{ $row->classe ?? '—' }}</td>
                             <td class="td-center">{{ isset($row->classificacao_final) ? number_format($row->classificacao_final, 2, ',', '.') : '—' }}</td>
                             <td class="td-center">
-                                @php $r = strtolower($row->resultado ?? ''); @endphp
+                                @php
+                                    $r = strtolower($row->resultado ?? '');
+                                    $obs = strtolower($row->observacoes ?? '');
+                                    $emRecurso = str_contains($obs, 'recurso');
+                                @endphp
                                 @if(str_contains($r, 'aprovado') && !str_contains($r, 'reprovado'))
                                     <span class="badge-aprovado">Aprovado</span>
+                                @elseif($emRecurso)
+                                    <span class="badge-transito">Recurso</span>
                                 @elseif(str_contains($r, 'reprovado'))
                                     <span class="badge-reprovado">Reprovado</span>
                                 @else
