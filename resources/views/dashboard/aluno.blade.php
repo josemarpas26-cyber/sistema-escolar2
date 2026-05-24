@@ -268,10 +268,10 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="xl:col-span-2">
             <x-card title="Notas por disciplina" icon="fas fa-chart-bar">
                 <div class="flex flex-wrap gap-3 mb-4 text-xs font-semibold" style="color:var(--tx-3);">
-                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(55,138,221,0.85);"></span>Muito Bom (≥14)</span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(99,153,34,0.85);"></span>Bom (10–13)</span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(186,117,23,0.85);"></span>Suficiente (8–9)</span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(226,75,74,0.85);"></span>Negativa (&lt;8)</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(55,138,221,0.85);"></span>Excelente (≥18)</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(99,153,34,0.85);"></span>Bom (14–17)</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(186,117,23,0.85);"></span>Suficiente (10–13)</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:rgba(226,75,74,0.85);"></span>Negativa (&lt;10)</span>
                 </div>
                 <div class="ad-chart-wrap" style="height:220px;">
                     <canvas id="adBarChart"
