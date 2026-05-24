@@ -94,14 +94,36 @@
             <div class="focus-ids"></div>
             <button type="submit" class="btn btn-danger w-full">Arquivar selecionados</button>
         </form>
+{{--
+<form method="POST" action="{{ route('focus.importar-alunos') }}" enctype="multipart/form-data" class="space-y-2 foco-action-card">
+    @csrf
 
-        <form method="POST" action="{{ route('focus.importar-alunos') }}" enctype="multipart/form-data" class="space-y-2 foco-action-card">
-            @csrf
-            <h4 class="font-medium text-gray-900"><i class="fas fa-file-import mr-1 text-violet-600"></i> Importação em massa (Excel/CSV)</h4>
-            <input type="file" name="ficheiro" class="input" accept=".csv,.txt,.xlsx,.xls" required>
-            <p class="text-xs text-gray-500">Colunas mínimas: <code>name</code>, <code>numero_processo</code>, <code>bi</code>, <code>data_nascimento</code>.</p>
-            <button type="submit" class="btn btn-primary w-full">Importar ficheiro</button>
-        </form>
+    <h4 class="font-medium text-gray-900">
+        <i class="fas fa-file-import mr-1 text-violet-600"></i>
+        Importação em massa (Excel/CSV)
+    </h4>
+
+    <input
+        type="file"
+        name="ficheiro"
+        class="input"
+        accept=".csv,.txt,.xlsx,.xls"
+        required
+    >
+
+    <p class="text-xs text-gray-500">
+        Colunas mínimas:
+        <code>name</code>,
+        <code>numero_processo</code>,
+        <code>bi</code>,
+        <code>data_nascimento</code>.
+    </p>
+
+    <button type="submit" class="btn btn-primary w-full">
+        Importar ficheiro
+    </button>
+</form>
+--}}
     </div>
 </x-card>
 @endif
