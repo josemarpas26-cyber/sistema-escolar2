@@ -615,6 +615,33 @@ class NotaController extends Controller
         });
 
         foreach ($alunosAlterados as $dadosAluno) {
+            $notasAluno = Nota::where('turma_id', $dadosAluno['turma_id'])
+                ->where('aluno_id', $dadosAluno['aluno_id'])
+                ->with('turma:id,classe')
+                ->get();
+
+            foreach ($notasAluno as $notaAluno) {
+                $notaRecursoTexto = $notaAluno->nota_recurso !== null
+                    ? ' Nota de recurso: '.number_format((float) $notaAluno->nota_recurso, 2, '.', '').'.'
+                    : '';
+
+                HistoricoAcademico::updateOrCreate(
+                    [
+                        'aluno_id' => $notaAluno->aluno_id,
+                        'turma_id' => $notaAluno->turma_id,
+                        'disciplina_id' => $notaAluno->disciplina_id,
+                        'ano_letivo_id' => $notaAluno->ano_letivo_id,
+                    ],
+                    [
+                        'classe' => (string) ($notaAluno->turma?->classe ?? ''),
+                        'classificacao_final' => (float) ($notaAluno->cfd_efetiva ?? $notaAluno->cfd ?? 0),
+                        'resultado' => $notaAluno->cfd_efetiva >= 10 ? 'aprovado' : 'reprovado',
+                        'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.'.$notaRecursoTexto,
+                        'data_conclusao' => now(),
+                    ]
+                );
+            }
+
             $this->estadoMatriculaService->sincronizarAlunoNaTurma($dadosAluno['turma_id'], $dadosAluno['aluno_id']);
         }
         
