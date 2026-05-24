@@ -280,6 +280,8 @@
                                     <span class="badge-transito">Recurso</span>
                                 @elseif(str_contains($r, 'reprovado'))
                                     <span class="badge-reprovado">Reprovado</span>
+                                @elseif(str_contains($r, 'recurso'))
+                                    <span class="badge-transito">Recurso</span>
                                 @else
                                     <span class="badge-transito">{{ $row->resultado ?? '—' }}</span>
                                 @endif
