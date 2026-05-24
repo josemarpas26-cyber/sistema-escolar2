@@ -261,7 +261,7 @@
                         $classeNome = $primeiro?->classe ?? '—';
                     @endphp
                     <tr>
-                        <td colspan="4" style="font-weight:700; background:#f3f4f6;">
+                        <td colspan="3" style="font-weight:700; background:#f3f4f6;">
                             Ano letivo: {{ $anoNome }} | Turma: {{ $turmaNome }} | Classe: {{ $classeNome }}
                         </td>
                     </tr>
@@ -290,6 +290,8 @@
                                     <span class="badge-transito">Recurso</span>
                                 @elseif(str_contains($r, 'reprovado'))
                                     <span class="badge-reprovado">Reprovado</span>
+                                @elseif(str_contains($r, 'recurso'))
+                                    <span class="badge-transito">Recurso</span>
                                 @else
                                     <span class="badge-transito">{{ $row->resultado ?? '—' }}</span>
                                 @endif

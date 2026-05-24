@@ -590,6 +590,22 @@ class NotaController extends Controller
                 \App\Observers\NotaObserver::$suprimirLogs = false;
                 $nota->save();
 
+                HistoricoAcademico::updateOrCreate(
+                    [
+                        'aluno_id' => $nota->aluno_id,
+                        'turma_id' => $nota->turma_id,
+                        'disciplina_id' => $nota->disciplina_id,
+                        'ano_letivo_id' => $nota->ano_letivo_id,
+                    ],
+                    [
+                        'classe' => (string) ($nota->turma?->classe ?? ''),
+                        'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->cfd ?? 0),
+                        'resultado' => $nota->recursoMelhoraClassificacaoFinal() ? 'aprovado' : 'reprovado',
+                        'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.',
+                        'data_conclusao' => now(),
+                    ]
+                );
+
                 $salvas++;
                 $alunosAlterados[$nota->turma_id.'-'.$nota->aluno_id] = [
                     'turma_id' => (int) $nota->turma_id,
