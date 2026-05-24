@@ -81,7 +81,7 @@ public function __construct(
     $this->areaFormacao = $areaFormacao ?? $this->turma->area_formacao_nome ?? $this->areaFormacao;
 
     $this->alunos = $turma->alunos()
-        ->wherePivot('status', 'matriculado')
+        ->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])
         ->orderBy('name')
         ->get();
 }

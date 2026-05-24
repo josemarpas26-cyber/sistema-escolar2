@@ -602,9 +602,25 @@ class TurmaController extends Controller
         }
 
         if ($aprovados->isEmpty()) {
-            if ($emRecurso->isNotEmpty()) {
-                $this->marcarAlunosEmRecurso($turma, $emRecurso);
-            }
+            DB::transaction(function () use ($turma, $reprovados, $emRecurso, $notasFinaisPorAluno) {
+                foreach ($reprovados as $dadosReprovado) {
+                    $alunoReprovado = $dadosReprovado['aluno'];
+
+                    $turma->alunos()->updateExistingPivot($alunoReprovado->id, [
+                        'status' => 'reprovado',
+                    ]);
+
+                    $this->registarHistoricoAluno($turma, $alunoReprovado->id, $notasFinaisPorAluno, 'reprovado', 'Registo automático no fecho anual da turma.');
+                }
+
+                if ($emRecurso->isNotEmpty()) {
+                    $this->marcarAlunosEmRecurso($turma, $emRecurso);
+                }
+
+                foreach ($emRecurso as $alunoRecurso) {
+                    $this->registarHistoricoAluno($turma, $alunoRecurso->id, $notasFinaisPorAluno, 'recurso', 'Registo automático no fecho anual da turma (aluno em recurso).');
+                }
+            });
 
             $mensagem = 'Nenhum aluno cumpre os critérios de aprovação.';
 
@@ -634,7 +650,7 @@ class TurmaController extends Controller
         }
 
         $novaTurma = DB::transaction(function () use (
-        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $emRecurso, $disciplinaIds, $disciplinasDestino
+        $turma, $novaClasse, $proximoAno, $aprovados, $reprovados, $emRecurso, $disciplinaIds, $disciplinasDestino, $notasFinaisPorAluno
         ) {
             $novaTurma = Turma::create([
                 'nome'                 => $turma->nome,
@@ -687,13 +703,50 @@ class TurmaController extends Controller
             }
 
             foreach ($reprovados as $dadosReprovado) {
-                $turma->alunos()->updateExistingPivot($dadosReprovado['aluno']->id, [
+                $alunoReprovado = $dadosReprovado['aluno'];
+
+                $turma->alunos()->updateExistingPivot($alunoReprovado->id, [
                     'status' => 'reprovado',
                 ]);
+                foreach ($notasFinaisPorAluno->get($alunoReprovado->id, collect()) as $nota) {
+                    HistoricoAcademico::updateOrCreate(
+                        [
+                            'aluno_id' => $alunoReprovado->id,
+                            'turma_id' => $turma->id,
+                            'disciplina_id' => $nota->disciplina_id,
+                            'ano_letivo_id' => $turma->ano_letivo_id,
+                        ],
+                        [
+                            'classe' => (string) $turma->classe,
+                            'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
+                            'resultado' => 'reprovado',
+                            'observacoes' => 'Registo automático no fecho anual da turma.',
+                            'data_conclusao' => now(),
+                        ]
+                    );
+                }
             }
 
             $this->marcarAlunosEmRecurso($turma, $emRecurso);
-
+            foreach ($emRecurso as $alunoRecurso) {
+                foreach ($notasFinaisPorAluno->get($alunoRecurso->id, collect()) as $nota) {
+                    HistoricoAcademico::updateOrCreate(
+                        [
+                            'aluno_id' => $alunoRecurso->id,
+                            'turma_id' => $turma->id,
+                            'disciplina_id' => $nota->disciplina_id,
+                            'ano_letivo_id' => $turma->ano_letivo_id,
+                        ],
+                        [
+                            'classe' => (string) $turma->classe,
+                            'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
+                            'resultado' => 'recurso',
+                            'observacoes' => 'Registo automático no fecho anual da turma (aluno em recurso).',
+                            'data_conclusao' => now(),
+                        ]
+                    );
+                }
+            }
             return $novaTurma;
         });
 
@@ -732,6 +785,31 @@ class TurmaController extends Controller
         }
     }
 
+    private function registarHistoricoAluno(
+        Turma $turma,
+        int $alunoId,
+        Collection $notasFinaisPorAluno,
+        string $resultado,
+        string $observacoes
+    ): void {
+        foreach ($notasFinaisPorAluno->get($alunoId, collect()) as $nota) {
+            HistoricoAcademico::updateOrCreate(
+                [
+                    'aluno_id' => $alunoId,
+                    'turma_id' => $turma->id,
+                    'disciplina_id' => $nota->disciplina_id,
+                    'ano_letivo_id' => $turma->ano_letivo_id,
+                ],
+                [
+                    'classe' => (string) $turma->classe,
+                    'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
+                    'resultado' => $resultado,
+                    'observacoes' => $observacoes,
+                    'data_conclusao' => now(),
+                ]
+            );
+        }
+    }
     private function atualizarStatusAluno(Turma $turma, User $aluno, string $status, string $mensagemSucesso)
     {
         $statusPermitidos = ['transferido', 'desistente'];
