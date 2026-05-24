@@ -248,6 +248,7 @@
                 <tr>
                     <th>Disciplina</th>
                     <th class="td-center">CFD</th>
+                    <th class="td-center">Nota Recurso</th>
                     <th class="td-center">Resultado</th>
                 </tr>
             </thead>
@@ -268,6 +269,15 @@
                         <tr>
                             <td>{{ $row->disciplina->nome ?? '—' }}</td>
                             <td class="td-center">{{ isset($row->classificacao_final) ? number_format($row->classificacao_final, 2, ',', '.') : '—' }}</td>
+                            <td class="td-center">
+                                @php
+                                    $notaRecurso = null;
+                                    if (preg_match('/nota de recurso:\\s*([0-9]+(?:\\.[0-9]+)?)/i', (string) ($row->observacoes ?? ''), $m)) {
+                                        $notaRecurso = number_format((float) $m[1], 2, ',', '.');
+                                    }
+                                @endphp
+                                {{ $notaRecurso ?? '—' }}
+                            </td>
                             <td class="td-center">
                                 @php
                                     $r = strtolower($row->resultado ?? '');
