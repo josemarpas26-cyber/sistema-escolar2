@@ -610,7 +610,7 @@ class TurmaController extends Controller
                         'status' => 'reprovado',
                     ]);
 
-                    $this->registarHistoricoAluno($turma, $alunoReprovado->id, $notasFinaisPorAluno, 'reprovado', 'Registo automático no fecho anual da turma.');
+                    $this->registarHistoricoAluno($turma, $alunoReprovado->id, $notasFinaisPorAluno, 'Registo automático no fecho anual da turma.');
                 }
 
                 if ($emRecurso->isNotEmpty()) {
@@ -618,7 +618,7 @@ class TurmaController extends Controller
                 }
 
                 foreach ($emRecurso as $alunoRecurso) {
-                    $this->registarHistoricoAluno($turma, $alunoRecurso->id, $notasFinaisPorAluno, 'reprovado', 'Registo automático no fecho anual da turma (aluno em recurso).');
+                    $this->registarHistoricoAluno($turma, $alunoRecurso->id, $notasFinaisPorAluno, 'Registo automático no fecho anual da turma (aluno em recurso).');
                 }
             });
 
@@ -719,7 +719,7 @@ class TurmaController extends Controller
                         [
                             'classe' => (string) $turma->classe,
                             'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
-                            'resultado' => 'reprovado',
+                            'resultado' => $nota->isAprovado() ? 'aprovado' : 'reprovado',
                             'observacoes' => 'Registo automático no fecho anual da turma.',
                             'data_conclusao' => now(),
                         ]
@@ -740,7 +740,7 @@ class TurmaController extends Controller
                         [
                             'classe' => (string) $turma->classe,
                             'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
-                            'resultado' => 'reprovado',
+                            'resultado' => $nota->isAprovado() ? 'aprovado' : 'reprovado',
                             'observacoes' => 'Registo automático no fecho anual da turma (aluno em recurso).',
                             'data_conclusao' => now(),
                         ]
@@ -790,7 +790,6 @@ class TurmaController extends Controller
         Turma $turma,
         int $alunoId,
         Collection $notasFinaisPorAluno,
-        string $resultado,
         string $observacoes
     ): void {
         foreach ($notasFinaisPorAluno->get($alunoId, collect()) as $nota) {
@@ -804,7 +803,7 @@ class TurmaController extends Controller
                 [
                     'classe' => (string) $turma->classe,
                     'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->ca ?? 0),
-                    'resultado' => $resultado,
+                    'resultado' => $nota->isAprovado() ? 'aprovado' : 'reprovado',
                     'observacoes' => $observacoes,
                     'data_conclusao' => now(),
                 ]
