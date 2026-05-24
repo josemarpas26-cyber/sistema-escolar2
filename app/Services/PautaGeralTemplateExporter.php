@@ -128,7 +128,7 @@ class PautaGeralTemplateExporter
         $anoLetivo ??= $turma->anoLetivo;
 
         $alunos = $turma->alunos()
-            ->wherePivot('status', 'matriculado')
+            ->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])
             ->orderBy('name')
             ->get();
 
