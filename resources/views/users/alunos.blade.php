@@ -64,7 +64,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <form method="POST" action="{{ route('focus.matricular-alunos') }}" class="space-y-2 focus-form foco-action-card">
             @csrf
-            <h4 class="font-medium text-gray-900"><i class="fas fa-user-check mr-1 text-emerald-600"></i> Modo Foco: Matrícula de múltiplos alunos</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-user-check mr-1 text-emerald-600"></i>  Matrícula de múltiplos alunos</h4>
             <div class="focus-ids"></div>
             <select name="turma_id" class="input" required>
                 <option value="">Selecionar turma</option>
@@ -78,7 +78,7 @@
 
         <form method="POST" action="{{ route('focus.atualizar-status') }}" class="space-y-2 focus-form foco-action-card">
             @csrf
-            <h4 class="font-medium text-gray-900"><i class="fas fa-toggle-on mr-1 text-blue-600"></i> Modo Foco: Atualização em lote</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-toggle-on mr-1 text-blue-600"></i> Atualização em lote</h4>
             <div class="focus-ids"></div>
             <select name="ativo" class="input" required>
                 <option value="1">Marcar como ativo</option>
@@ -90,14 +90,14 @@
         <form method="POST" action="{{ route('focus.arquivar-usuarios') }}" class="space-y-2 focus-form foco-action-card" onsubmit="return confirm('Arquivar os registos selecionados? Esta ação pode ser revertida na Lixeira.')">
             @csrf
             @method('DELETE')
-            <h4 class="font-medium text-gray-900"><i class="fas fa-box-archive mr-1 text-amber-600"></i> Modo Foco: Eliminação/arquivamento em massa</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-box-archive mr-1 text-amber-600"></i> Eliminação/arquivamento em massa</h4>
             <div class="focus-ids"></div>
             <button type="submit" class="btn btn-danger w-full">Arquivar selecionados</button>
         </form>
 
         <form method="POST" action="{{ route('focus.importar-alunos') }}" enctype="multipart/form-data" class="space-y-2 foco-action-card">
             @csrf
-            <h4 class="font-medium text-gray-900"><i class="fas fa-file-import mr-1 text-violet-600"></i> Modo Foco: Importação em massa (Excel/CSV)</h4>
+            <h4 class="font-medium text-gray-900"><i class="fas fa-file-import mr-1 text-violet-600"></i> Importação em massa (Excel/CSV)</h4>
             <input type="file" name="ficheiro" class="input" accept=".csv,.txt,.xlsx,.xls" required>
             <p class="text-xs text-gray-500">Colunas mínimas: <code>name</code>, <code>numero_processo</code>, <code>bi</code>, <code>data_nascimento</code>.</p>
             <button type="submit" class="btn btn-primary w-full">Importar ficheiro</button>
