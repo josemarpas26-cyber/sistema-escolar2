@@ -10,7 +10,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
@@ -174,7 +174,7 @@
             font-weight: bold;
             margin-left: 8px;
         }
-        
+
         .logo { text-align: center; margin-bottom: 2px; }
         .logo img { height: 50px; }
     </style>
@@ -182,7 +182,6 @@
 <body>
 
 @php
-    // ─── Label do trimestre ───
     $trimestreLabel = match($trimestre) {
         '1' => '1º Trimestre',
         '2' => '2º Trimestre',
@@ -190,20 +189,20 @@
         default => 'Final (CFD)',
     };
 
-    // ─── Foto de perfil em base64 ───
     $fotoBase64 = $aluno->foto_perfil_pdf_src;
+    $isDecimaTerceiraFinal = (int) ($turma->classe ?? 0) === 13 && $trimestre === 'final';
+    $resumo13 = $classificacaoEnsinoMedioResumo ?? null;
 @endphp
 
-    <!-- Header -->
     <div class="header">
-            @php
-                $path = public_path('images/logo1.png');
-                $type = pathinfo($path, PATHINFO_EXTENSION);
-                $data = file_get_contents($path);
-                $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
-            @endphp
+        @php
+            $path = public_path('images/logo1.png');
+            $type = pathinfo($path, PATHINFO_EXTENSION);
+            $data = file_get_contents($path);
+            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        @endphp
         <div class="logo">
-                <img src="{{ $base64 }}" alt="Logo">
+            <img src="{{ $base64 }}" alt="Logo">
         </div>
         <h1> BOLETIM ESCOLAR</h1>
         <p>
@@ -212,12 +211,11 @@
         </p>
     </div>
 
-    <!-- Informações do Aluno -->
     <div class="info-section">
         <div class="foto-perfil-wrap">
             <img src="{{ $fotoBase64 }}" alt="Foto" class="foto-perfil">
         </div>
-        
+
         <div class="info-row">
             <span class="info-label">Aluno:</span>
             <span class="info-value">{{ $aluno->name }}</span>
@@ -242,13 +240,20 @@
         @endif
     </div>
 
-    <!-- Notas -->
     <table>
         <thead>
             <tr>
                 <th width="35%">Disciplina</th>
 
-                @if($trimestre === '1')
+                @if($isDecimaTerceiraFinal)
+                    <th>CFD</th>
+                    <th>PC</th>
+                    <th>E. C. S</th>
+                    <th>PAP</th>
+                    <th>MF</th>
+                    <th>Resultado</th>
+                    <th>Observações</th>
+                @elseif($trimestre === '1')
                     <th>MAC1</th>
                     <th>PP1</th>
                     <th>PT1</th>
@@ -273,7 +278,9 @@
                     <th>CFD</th>
                 @endif
 
-                <th>Status</th>
+                @unless($isDecimaTerceiraFinal)
+                    <th>Status</th>
+                @endunless
             </tr>
         </thead>
         <tbody>
@@ -291,7 +298,17 @@
                 <tr>
                     <td class="disciplina">{{ $nota->disciplina->nome }}</td>
 
-                    @if($trimestre === '1')
+                    @if($isDecimaTerceiraFinal)
+                        <td><strong>{{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 2) : '-' }}</strong></td>
+                        <td>{{ is_numeric(data_get($resumo13, 'pc')) ? number_format((float) data_get($resumo13, 'pc'), 2) : '-' }}</td>
+                        <td>{{ is_numeric(data_get($resumo13, 'classificacao.ecs')) ? number_format((float) data_get($resumo13, 'classificacao.ecs'), 2) : '-' }}</td>
+                        <td>{{ is_numeric(data_get($resumo13, 'classificacao.pap')) ? number_format((float) data_get($resumo13, 'classificacao.pap'), 2) : '-' }}</td>
+                        <td><strong>{{ is_numeric(data_get($resumo13, 'media_final')) ? number_format((float) data_get($resumo13, 'media_final'), 2) : '-' }}</strong></td>
+                        <td class="{{ strtoupper((string) data_get($resumo13, 'resultado')) === 'APROVADO' ? 'aprovado' : (strtoupper((string) data_get($resumo13, 'resultado')) === 'REPROVADO' ? 'reprovado' : '') }}">
+                            {{ data_get($resumo13, 'resultado', 'Pendente') }}
+                        </td>
+                        <td style="text-align:left;">{{ data_get($resumo13, 'classificacao.observacoes') ?: '-' }}</td>
+                    @elseif($trimestre === '1')
                         <td>{{ $nota->mac1 !== null ? number_format($nota->mac1, 2) : '-' }}</td>
                         <td>{{ $nota->pp1  !== null ? number_format($nota->pp1,  2) : '-' }}</td>
                         <td>{{ $nota->pt1  !== null ? number_format($nota->pt1,  2) : '-' }}</td>
@@ -321,48 +338,83 @@
                         </td>
                     @endif
 
-                    <td class="{{ $nota->recursoPendente() ? '' : ($temNota ? ($aprovadoPeriodo ? 'aprovado' : 'reprovado') : '') }}">
-                        @if(!$temNota)
-                            Pendente
-                        @elseif($nota->recursoPendente())
-                            Em recurso
-                        @elseif($aprovadoPeriodo)
-                            Aprovado
-                        @else
-                            Reprovado
-                        @endif
-                    </td>
+                    @unless($isDecimaTerceiraFinal)
+                        <td class="{{ $nota->recursoPendente() ? '' : ($temNota ? ($aprovadoPeriodo ? 'aprovado' : 'reprovado') : '') }}">
+                            @if(!$temNota)
+                                Pendente
+                            @elseif($nota->recursoPendente())
+                                Em recurso
+                            @elseif($aprovadoPeriodo)
+                                Aprovado
+                            @else
+                                Reprovado
+                            @endif
+                        </td>
+                    @endunless
                 </tr>
             @endforeach
         </tbody>
     </table>
 
-    <!-- Resumo -->
     <div class="summary">
         <div class="summary-row">
             <span class="summary-label">Período:</span>
             <span class="summary-value">{{ $trimestreLabel }}</span>
         </div>
-        <div class="summary-row">
-            <span class="summary-label">Média Geral:</span>
-            <span class="summary-value">{{ number_format($mediaGeral, 2) }} valores</span>
-        </div>
-        <div class="summary-row">
-            <span class="summary-label">Disciplinas Aprovadas:</span>
-            <span class="summary-value">{{ $aprovacoes }} de {{ $aprovacoes + $reprovacoes }}</span>
-        </div>
-        <div class="summary-row">
-            <span class="summary-label">Taxa de Aprovação:</span>
-            <span class="summary-value">
-                {{ $aprovacoes + $reprovacoes > 0 ? number_format(($aprovacoes / ($aprovacoes + $reprovacoes)) * 100, 1) : 0 }}%
-            </span>
-        </div>
+        @if($isDecimaTerceiraFinal)
+            <div class="summary-row">
+                <span class="summary-label">CFD:</span>
+                <span class="summary-value">
+                    {{ optional($notas->first())->cfd_efetiva !== null ? number_format((float) optional($notas->first())->cfd_efetiva, 2) : '-' }}
+                </span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">PC:</span>
+                <span class="summary-value">{{ is_numeric(data_get($resumo13, 'pc')) ? number_format((float) data_get($resumo13, 'pc'), 2) : '-' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">E. C. S:</span>
+                <span class="summary-value">{{ is_numeric(data_get($resumo13, 'classificacao.ecs')) ? number_format((float) data_get($resumo13, 'classificacao.ecs'), 2) : '-' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">PAP:</span>
+                <span class="summary-value">{{ is_numeric(data_get($resumo13, 'classificacao.pap')) ? number_format((float) data_get($resumo13, 'classificacao.pap'), 2) : '-' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Média Final (MF):</span>
+                <span class="summary-value">{{ is_numeric(data_get($resumo13, 'media_final')) ? number_format((float) data_get($resumo13, 'media_final'), 2) : '-' }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Resultado:</span>
+                <span class="summary-value">{{ data_get($resumo13, 'resultado', 'Pendente') }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Observações:</span>
+                <span class="summary-value" style="font-size:13px;">{{ data_get($resumo13, 'classificacao.observacoes') ?: '-' }}</span>
+            </div>
+        @else
+            <div class="summary-row">
+                <span class="summary-label">Média Geral:</span>
+                <span class="summary-value">{{ number_format($mediaGeral, 2) }} valores</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Disciplinas Aprovadas:</span>
+                <span class="summary-value">{{ $aprovacoes }} de {{ $aprovacoes + $reprovacoes }}</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Taxa de Aprovação:</span>
+                <span class="summary-value">
+                    {{ $aprovacoes + $reprovacoes > 0 ? number_format(($aprovacoes / ($aprovacoes + $reprovacoes)) * 100, 1) : 0 }}%
+                </span>
+            </div>
+        @endif
     </div>
 
-    <!-- Legenda -->
     <div class="legenda">
         <strong>Legenda:</strong>
-        @if($trimestre === '1')
+        @if($isDecimaTerceiraFinal)
+            CFD = Classificação Final da Disciplina | PC = Média dos CFDs da 13ª | E.C.S = Exame de Curso | PAP = Prova de Aptidão Profissional | MF = Média Final
+        @elseif($trimestre === '1')
             MAC1 = Média de Avaliações Contínuas | PP1 = Prova do Professor | PT1 = Prova Trimestral | MT1 = Média do 1º Trimestre
         @elseif($trimestre === '2')
             MAC2 = Média de Avaliações Contínuas | PP2 = Prova do Professor | PT2 = Prova Trimestral | MT2 = Média do 2º Trimestre
@@ -373,10 +425,9 @@
         @endif
     </div>
 
-    <!-- Footer -->
     <div class="footer">
         <p>Documento gerado em {{ now()->format('d/m/Y H:i') }}</p>
-        <p>Sistema de Gestão Escolar - NotasEscola 🇦🇴</p>
+        <p>Sistema de Gestão Escolar - NotasEscola AO</p>
     </div>
 
 </body>

@@ -3,6 +3,7 @@ namespace App\Exports;
 
 use App\Models\Nota;
 use App\Models\Turma;
+use App\Services\ClassificacaoEnsinoMedioService;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -58,6 +59,7 @@ private string     $trimestre;
 private Collection $alunos;
 private ?string    $nomeEscola;
 private ?string    $areaFormacao;
+private Collection $classificacoesEnsinoMedio;
 private ?string    $caminhoLogo; // 🔹 Caminho configurável do logo
 
 public function __construct(
@@ -84,6 +86,12 @@ public function __construct(
         ->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])
         ->orderBy('name')
         ->get();
+
+    $this->classificacoesEnsinoMedio = $this->isDecimaTerceiraFinal()
+        ? app(ClassificacaoEnsinoMedioService::class)
+            ->montarResumoDaTurma($this->turma, $this->notasPorAluno->flatten(1))
+            ->keyBy(fn (array $item) => $item['aluno']->id)
+        : collect();
 }
 
 public function collection(): Collection
@@ -190,6 +198,12 @@ private function escreverBoletim(
     
     // 🔹 Obter configuração dinâmica das colunas de notas
     $configNotas = $this->getConfiguracaoNotas();
+
+    if ($this->isDecimaTerceiraFinal()) {
+        $this->escreverBoletimDecimaTerceira($sheet, $linhaInicio, $cols, $aluno, $numeroOrdem, $notas);
+
+        return;
+    }
 
     // ── Cabeçalho ────────────────────────────────────────────────────────
     $this->linha($sheet, $linhaInicio + self::OFF_ESCOLA, $cols['inicio'], $cols['fim'],
@@ -395,6 +409,14 @@ private function colunas(string $colInicio): array
 
 private function getConfiguracaoNotas(): array
 {
+    if ($this->isDecimaTerceiraFinal()) {
+        return [
+            ['key' => 'cfd_efetiva', 'label' => 'CFD'],
+            ['key' => 'media_final', 'label' => 'MF'],
+            ['key' => 'resultado', 'label' => 'RESULT'],
+        ];
+    }
+
     $config = $this->turma->anoLetivo?->configuracaoAvaliacao;
 
     if (! $config || ! in_array($this->trimestre, ['1', '2', '3'], true)) {
@@ -418,6 +440,16 @@ private function valoresPeriodo(Nota $nota): array
     $fmt = fn ($v) => $v !== null ? number_format((float) $v, 2, ',', '') : '';
     $valores = [];
 
+    if ($this->isDecimaTerceiraFinal()) {
+        $resumo = $this->classificacoesEnsinoMedio->get($nota->aluno_id);
+
+        return [
+            'cfd_efetiva' => $fmt($nota->cfd_efetiva),
+            'media_final' => $fmt(data_get($resumo, 'media_final')),
+            'resultado' => (string) data_get($resumo, 'resultado', ''),
+        ];
+    }
+
     foreach ($this->getConfiguracaoNotas() as $config) {
         $chave = $config['key'];
         $valores[$chave] = $fmt($nota->{$chave} ?? null);
@@ -434,6 +466,98 @@ private function labelPeriodo(): string
         '3'     => 'IIIº TRIMESTRE',
         default => 'CLASSIFICAÇÃO FINAL',
     };
+}
+
+private function escreverBoletimDecimaTerceira(
+    Worksheet $sheet,
+    int $linhaInicio,
+    array $cols,
+    object $aluno,
+    int $numeroOrdem,
+    Collection $notas
+): void {
+    $classe = $this->turma->classe;
+    $curso  = $this->turma->curso?->nome ?? 'CURSO';
+    $resumo = $this->classificacoesEnsinoMedio->get($aluno->id);
+    $notaProjecto = $notas->sortBy(fn ($nota) => $nota->disciplina?->nome)->first();
+
+    $this->linha($sheet, $linhaInicio + self::OFF_ESCOLA, $cols['inicio'], $cols['fim'],
+        $this->nomeEscola, ['bold' => true, 'size' => 8, 'align' => 'center']);
+    $this->linha($sheet, $linhaInicio + self::OFF_AREA, $cols['inicio'], $cols['fim'],
+        $this->areaFormacao ? 'AREA DE FORMACAO DE '.strtoupper($this->areaFormacao) : '', ['size' => 8, 'align' => 'center']);
+    $this->linha($sheet, $linhaInicio + self::OFF_CURSO, $cols['inicio'], $cols['fim'],
+        'CURSO DE '.strtoupper($curso), ['bold' => true, 'size' => 8, 'align' => 'center']);
+    $this->linha($sheet, $linhaInicio + self::OFF_TITULO, $cols['inicio'], $cols['fim'],
+        'BOLETIM DE NOTAS ', ['bold' => true, 'size' => 8, 'align' => 'center', 'cor' => self::COR_VERDE]);
+    $this->linha($sheet, $linhaInicio + self::OFF_PERIODO, $cols['inicio'], $cols['fim'],
+        "ANO LECTIVO: {$this->turma->anoLetivo?->nome}               {$this->labelPeriodo()}",
+        ['size' => 8, 'align' => 'center']);
+
+    $this->celula($sheet, $cols['inicio'] . ($linhaInicio + self::OFF_NOME),
+        strtoupper($aluno->name), ['bold' => true, 'size' => 9, 'cor' => self::COR_VERMELHO]);
+
+    $salaNumero = $this->turma->sala ?? 'â€”';
+    $this->celula($sheet, $cols['inicio'] . ($linhaInicio + self::OFF_CLASSE),
+        "     {$classe}.Âª CLASSE      NÂº {$numeroOrdem}       TURMA: {$this->turma->nome}       SALA NÂº {$salaNumero} ",
+        ['size' => 7, 'cor' => self::COR_AZUL_ESC]);
+
+    $rowHeader = $linhaInicio + self::OFF_HEADER;
+    $this->celulaComBorda($sheet, $cols['inicio'] . $rowHeader, 'DISCIPLINA',
+        ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center'], true);
+    $this->celulaComBorda($sheet, $cols['notas'][0] . $rowHeader, 'CFD',
+        ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center'], true);
+    $this->celulaComBorda($sheet, $cols['notas'][1] . $rowHeader, 'MF',
+        ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center'], true);
+    $this->celulaComBorda($sheet, $cols['notas'][2] . $rowHeader, 'RESULT',
+        ['bold' => true, 'size' => 8, 'cor' => self::COR_VERDE, 'align' => 'center'], true);
+
+    $rowProjeto = $linhaInicio + self::OFF_DISC_INI;
+    $this->celulaComBorda($sheet, $cols['inicio'] . $rowProjeto, (string) ($notaProjecto?->disciplina?->nome ?? 'Projecto Tecnologico'), ['size' => 8], true);
+    $this->celulaComBorda($sheet, $cols['notas'][0] . $rowProjeto, $this->formatarNumeroResumo13($notaProjecto?->cfd_efetiva), ['size' => 8, 'align' => 'center'], true);
+    $this->celulaComBorda($sheet, $cols['notas'][1] . $rowProjeto, $this->formatarNumeroResumo13(data_get($resumo, 'media_final')), ['size' => 8, 'align' => 'center'], true);
+    $this->celulaComBorda($sheet, $cols['notas'][2] . $rowProjeto, (string) data_get($resumo, 'resultado', ''), ['size' => 8, 'align' => 'center'], true);
+
+    $this->escreverLinhaResumo13($sheet, $cols, $linhaInicio + self::OFF_DISC_INI + 1, 'PC', $this->formatarNumeroResumo13(data_get($resumo, 'pc')));
+    $this->escreverLinhaResumo13($sheet, $cols, $linhaInicio + self::OFF_DISC_INI + 2, 'E.C.S', $this->formatarNumeroResumo13(data_get($resumo, 'classificacao.ecs')));
+    $this->escreverLinhaResumo13($sheet, $cols, $linhaInicio + self::OFF_DISC_INI + 3, 'PAP', $this->formatarNumeroResumo13(data_get($resumo, 'classificacao.pap')));
+    $this->escreverLinhaResumo13($sheet, $cols, $linhaInicio + self::OFF_DISC_INI + 4, 'OBS.', (string) data_get($resumo, 'classificacao.observacoes', ''));
+
+    $rowDirL = $linhaInicio + self::OFF_DIRETOR_L;
+    $rowDirN = $linhaInicio + self::OFF_DIRETOR_N;
+    $this->celula($sheet, $cols['inicio'] . $rowDirL, 'O DIRECTOR DE TURMA: ', ['size' => 8]);
+    $this->celula($sheet, $cols['inicio'] . $rowDirN, $this->turma->coordenador?->name ?? '', ['size' => 11]);
+
+    $rangeBoletim = $cols['inicio'] . ($linhaInicio + self::OFF_ESCOLA)
+        . ':' . $cols['fim'] . ($linhaInicio + self::OFF_DIRETOR_N);
+
+    $sheet->getStyle($rangeBoletim)->applyFromArray([
+        'borders' => [
+            'outline' => [
+                'borderStyle' => Border::BORDER_THIN,
+                'color'       => ['argb' => self::COR_BORDA],
+            ],
+        ],
+    ]);
+
+    $this->aplicarBordasTabela($sheet, $cols, $linhaInicio, 3);
+}
+
+private function escreverLinhaResumo13(Worksheet $sheet, array $cols, int $row, string $label, string $valor): void
+{
+    $this->celulaComBorda($sheet, $cols['inicio'].$row, $label, ['size' => 8], true);
+    $this->celulaComBorda($sheet, $cols['notas'][0].$row, $valor, ['size' => 8, 'align' => 'center'], true);
+    $this->celulaComBorda($sheet, $cols['notas'][1].$row, '', ['size' => 8], true);
+    $this->celulaComBorda($sheet, $cols['notas'][2].$row, '', ['size' => 8], true);
+}
+
+private function isDecimaTerceiraFinal(): bool
+{
+    return (int) $this->turma->classe === 13 && $this->trimestre === 'final';
+}
+
+private function formatarNumeroResumo13(mixed $valor): string
+{
+    return is_numeric($valor) ? number_format((float) $valor, 2, ',', '') : '';
 }
 
 private function aplicarBordasTabela(Worksheet $sheet, array $cols, int $linhaInicio, int $qtdColunasNotas): void

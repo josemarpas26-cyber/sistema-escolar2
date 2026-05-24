@@ -37,27 +37,63 @@ class ClassificacaoEnsinoMedioService
             ->whereIn('pivot.status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])
             ->values()
             ->map(function ($aluno) use (
-                $turma,
                 $disciplinasIds,
                 $totalDisciplinas,
                 $notasPorAluno,
                 $classificacoes,
                 $notaMinima
             ) {
-                $classificacao = $classificacoes->get($aluno->id);
-                $notasAluno = $notasPorAluno->get($aluno->id, collect());
-
-                $pc = $this->calcularPc($disciplinasIds, $notasAluno, $totalDisciplinas);
-                $mediaFinal = $this->calcularMediaFinal($pc, $classificacao?->ecs, $classificacao?->pap);
-
-                return [
-                    'aluno' => $aluno,
-                    'classificacao' => $classificacao,
-                    'pc' => $pc,
-                    'media_final' => $mediaFinal,
-                    'resultado' => $this->resolverResultado($notasAluno, $mediaFinal, $notaMinima, $totalDisciplinas),
-                ];
+                return $this->montarResumoDoAlunoComDados(
+                    $aluno,
+                    $disciplinasIds,
+                    $totalDisciplinas,
+                    $notasPorAluno->get($aluno->id, collect()),
+                    $classificacoes->get($aluno->id),
+                    $notaMinima
+                );
             });
+    }
+
+    public function montarResumoDoAluno(Turma $turma, mixed $aluno, ?Collection $notas = null): ?array
+    {
+        $turma->loadMissing('disciplinas');
+
+        $alunoModel = $aluno instanceof \App\Models\User
+            ? $aluno
+            : $turma->alunos()
+                ->where('users.id', (int) $aluno)
+                ->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])
+                ->first();
+
+        if (! $alunoModel) {
+            return null;
+        }
+
+        $disciplinasIds = $turma->disciplinas->pluck('id')->values();
+        $totalDisciplinas = $disciplinasIds->count();
+
+        $notas ??= Nota::query()
+            ->where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $turma->ano_letivo_id)
+            ->where('aluno_id', $alunoModel->id)
+            ->whereIn('disciplina_id', $disciplinasIds)
+            ->with(['disciplina.cursos', 'turma'])
+            ->get();
+
+        $classificacao = ClassificacaoEnsinoMedio::query()
+            ->where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $turma->ano_letivo_id)
+            ->where('aluno_id', $alunoModel->id)
+            ->first();
+
+        return $this->montarResumoDoAlunoComDados(
+            $alunoModel,
+            $disciplinasIds,
+            $totalDisciplinas,
+            $notas,
+            $classificacao,
+            $this->notaMinimaAprovacao($turma)
+        );
     }
 
     public function calcularPc(Collection $disciplinasIds, Collection $notasAluno, int $totalDisciplinas): ?float
@@ -101,6 +137,26 @@ class ClassificacaoEnsinoMedioService
         return $mediaFinal >= $notaMinima && $notasFinais->every(fn (Nota $nota) => $nota->isAprovado())
             ? 'Aprovado'
             : 'Reprovado';
+    }
+
+    private function montarResumoDoAlunoComDados(
+        mixed $aluno,
+        Collection $disciplinasIds,
+        int $totalDisciplinas,
+        Collection $notasAluno,
+        ?ClassificacaoEnsinoMedio $classificacao,
+        float $notaMinima
+    ): array {
+        $pc = $this->calcularPc($disciplinasIds, $notasAluno, $totalDisciplinas);
+        $mediaFinal = $this->calcularMediaFinal($pc, $classificacao?->ecs, $classificacao?->pap);
+
+        return [
+            'aluno' => $aluno,
+            'classificacao' => $classificacao,
+            'pc' => $pc,
+            'media_final' => $mediaFinal,
+            'resultado' => $this->resolverResultado($notasAluno, $mediaFinal, $notaMinima, $totalDisciplinas),
+        ];
     }
 
     private function notaMinimaAprovacao(Turma $turma): float

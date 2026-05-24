@@ -37,15 +37,17 @@
     $tituloArea = $turma->area_formacao_nome
         ? 'AREA DE FORMACAO DE ' . \Illuminate\Support\Str::upper($turma->area_formacao_nome)
         : '';
+    $isDecimaTerceiraFinal = (int) ($turma->classe ?? 0) === 13 && $trimestre === 'final';
 @endphp
 
 @foreach($chunks as $dupla)
 <div class="page">
     <div class="row">
-        @foreach($dupla as $index => $aluno)
+        @foreach($dupla as $aluno)
             @php
                 $notas = $notasPorAluno->get($aluno->id, collect())->sortBy(fn($nota) => $nota->disciplina?->nome)->take(14)->values();
                 $numeroOrdem = $alunos->search(fn($item) => $item->id === $aluno->id) + 1;
+                $resumo13 = $classificacoesEnsinoMedio->get($aluno->id);
             @endphp
             <div class="col">
                 <div class="boletim">
@@ -64,20 +66,39 @@
                         <thead>
                             <tr>
                                 <th>DISCIPLINA</th>
-                                @foreach($configNotas as $config)
-                                    <th>{{ $config['label'] }}</th>
-                                @endforeach
+                                @if($isDecimaTerceiraFinal)
+                                    <th>CFD</th>
+                                    <th>PC</th>
+                                    <th>E.C.S</th>
+                                    <th>PAP</th>
+                                    <th>MF</th>
+                                    <th>RESULTADO</th>
+                                    <th>OBSERV.</th>
+                                @else
+                                    @foreach($configNotas as $config)
+                                        <th>{{ $config['label'] }}</th>
+                                    @endforeach
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
-                            {{-- ✅ Itera apenas as disciplinas reais, sem linhas vazias --}}
                             @foreach($notas as $nota)
                                 <tr>
                                     <td>{{ $nota->disciplina?->nome ?? '' }}</td>
-                                    @foreach($configNotas as $config)
-                                        @php $valor = $nota->{$config['key']}; @endphp
-                                        <td>{{ $valor !== null ? number_format((float) $valor, 2, ',', '') : '' }}</td>
-                                    @endforeach
+                                    @if($isDecimaTerceiraFinal)
+                                        <td>{{ $nota->cfd_efetiva !== null ? number_format((float) $nota->cfd_efetiva, 2, ',', '') : '' }}</td>
+                                        <td>{{ is_numeric(data_get($resumo13, 'pc')) ? number_format((float) data_get($resumo13, 'pc'), 2, ',', '') : '' }}</td>
+                                        <td>{{ is_numeric(data_get($resumo13, 'classificacao.ecs')) ? number_format((float) data_get($resumo13, 'classificacao.ecs'), 2, ',', '') : '' }}</td>
+                                        <td>{{ is_numeric(data_get($resumo13, 'classificacao.pap')) ? number_format((float) data_get($resumo13, 'classificacao.pap'), 2, ',', '') : '' }}</td>
+                                        <td>{{ is_numeric(data_get($resumo13, 'media_final')) ? number_format((float) data_get($resumo13, 'media_final'), 2, ',', '') : '' }}</td>
+                                        <td>{{ data_get($resumo13, 'resultado', '') }}</td>
+                                        <td>{{ data_get($resumo13, 'classificacao.observacoes', '') }}</td>
+                                    @else
+                                        @foreach($configNotas as $config)
+                                            @php $valor = $nota->{$config['key']}; @endphp
+                                            <td>{{ $valor !== null ? number_format((float) $valor, 2, ',', '') : '' }}</td>
+                                        @endforeach
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>

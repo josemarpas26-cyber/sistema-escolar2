@@ -84,8 +84,6 @@ class ClassificacaoEnsinoMedioServiceTest extends TestCase
         ]);
 
         $disciplinas = collect([
-            ['nome' => 'Portugues', 'codigo' => 'LP'],
-            ['nome' => 'Matematica', 'codigo' => 'MAT'],
             ['nome' => 'Projecto Tecnologico', 'codigo' => 'PTEC'],
         ])->map(function (array $dados) {
             return Disciplina::create([

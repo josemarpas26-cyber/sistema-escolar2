@@ -11,6 +11,7 @@ use App\Models\Nota;
 use App\Models\ProfessorTurmaDisciplina;
 use App\Models\Turma;
 use App\Models\User;
+use App\Services\ClassificacaoEnsinoMedioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -222,6 +223,9 @@ class RelatorioController extends Controller
         $mediaGeral = $valoresPeriodo->avg();
         $aprovacoes = $valoresPeriodo->filter(fn ($v) => $v >= 10)->count();
         $reprovacoes = $valoresPeriodo->count() - $aprovacoes;
+        $classificacaoEnsinoMedioResumo = $this->ehBoletimFinalDaDecimaTerceira($turma, $trimestre)
+            ? app(ClassificacaoEnsinoMedioService::class)->montarResumoDoAluno($turma, $aluno)
+            : null;
 
         $dados = [
             'aluno' => $aluno,
@@ -235,6 +239,7 @@ class RelatorioController extends Controller
             'disciplinaSelecionada' => $disciplinaId
                 ? Disciplina::find($disciplinaId)
                 : null,
+            'classificacaoEnsinoMedioResumo' => $classificacaoEnsinoMedioResumo,
         ];
 
         if ($request->formato === 'pdf') {
@@ -468,7 +473,9 @@ class RelatorioController extends Controller
                 $dados['aluno'],
                 $dados['turma'],
                 $dados['notas'],
-                $dados['mediaGeral']
+                $dados['mediaGeral'],
+                $dados['trimestre'] ?? 'final',
+                $dados['classificacaoEnsinoMedioResumo'] ?? null
             ),
             'boletim-'.$dados['aluno']->numero_processo.'.xlsx'
         );
@@ -908,6 +915,7 @@ class RelatorioController extends Controller
             'periodoLabel' => $this->labelPeriodoBoletimMassa($dados['trimestre']),
             'configNotas' => $this->configuracaoNotasBoletimMassa($dados['trimestre']),
             'notasPorAluno' => $dados['notasPorAluno'],
+            'classificacoesEnsinoMedio' => $dados['classificacoesEnsinoMedio'] ?? collect(),
         ])->setPaper('a4', 'portrait');
 
         $nomeArquivo = 'boletins-'
@@ -1014,10 +1022,17 @@ class RelatorioController extends Controller
             : '';
 
         if ($formato === 'pdf') {
+            $classificacoesEnsinoMedio = $this->ehBoletimFinalDaDecimaTerceira($turma, $trimestre)
+                ? app(ClassificacaoEnsinoMedioService::class)
+                    ->montarResumoDaTurma($turma, $notas->flatten(1))
+                    ->keyBy(fn (array $item) => $item['aluno']->id)
+                : collect();
+
             return $this->gerarBoletimMassaPDF([
                 'turma' => $turma,
                 'notasPorAluno' => $notas,
                 'trimestre' => $trimestre,
+                'classificacoesEnsinoMedio' => $classificacoesEnsinoMedio,
             ], $sufixoAluno);
         }
 
@@ -1031,6 +1046,11 @@ class RelatorioController extends Controller
             new BoletimMassaExport($turma, $notas, $trimestre),
             $filename
         );
+    }
+
+    private function ehBoletimFinalDaDecimaTerceira(Turma $turma, string $trimestre): bool
+    {
+        return (int) $turma->classe === 13 && $trimestre === 'final';
     }
 
 }
