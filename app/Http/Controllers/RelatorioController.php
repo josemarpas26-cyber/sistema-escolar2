@@ -43,7 +43,7 @@ class RelatorioController extends Controller
                 ->when($anoLetivoSelecionadoId, fn ($qq) => $qq->where('ano_letivo_id', $anoLetivoSelecionadoId))])
             ->when($anoLetivoSelecionadoId, fn ($q) => $q->whereHas('turmas', fn ($qq) => $qq
                 ->where('ano_letivo_id', $anoLetivoSelecionadoId)
-                ->where('turma_aluno.status', 'matriculado')))
+                ->whereIn('turma_aluno.status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])))
             ->orderBy('name')
             ->get();
         $professores = User::professores()->orderBy('name')->get();
@@ -880,7 +880,7 @@ class RelatorioController extends Controller
             'curso.areaFormacao',
             'anoLetivo',
             'coordenador',
-            'alunos' => fn ($q) => $q->wherePivot('status', 'matriculado')->orderBy('name'),
+            'alunos' => fn ($q) => $q->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])->orderBy('name'),
         ])->findOrFail($validated['turma_id']);
 
         // Usar o ano lectivo da turma ou o pedido; fallback para o activo
