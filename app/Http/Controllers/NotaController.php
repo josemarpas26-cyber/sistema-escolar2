@@ -122,7 +122,7 @@ class NotaController extends Controller
             $turma = Turma::findOrFail($turmaId);
             $disciplina = Disciplina::findOrFail($disciplinaId);
             $alunos = $turma->alunos()
-                ->wherePivotIn('status', ['matriculado', 'recurso'])
+                ->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado'])
                 ->orderBy('users.name')
                 ->get();
 
@@ -589,21 +589,7 @@ class NotaController extends Controller
                 $this->notaService->recalcularNota($nota);
                 \App\Observers\NotaObserver::$suprimirLogs = false;
                 $nota->save();
-                HistoricoAcademico::updateOrCreate(
-                    [
-                        'aluno_id' => $nota->aluno_id,
-                        'turma_id' => $nota->turma_id,
-                        'disciplina_id' => $nota->disciplina_id,
-                        'ano_letivo_id' => $nota->ano_letivo_id,
-                    ],
-                    [
-                        'classe' => (string) ($nota->turma?->classe ?? ''),
-                        'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->cfd ?? 0),
-                        'resultado' => $nota->recursoMelhoraClassificacaoFinal() ? 'aprovado' : 'reprovado',
-                        'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.',
-                        'data_conclusao' => now(),
-                    ]
-                );
+
                 $salvas++;
                 $alunosAlterados[$nota->turma_id.'-'.$nota->aluno_id] = [
                     'turma_id' => (int) $nota->turma_id,
@@ -619,26 +605,7 @@ class NotaController extends Controller
                 ->get();
 
             foreach ($notasAluno as $notaAluno) {
-                $notaRecursoTexto = $notaAluno->nota_recurso !== null
-                    ? ' Nota de recurso: '.number_format((float) $notaAluno->nota_recurso, 2, '.', '').'.'
-                    : '';
-
-                HistoricoAcademico::updateOrCreate(
-                    [
-                        'aluno_id' => $notaAluno->aluno_id,
-                        'turma_id' => $notaAluno->turma_id,
-                        'disciplina_id' => $notaAluno->disciplina_id,
-                        'ano_letivo_id' => $notaAluno->ano_letivo_id,
-                    ],
-                    [
-                        'classe' => (string) ($notaAluno->turma?->classe ?? ''),
-                        'classificacao_final' => (float) ($notaAluno->cfd_efetiva ?? $notaAluno->cfd ?? 0),
-                        'resultado' => $notaAluno->cfd_efetiva >= 10 ? 'aprovado' : 'reprovado',
-                        'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.'.$notaRecursoTexto,
-                        'data_conclusao' => now(),
-                    ]
-                );
-            }
+            $this->sincronizarHistoricoDoAlunoNaTurma($dadosAluno['turma_id'], $dadosAluno['aluno_id']);
 
             $this->estadoMatriculaService->sincronizarAlunoNaTurma($dadosAluno['turma_id'], $dadosAluno['aluno_id']);
         }
@@ -649,6 +616,7 @@ class NotaController extends Controller
 
         return back()->with($tipo, $mensagem);
     }
+}
 
     public function lancarRecurso(Request $request)
     {
@@ -711,6 +679,12 @@ class NotaController extends Controller
                     continue;
                 }
 
+                if ($nota->nota_recurso !== null) {
+                    $semAlteracao++;
+
+                    continue;
+                }
+
                 $nota->nota_recurso = round((float) $notaData['nota_recurso'], 2);
 
                 if (! $nota->isDirty('nota_recurso')) {
@@ -721,21 +695,6 @@ class NotaController extends Controller
 
                 $nota->save();
 
-                HistoricoAcademico::updateOrCreate(
-                    [
-                        'aluno_id' => $nota->aluno_id,
-                        'turma_id' => $nota->turma_id,
-                        'disciplina_id' => $nota->disciplina_id,
-                        'ano_letivo_id' => $nota->ano_letivo_id,
-                    ],
-                    [
-                        'classe' => (string) ($nota->turma?->classe ?? ''),
-                        'classificacao_final' => (float) ($nota->cfd_efetiva ?? $nota->cfd ?? 0),
-                        'resultado' => $nota->recursoMelhoraClassificacaoFinal() ? 'aprovado' : 'reprovado',
-                        'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.',
-                        'data_conclusao' => now(),
-                    ]
-                );
                 $salvas++;
                 $alunosAlterados[$nota->turma_id.'-'.$nota->aluno_id] = [
                     'turma_id' => (int) $nota->turma_id,
@@ -745,6 +704,7 @@ class NotaController extends Controller
         });
 
         foreach ($alunosAlterados as $dadosAluno) {
+            $this->sincronizarHistoricoDoAlunoNaTurma($dadosAluno['turma_id'], $dadosAluno['aluno_id']);
             $this->estadoMatriculaService->sincronizarAlunoNaTurma($dadosAluno['turma_id'], $dadosAluno['aluno_id']);
         }
 
@@ -773,6 +733,36 @@ class NotaController extends Controller
         $tipo = $salvas > 0 ? 'success' : (! empty($partes) ? 'warning' : 'info');
 
         return back()->with($tipo, $mensagem);
+    }
+
+    private function sincronizarHistoricoDoAlunoNaTurma(int $turmaId, int $alunoId): void
+    {
+        $notasAluno = Nota::where('turma_id', $turmaId)
+            ->where('aluno_id', $alunoId)
+            ->with('turma:id,classe')
+            ->get();
+
+        foreach ($notasAluno as $notaAluno) {
+            $notaRecursoTexto = $notaAluno->nota_recurso !== null
+                ? ' Nota de recurso: '.number_format((float) $notaAluno->nota_recurso, 2, '.', '').'.'
+                : '';
+
+            HistoricoAcademico::updateOrCreate(
+                [
+                    'aluno_id' => $notaAluno->aluno_id,
+                    'turma_id' => $notaAluno->turma_id,
+                    'disciplina_id' => $notaAluno->disciplina_id,
+                    'ano_letivo_id' => $notaAluno->ano_letivo_id,
+                ],
+                [
+                    'classe' => (string) ($notaAluno->turma?->classe ?? ''),
+                    'classificacao_final' => (float) ($notaAluno->cfd_efetiva ?? $notaAluno->cfd ?? 0),
+                    'resultado' => $notaAluno->isAprovado() ? 'aprovado' : 'reprovado',
+                    'observacoes' => 'Registo atualizado automaticamente após lançamento de recurso.'.$notaRecursoTexto,
+                    'data_conclusao' => now(),
+                ]
+            );
+        }
     }
 
     // -------------------------------------------------------------------------

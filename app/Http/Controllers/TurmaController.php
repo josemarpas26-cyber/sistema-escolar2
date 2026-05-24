@@ -556,7 +556,7 @@ class TurmaController extends Controller
         // ----------------------------------------------------------------
 
         $todosAlunos = $turma->alunos()
-            ->wherePivotIn('status', ['matriculado', ResultadoAlunoTurmaService::STATUS_RECURSO])
+            ->wherePivotIn('status', ['matriculado', 'aprovado', ResultadoAlunoTurmaService::STATUS_RECURSO])
             ->get();
 
         if ($todosAlunos->isEmpty()) {
