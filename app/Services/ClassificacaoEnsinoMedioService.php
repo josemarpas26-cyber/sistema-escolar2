@@ -34,7 +34,7 @@ class ClassificacaoEnsinoMedioService
         $notaMinima = $this->notaMinimaAprovacao($turma);
 
         return $turma->alunos
-            ->whereIn('pivot.status', ['matriculado', 'aprovado', 'reprovado', 'concluido'])
+            ->whereIn('pivot.status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])
             ->values()
             ->map(function ($aluno) use (
                 $turma,

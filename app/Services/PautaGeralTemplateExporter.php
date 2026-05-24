@@ -124,6 +124,10 @@ class PautaGeralTemplateExporter
         $anoLetivo = $dados['anoLetivo'] ?? null;
         $trimestre = (string) ($dados['trimestre'] ?? 'final');
 
+        if ((int) $turma->classe === 13 && ! in_array($trimestre, ['1', '2', '3'], true)) {
+            return app(PautaGeralDecimaTerceiraTemplateExporter::class)->build($dados);
+        }
+
         $turma->loadMissing(['curso.coordenador', 'coordenador', 'disciplinas.cursos']);
         $anoLetivo ??= $turma->anoLetivo;
 

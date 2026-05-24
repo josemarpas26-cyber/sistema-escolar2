@@ -19,29 +19,36 @@ return new class extends Migration
 
         DB::table('areas_formacao')->insert([
             [
-                'nome' => 'Informatica',
-                'descricao' => 'Cursos da area de tecnologias de informacao e sistemas.',
+                'nome' => 'Construção civil',
+                'descricao' => 'Cursos da área de construção civil.',
                 'ativo' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'nome' => 'Saude',
-                'descricao' => 'Cursos ligados a cuidados de saude e areas clinicas.',
+                'nome' => 'Informática',
+                'descricao' => 'Cursos da área de tecnologias de informação e sistemas.',
                 'ativo' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'nome' => 'Gestao',
-                'descricao' => 'Cursos ligados a administracao, economia e gestao.',
+                'nome' => 'Eletricidade',
+                'descricao' => 'Cursos ligados à área de eletricidade e instalações.',
                 'ativo' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'nome' => 'Ciencias',
-                'descricao' => 'Cursos da area de ciencias gerais.',
+                'nome' => 'Mecânica',
+                'descricao' => 'Cursos da área de mecânica industrial.',
+                'ativo' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nome' => 'Tecnologia de móveis',
+                'descricao' => 'Cursos da área de tecnologia e produção de móveis.',
                 'ativo' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -56,7 +63,7 @@ return new class extends Migration
         });
 
         $areaInformaticaId = DB::table('areas_formacao')
-            ->where('nome', 'Informatica')
+            ->where('nome', 'Informática')
             ->value('id');
 
         if ($areaInformaticaId) {

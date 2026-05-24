@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AnoLetivo;
+use App\Models\ClassificacaoEnsinoMedio;
 use App\Models\Curso;
 use App\Models\Disciplina;
 use App\Models\Nota;
@@ -282,6 +283,171 @@ class ExportacoesXlsxTest extends TestCase
         $this->assertSame('Não Transita', $sheet->getCell('T15')->getValue());
     }
 
+    public function test_exportador_da_pauta_geral_da_decima_terceira_usa_template_especifico(): void
+    {
+        $anoLetivo = AnoLetivo::create([
+            'nome' => '2025/2026',
+            'data_inicio' => '2025-09-01',
+            'data_fim' => '2026-07-31',
+            'ativo' => true,
+            'encerrado' => false,
+        ]);
+
+        $coordenadorTurma = User::factory()->create(['name' => 'Director da Turma']);
+        $coordenadorCurso = User::factory()->create(['name' => 'Coordenador do Curso']);
+
+        $curso = Curso::create([
+            'nome' => 'InformÃ¡tica',
+            'codigo' => 'INF',
+            'coordenador_id' => $coordenadorCurso->id,
+            'ativo' => true,
+        ]);
+
+        $turma = Turma::create([
+            'nome' => 'A',
+            'classe' => '13',
+            'curso_id' => $curso->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'coordenador_turma_id' => $coordenadorTurma->id,
+            'capacidade' => 40,
+            'ativo' => true,
+        ]);
+
+        $portugues = Disciplina::create([
+            'nome' => 'PortuguÃªs',
+            'codigo' => 'LP',
+            'leciona_13' => true,
+            'ativo' => true,
+        ]);
+
+        $matematica = Disciplina::create([
+            'nome' => 'MatemÃ¡tica',
+            'codigo' => 'MAT',
+            'leciona_13' => true,
+            'ativo' => true,
+        ]);
+
+        $projecto = Disciplina::create([
+            'nome' => 'Projecto TecnolÃ³gico',
+            'codigo' => 'PTEC',
+            'leciona_13' => true,
+            'ativo' => true,
+        ]);
+
+        $turma->disciplinas()->attach([$portugues->id, $matematica->id, $projecto->id]);
+        $curso->disciplinas()->attach($portugues->id, ['ano_terminal' => 13]);
+        $curso->disciplinas()->attach($matematica->id, ['ano_terminal' => null]);
+        $curso->disciplinas()->attach($projecto->id, ['ano_terminal' => 13]);
+
+        $profPortugues = User::factory()->create(['name' => 'Prof PortuguÃªs']);
+        $profProjecto = User::factory()->create(['name' => 'Prof Projecto']);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $profPortugues->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $portugues->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        ProfessorTurmaDisciplina::create([
+            'professor_id' => $profProjecto->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $projecto->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ]);
+
+        $aluno = User::factory()->create([
+            'name' => 'Aluno 13Âª',
+            'numero_processo' => '20251301',
+            'genero' => 'M',
+        ]);
+
+        $turma->alunos()->attach($aluno->id, [
+            'data_matricula' => '2025-09-02',
+            'status' => 'matriculado',
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $portugues->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'cfd' => 14,
+            'status' => 'finalizado',
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $matematica->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'cfd' => 12,
+            'status' => 'finalizado',
+        ]);
+
+        Nota::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'disciplina_id' => $projecto->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'ca_12' => 13,
+            'mft2' => 14,
+            'mac3' => 15,
+            'pp3' => 16,
+            'mt3' => 17,
+            'ca' => 18,
+            'cfd' => 16,
+            'status' => 'finalizado',
+        ]);
+
+        ClassificacaoEnsinoMedio::create([
+            'aluno_id' => $aluno->id,
+            'turma_id' => $turma->id,
+            'ano_letivo_id' => $anoLetivo->id,
+            'ecs' => 12,
+            'pap' => 18,
+            'observacoes' => 'Apto para defesa final.',
+        ]);
+
+        $spreadsheet = app(PautaGeralTemplateExporter::class)->build([
+            'turma' => $turma,
+            'anoLetivo' => $anoLetivo,
+            'trimestre' => 'final',
+        ]);
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $colPortugues = $this->findColumnContainingInRow($sheet, 12, 'PORTUGU');
+        $colMatematica = $this->findColumnContainingInRow($sheet, 12, 'MATEM');
+
+        $this->assertSame('AK', $sheet->getHighestColumn());
+        $this->assertGreaterThanOrEqual(30, $sheet->getHighestRow());
+        $this->assertSame('PAUTA FINAL DA 13ª CLASSE', $sheet->getCell('D9')->getValue());
+        $this->assertSame('TURMA: INF13A', $sheet->getCell('AB10')->getValue());
+        $this->assertNotNull($colPortugues);
+        $this->assertNotNull($colMatematica);
+        $this->assertStringContainsString('PROJECTO', (string) $sheet->getCell('U12')->getValue());
+        $this->assertStringContainsString('Aluno 13', (string) $sheet->getCell('C15')->getValue());
+        $this->assertSame(14.0, (float) $sheet->getCell($colPortugues.'15')->getCalculatedValue());
+        $this->assertSame(12.0, (float) $sheet->getCell($colMatematica.'15')->getCalculatedValue());
+        $this->assertSame(13.0, (float) $sheet->getCell('W15')->getCalculatedValue());
+        $this->assertSame(14.0, (float) $sheet->getCell('X15')->getCalculatedValue());
+        $this->assertSame(15.0, (float) $sheet->getCell('Y15')->getCalculatedValue());
+        $this->assertSame(16.0, (float) $sheet->getCell('Z15')->getCalculatedValue());
+        $this->assertSame(17.0, (float) $sheet->getCell('AA15')->getCalculatedValue());
+        $this->assertSame(18.0, (float) $sheet->getCell('AB15')->getCalculatedValue());
+        $this->assertSame(16.0, (float) $sheet->getCell('AC15')->getCalculatedValue());
+        $this->assertSame(12.0, (float) $sheet->getCell('AF15')->getCalculatedValue());
+        $this->assertSame(18.0, (float) $sheet->getCell('AG15')->getCalculatedValue());
+        $this->assertSame(14.0, (float) $sheet->getCell('AH15')->getCalculatedValue());
+        $this->assertSame(14.0, (float) $sheet->getCell('AI15')->getCalculatedValue());
+        $this->assertSame('Apto para defesa final.', $sheet->getCell('AJ15')->getValue());
+        $this->assertSame('APROVADO', $sheet->getCell('AK15')->getValue());
+        $this->assertSame($profPortugues->name, $sheet->getCell('U16')->getValue());
+        $this->assertSame($profProjecto->name, $sheet->getCell('AD16')->getValue());
+        $this->assertSame($coordenadorTurma->name, $sheet->getCell('A26')->getValue());
+        $this->assertSame($coordenadorCurso->name, $sheet->getCell('F26')->getValue());
+    }
+
     public function test_pauta_export_mantem_mt1_vazio_para_aluno_que_ingressou_no_segundo_trimestre(): void
     {
         $alunoRole = $this->createRoleWithPermissions('aluno', []);
@@ -484,5 +650,22 @@ class ExportacoesXlsxTest extends TestCase
         $role->permissions()->sync($permissionIds);
 
         return $role;
+    }
+
+    private function findColumnContainingInRow(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, int $row, string $expected): ?string
+    {
+        $lastColIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($sheet->getHighestColumn());
+        $expected = strtoupper($expected);
+
+        for ($columnIndex = 1; $columnIndex <= $lastColIndex; $columnIndex++) {
+            $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex);
+            $value = strtoupper((string) $sheet->getCell($column.$row)->getValue());
+
+            if (str_contains($value, $expected)) {
+                return $column;
+            }
+        }
+
+        return null;
     }
 }
