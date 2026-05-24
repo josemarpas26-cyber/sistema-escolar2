@@ -261,7 +261,7 @@
                         $classeNome = $primeiro?->classe ?? '—';
                     @endphp
                     <tr>
-                        <td colspan="3" style="font-weight:700; background:#f3f4f6;">
+                        <td colspan="4" style="font-weight:700; background:#f3f4f6;">
                             Ano letivo: {{ $anoNome }} | Turma: {{ $turmaNome }} | Classe: {{ $classeNome }}
                         </td>
                     </tr>
@@ -271,8 +271,10 @@
                             <td class="td-center">{{ isset($row->classificacao_final) ? number_format($row->classificacao_final, 2, ',', '.') : '—' }}</td>
                             <td class="td-center">
                                 @php
-                                    $notaRecurso = null;
-                                    if (preg_match('/nota de recurso:\\s*([0-9]+(?:\\.[0-9]+)?)/i', (string) ($row->observacoes ?? ''), $m)) {
+                                    $notaRecurso = $row->nota_recurso_historico !== null
+                                        ? number_format((float) $row->nota_recurso_historico, 2, ',', '.')
+                                        : null;
+                                    if ($notaRecurso === null && preg_match('/nota de recurso:\\s*([0-9]+(?:\\.[0-9]+)?)/i', (string) ($row->observacoes ?? ''), $m)) {
                                         $notaRecurso = number_format((float) $m[1], 2, ',', '.');
                                     }
                                 @endphp
@@ -280,9 +282,8 @@
                             </td>
                             <td class="td-center">
                                 @php
-                                    $r = strtolower($row->resultado ?? '');
-                                    $obs = strtolower($row->observacoes ?? '');
-                                    $emRecurso = str_contains($obs, 'recurso');
+                                    $r = strtolower($row->resultado_exibicao ?? ($row->resultado ?? ''));
+                                    $emRecurso = $r === 'recurso';
                                 @endphp
                                 @if(str_contains($r, 'aprovado') && !str_contains($r, 'reprovado'))
                                     <span class="badge-aprovado">Aprovado</span>
