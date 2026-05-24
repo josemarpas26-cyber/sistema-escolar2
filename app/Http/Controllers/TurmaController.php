@@ -747,6 +747,7 @@ class TurmaController extends Controller
                     );
                 }
             }
+
             return $novaTurma;
         });
 

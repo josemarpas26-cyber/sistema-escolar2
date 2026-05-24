@@ -246,7 +246,6 @@
         <table>
             <thead>
                 <tr>
-
                     <th>Disciplina</th>
                     <th class="td-center">CFD</th>
                     <th class="td-center">Resultado</th>
@@ -267,7 +266,6 @@
                     </tr>
                     @foreach($registros as $row)
                         <tr>
-                           
                             <td>{{ $row->disciplina->nome ?? '—' }}</td>
                             <td class="td-center">{{ isset($row->classificacao_final) ? number_format($row->classificacao_final, 2, ',', '.') : '—' }}</td>
                             <td class="td-center">
