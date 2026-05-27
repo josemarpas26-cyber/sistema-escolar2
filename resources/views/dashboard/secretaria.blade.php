@@ -32,7 +32,7 @@
     />
 
     <x-stat-card 
-        title="Logs Hoje" 
+        title="Actividades Hoje" 
         :value="$logs_hoje" 
         icon="fas fa-history"
         color="primary"

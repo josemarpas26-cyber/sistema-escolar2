@@ -85,7 +85,11 @@ class Disciplina extends Model
             $relacaoCurso = $this->cursos->firstWhere('id', $cursoId);
 
             if (! $relacaoCurso) {
-                return $this->disciplinaTerminalInferida() === $classeAtual;
+                if ($this->cursos->isEmpty()) {
+                    return $this->disciplinaTerminalInferida() === $classeAtual;
+                }
+
+                return false;
             }
 
             $anoTerminal = $relacaoCurso->pivot->ano_terminal;
@@ -107,7 +111,11 @@ class Disciplina extends Model
             ->first();
 
         if (! $relacao) {
-            return $this->disciplinaTerminalInferida();
+            $temRelacaoComAlgumCurso = $this->cursos()->exists();
+
+            return $temRelacaoComAlgumCurso
+                ? null
+                : $this->disciplinaTerminalInferida();
         }
 
         return $relacao->pivot->ano_terminal !== null

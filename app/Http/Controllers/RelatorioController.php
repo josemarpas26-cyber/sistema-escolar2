@@ -11,8 +11,10 @@ use App\Models\Nota;
 use App\Models\ProfessorTurmaDisciplina;
 use App\Models\Turma;
 use App\Models\User;
+use App\Services\ClassificacaoEnsinoMedioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\BoletimMassaExport;
 
@@ -43,7 +45,7 @@ class RelatorioController extends Controller
                 ->when($anoLetivoSelecionadoId, fn ($qq) => $qq->where('ano_letivo_id', $anoLetivoSelecionadoId))])
             ->when($anoLetivoSelecionadoId, fn ($q) => $q->whereHas('turmas', fn ($qq) => $qq
                 ->where('ano_letivo_id', $anoLetivoSelecionadoId)
-                ->where('turma_aluno.status', 'matriculado')))
+                ->whereIn('turma_aluno.status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])))
             ->orderBy('name')
             ->get();
         $professores = User::professores()->orderBy('name')->get();
@@ -221,6 +223,9 @@ class RelatorioController extends Controller
         $mediaGeral = $valoresPeriodo->avg();
         $aprovacoes = $valoresPeriodo->filter(fn ($v) => $v >= 10)->count();
         $reprovacoes = $valoresPeriodo->count() - $aprovacoes;
+        $classificacaoEnsinoMedioResumo = $this->ehBoletimFinalDaDecimaTerceira($turma, $trimestre)
+            ? app(ClassificacaoEnsinoMedioService::class)->montarResumoDoAluno($turma, $aluno)
+            : null;
 
         $dados = [
             'aluno' => $aluno,
@@ -234,6 +239,7 @@ class RelatorioController extends Controller
             'disciplinaSelecionada' => $disciplinaId
                 ? Disciplina::find($disciplinaId)
                 : null,
+            'classificacaoEnsinoMedioResumo' => $classificacaoEnsinoMedioResumo,
         ];
 
         if ($request->formato === 'pdf') {
@@ -358,7 +364,9 @@ class RelatorioController extends Controller
 
         $historico = HistoricoAcademico::porAluno($aluno->id)
             ->with(['disciplina', 'turma', 'anoLetivo'])
-            ->get()
+            ->get();
+
+        $historico = $this->prepararHistoricoParaExibicao($aluno, $historico)
             ->groupBy('ano_letivo_id');
 
         $dados = [
@@ -465,7 +473,9 @@ class RelatorioController extends Controller
                 $dados['aluno'],
                 $dados['turma'],
                 $dados['notas'],
-                $dados['mediaGeral']
+                $dados['mediaGeral'],
+                $dados['trimestre'] ?? 'final',
+                $dados['classificacaoEnsinoMedioResumo'] ?? null
             ),
             'boletim-'.$dados['aluno']->numero_processo.'.xlsx'
         );
@@ -506,6 +516,98 @@ class RelatorioController extends Controller
             ]);
 
         return $pdf->download('historico-'.$dados['aluno']->numero_processo.'.pdf');
+    }
+
+    private function prepararHistoricoParaExibicao(User $aluno, Collection $historico): Collection
+    {
+        if ($historico->isEmpty()) {
+            return $historico;
+        }
+
+        $notasPorChave = Nota::query()
+            ->where('aluno_id', $aluno->id)
+            ->whereIn('turma_id', $historico->pluck('turma_id')->filter()->unique()->all())
+            ->whereIn('disciplina_id', $historico->pluck('disciplina_id')->filter()->unique()->all())
+            ->whereIn('ano_letivo_id', $historico->pluck('ano_letivo_id')->filter()->unique()->all())
+            ->with([
+                'turma:id,classe,curso_id',
+                'disciplina:id,nome,codigo,disciplina_terminal,leciona_10,leciona_11,leciona_12,leciona_13',
+                'disciplina.cursos:id',
+            ])
+            ->get()
+            ->keyBy(fn (Nota $nota) => $this->chaveHistorico(
+                $nota->aluno_id,
+                $nota->turma_id,
+                $nota->disciplina_id,
+                $nota->ano_letivo_id
+            ));
+
+        return $historico->map(function (HistoricoAcademico $registro) use ($notasPorChave) {
+            $nota = $notasPorChave->get($this->chaveHistorico(
+                $registro->aluno_id,
+                $registro->turma_id,
+                $registro->disciplina_id,
+                $registro->ano_letivo_id
+            ));
+
+            $status = $this->resolverStatusHistorico($registro, $nota);
+
+            $registro->setAttribute('nota_recurso_historico', $this->resolverNotaRecursoHistorico($registro, $nota));
+            $registro->setAttribute('resultado_exibicao', $this->labelStatusHistorico($status, $registro->resultado));
+
+            return $registro;
+        });
+    }
+
+    private function chaveHistorico(int $alunoId, int $turmaId, int $disciplinaId, int $anoLetivoId): string
+    {
+        return implode(':', [$alunoId, $turmaId, $disciplinaId, $anoLetivoId]);
+    }
+
+    private function resolverStatusHistorico(HistoricoAcademico $registro, ?Nota $nota): string
+    {
+        $resultado = strtolower(trim((string) $registro->resultado));
+
+        if ($resultado === 'aprovado') {
+            return 'aprovado';
+        }
+
+        if ($nota?->recursoPendente()) {
+            return 'recurso';
+        }
+
+        return match ($resultado) {
+            'reprovado' => 'reprovado',
+            'dispensado' => 'dispensado',
+            'recurso' => 'recurso',
+            '' => 'indefinido',
+            default => $resultado,
+        };
+    }
+
+    private function resolverNotaRecursoHistorico(HistoricoAcademico $registro, ?Nota $nota): ?float
+    {
+        if ($nota?->nota_recurso !== null && is_numeric($nota->nota_recurso)) {
+            return round((float) $nota->nota_recurso, 2);
+        }
+
+        if (preg_match('/nota de recurso:\s*([0-9]+(?:[.,][0-9]+)?)/i', (string) $registro->observacoes, $match)) {
+            return round((float) str_replace(',', '.', $match[1]), 2);
+        }
+
+        return null;
+    }
+
+    private function labelStatusHistorico(string $status, ?string $fallback): string
+    {
+        return match ($status) {
+            'aprovado' => 'Aprovado',
+            'reprovado' => 'Reprovado',
+            'recurso' => 'Recurso',
+            'dispensado' => 'Dispensado',
+            'indefinido' => '—',
+            default => ucfirst(str_replace('_', ' ', $fallback ?: $status)),
+        };
     }
 
     private function gerarPautaGeralPDF(array $dados)
@@ -813,6 +915,7 @@ class RelatorioController extends Controller
             'periodoLabel' => $this->labelPeriodoBoletimMassa($dados['trimestre']),
             'configNotas' => $this->configuracaoNotasBoletimMassa($dados['trimestre']),
             'notasPorAluno' => $dados['notasPorAluno'],
+            'classificacoesEnsinoMedio' => $dados['classificacoesEnsinoMedio'] ?? collect(),
         ])->setPaper('a4', 'portrait');
 
         $nomeArquivo = 'boletins-'
@@ -880,7 +983,7 @@ class RelatorioController extends Controller
             'curso.areaFormacao',
             'anoLetivo',
             'coordenador',
-            'alunos' => fn ($q) => $q->wherePivot('status', 'matriculado')->orderBy('name'),
+            'alunos' => fn ($q) => $q->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado', 'concluido'])->orderBy('name'),
         ])->findOrFail($validated['turma_id']);
 
         // Usar o ano lectivo da turma ou o pedido; fallback para o activo
@@ -919,10 +1022,17 @@ class RelatorioController extends Controller
             : '';
 
         if ($formato === 'pdf') {
+            $classificacoesEnsinoMedio = $this->ehBoletimFinalDaDecimaTerceira($turma, $trimestre)
+                ? app(ClassificacaoEnsinoMedioService::class)
+                    ->montarResumoDaTurma($turma, $notas->flatten(1))
+                    ->keyBy(fn (array $item) => $item['aluno']->id)
+                : collect();
+
             return $this->gerarBoletimMassaPDF([
                 'turma' => $turma,
                 'notasPorAluno' => $notas,
                 'trimestre' => $trimestre,
+                'classificacoesEnsinoMedio' => $classificacoesEnsinoMedio,
             ], $sufixoAluno);
         }
 
@@ -936,6 +1046,11 @@ class RelatorioController extends Controller
             new BoletimMassaExport($turma, $notas, $trimestre),
             $filename
         );
+    }
+
+    private function ehBoletimFinalDaDecimaTerceira(Turma $turma, string $trimestre): bool
+    {
+        return (int) $turma->classe === 13 && $trimestre === 'final';
     }
 
 }

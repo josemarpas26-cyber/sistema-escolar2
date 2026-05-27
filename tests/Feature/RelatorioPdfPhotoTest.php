@@ -71,7 +71,7 @@ class RelatorioPdfPhotoTest extends TestCase
 
         $this->assertStringContainsString($aluno->foto_perfil_pdf_src, $htmlBoletim);
         $this->assertStringContainsString($aluno->foto_perfil_pdf_src, $htmlHistorico);
-        $this->assertStringContainsString(public_path('images/logo1.png'), $htmlHistorico);
+        $this->assertMatchesRegularExpression('/<img src="data:image\\/[^"]+" alt="Logo" class="header-logo">/', $htmlHistorico);
         $this->assertSame(1, substr_count($htmlHistorico, 'class="photo-box"'));
     }
 }

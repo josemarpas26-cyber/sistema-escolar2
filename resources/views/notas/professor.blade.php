@@ -2027,7 +2027,9 @@
                                  name="notas[{{ $idx }}][nota_recurso]" value="{{ $nota->nota_recurso }}"
                                  class="np-nota-input {{ $nota->nota_recurso !== null ? ($nota->nota_recurso >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                                  @input="onNotaInput($event, {{ $idx }}, 'recurso')"
-                                 @blur="formatNotaInput($event)" placeholder="—">
+                                 @blur="formatNotaInput($event)" placeholder="—"
+                                 @disabled($nota->nota_recurso !== null)
+                                 @readonly($nota->nota_recurso !== null)>
                         </div>
                       </td>
                       <td>
