@@ -150,7 +150,8 @@
             <tbody class="divide-y divide-gray-200">
                 @foreach($alunos as $aluno)
                 @php
-                    $turmaAtual = $aluno->turmas->where('pivot.status', 'matriculado')->first();
+                    $turmaAtual = $aluno->turmas
+                        ->whereIn('pivot.status', ['matriculado', 'recurso'])->first();
 
                     // Verificar se o professor pode ver o boletim deste aluno
                     $professorPodeVerBoletim = false;
