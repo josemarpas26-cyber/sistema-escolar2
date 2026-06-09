@@ -189,12 +189,16 @@
     }
 
     $configAvaliacao = $anoLetivo?->configuracaoAvaliacao ?? $turma->anoLetivo?->configuracaoAvaliacao;
+    $usaPgTerceiro = (int) ($turma->classe ?? 0) === 12;
+    $campoAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'pg' : 'pt3';
+    $labelAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'PG' : 'PT3';
     $colsDisciplina  = [];
 
     if (in_array($trimestre, ['1','2','3'], true) && $configAvaliacao) {
         $colsDisciplina = $configAvaliacao->provas
             ->where('periodo', (int) $trimestre)
             ->where('ativo', true)
+            ->when($trimestre === '3' && $usaPgTerceiro, fn($provas) => $provas->reject(fn($prova) => $prova->codigo === 'pt3'))
             ->sortBy('ordem')
             ->map(fn($prova) => ['campo' => $prova->codigo, 'label' => strtoupper($prova->codigo), 'tipo' => 'normal'])
             ->values()
@@ -207,8 +211,11 @@
         }
 
         if ($trimestre === '3') {
+            if (! collect($colsDisciplina)->contains('campo', $campoAvaliacaoFinalTerceiro)) {
+                $colsDisciplina[] = ['campo' => $campoAvaliacaoFinalTerceiro, 'label' => $labelAvaliacaoFinalTerceiro, 'tipo' => 'normal'];
+            }
+
             $colsDisciplina[] = ['campo' => 'cf',  'label' => 'CF',  'tipo' => 'mt'];
-            $colsDisciplina[] = ['campo' => 'pg',  'label' => 'PG',  'tipo' => 'normal'];
             $colsDisciplina[] = ['campo' => 'ca',  'label' => 'CA',  'tipo' => 'ca'];
         }
     }
@@ -218,7 +225,7 @@
             ['campo' => 'mt1', 'label' => 'MT1', 'tipo' => 'mt'],
             ['campo' => 'mt2', 'label' => 'MT2', 'tipo' => 'mt'],
             ['campo' => 'mt3', 'label' => 'MT3', 'tipo' => 'mt'],
-            ['campo' => 'pg',  'label' => 'PG',  'tipo' => 'normal'],
+            ['campo' => $campoAvaliacaoFinalTerceiro, 'label' => $labelAvaliacaoFinalTerceiro, 'tipo' => 'normal'],
             ['campo' => 'ca',  'label' => 'CA',  'tipo' => 'ca'],
             ['campo' => 'cfd_efetiva', 'label' => 'CFD', 'tipo' => 'cfd'],
         ];
@@ -318,7 +325,7 @@
     @if(!$isFinal)
         Provas configuradas dinamicamente para o período selecionado &nbsp;|&nbsp; MT = Média Trimestral
     @else
-        MT1/MT2/MT3 = Médias Trimestrais &nbsp;|&nbsp; PG = Prova Global &nbsp;|&nbsp; CA = Classif. Anual &nbsp;|&nbsp; CFD = Classif. Final Disciplina &nbsp;|&nbsp; ✓ Aprovado ≥ 10
+        MT1/MT2/MT3 = Médias Trimestrais &nbsp;|&nbsp; {{ $labelAvaliacaoFinalTerceiro }} = {{ $usaPgTerceiro ? 'Prova Global' : 'Prova Trimestral do 3º Trimestre' }} &nbsp;|&nbsp; CA = Classif. Anual &nbsp;|&nbsp; CFD = Classif. Final Disciplina &nbsp;|&nbsp; ✓ Aprovado ≥ 10
     @endif
     &nbsp;|&nbsp; Folha: <strong>{{ $pageSize }} Paisagem</strong>
     &nbsp;|&nbsp; Total de colunas: <strong>{{ $totalCols }}</strong>

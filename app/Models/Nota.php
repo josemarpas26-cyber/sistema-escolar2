@@ -176,10 +176,6 @@ class Nota extends Model
         }
 
         $this->pg = null;
-
-        if ($classe === 13) {
-            $this->pt3 = null;
-        }
     }
 
     private function calcularMediaDinamica(int $periodo, ConfiguracaoAvaliacao $configuracaoAvaliacao): ?float

@@ -1635,12 +1635,9 @@ class NotaController extends Controller
             return self::CAMPOS_EDITAVEIS_POR_TRIMESTRE[$trimestre] ?? [];
         }
 
-        return match ((int) $nota->turma->classe) {
-            10, 11 => ['pp3', 'pt3'],
-            12 => ['pp3', 'pg'],
-            13 => ['pp3'],
-            default => ['pp3'],
-        };
+        return (int) $nota->turma->classe === 12
+            ? ['pp3', 'pg']
+            : ['pp3', 'pt3'];
     }
 
     private function campoEstaBloqueado(Nota $nota, string $campo): bool

@@ -185,9 +185,8 @@ class NotaService
                 3 => $nota->mac3 !== null
                     && $nota->pp3 !== null
                     && match ((int) $nota->turma->classe) {
-                        10, 11 => $nota->pt3 !== null,
                         12 => $nota->pg !== null,
-                        default => true,
+                        default => $nota->pt3 !== null,
                     }
                     && $nota->mt3 !== null
                     && $nota->cf !== null

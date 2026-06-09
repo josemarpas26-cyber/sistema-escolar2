@@ -45,7 +45,7 @@ class AlunoDashboardTest extends TestCase
             'mft2' => 14,
             'mac3' => 15,
             'pp3' => 14,
-            'pg' => 13,
+            'pt3' => 13,
             'mt3' => 15,
             'cf' => 14.5,
             'ca' => 13.9,

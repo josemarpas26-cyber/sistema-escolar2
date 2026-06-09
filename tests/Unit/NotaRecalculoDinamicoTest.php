@@ -153,7 +153,7 @@ class NotaRecalculoDinamicoTest extends TestCase
         $this->assertNull($nota->pt3);
     }
 
-    public function test_recalcula_decima_terceira_sem_pg_e_com_ca_da_decima_segunda(): void
+    public function test_recalcula_decima_terceira_com_prova_trimestral_e_sem_pg(): void
     {
         $nota = new Nota([
             'ano_letivo_id' => 1,
@@ -165,6 +165,8 @@ class NotaRecalculoDinamicoTest extends TestCase
             'pt2' => 15,
             'mac3' => 16,
             'pp3' => 14,
+            'pt3' => 11,
+            'pg' => 20,
             'ca_12' => 15,
         ]);
 
@@ -190,16 +192,19 @@ class NotaRecalculoDinamicoTest extends TestCase
             3 => [
                 ['codigo' => 'mac3', 'peso' => 1, 'ativo' => true],
                 ['codigo' => 'pp3', 'peso' => 1, 'ativo' => true],
+                ['codigo' => 'pt3', 'peso' => 1, 'ativo' => true],
             ],
         ], 40);
 
         $nota->recalcular($config);
 
         $this->assertEquals(15.00, (float) $nota->mft2);
-        $this->assertEquals(15.00, (float) $nota->mt3);
-        $this->assertEquals(15.00, (float) $nota->cf);
-        $this->assertEquals(15.00, (float) $nota->ca);
-        $this->assertEquals(15.00, (float) $nota->cfd);
+        $this->assertEquals(13.67, (float) $nota->mt3);
+        $this->assertEquals(14.34, (float) $nota->cf);
+        $this->assertEquals(14.34, (float) $nota->ca);
+        $this->assertEquals(14.67, (float) $nota->cfd);
+        $this->assertNull($nota->pg);
+        $this->assertEquals(11.00, (float) $nota->pt3);
     }
 
     private function configuracao(array $provasPorPeriodo, float $pesoPg): ConfiguracaoAvaliacao

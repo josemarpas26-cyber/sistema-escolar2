@@ -121,7 +121,7 @@ class DashboardController extends Controller
                       ->orWhereNull('mac2')->orWhereNull('pp2')->orWhereNull('pt2')
                       ->orWhereNull('mac3')->orWhereNull('pp3')
                       ->orWhere(fn ($sub) => $sub
-                          ->whereHas('turma', fn ($turma) => $turma->whereIn('classe', ['10', '11']))
+                          ->whereHas('turma', fn ($turma) => $turma->where('classe', '!=', '12'))
                           ->whereNull('pt3'))
                       ->orWhere(fn ($sub) => $sub
                           ->whereHas('turma', fn ($turma) => $turma->where('classe', '12'))

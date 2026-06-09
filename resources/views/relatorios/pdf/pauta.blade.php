@@ -177,6 +177,9 @@
             '3' => '3º Trimestre',
             default => 'Final (CFD)',
         };
+        $usaPgTerceiro = (int) ($turma->classe ?? 0) === 12;
+        $campoAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'pg' : 'pt3';
+        $labelAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'PG' : 'PT3';
     @endphp
 
     <!-- Header -->
@@ -253,7 +256,7 @@
                     <th>PP3</th>
                     <th>MT3</th>
                     <th>CF</th>
-                    <th>PG</th>
+                    <th>{{ $labelAvaliacaoFinalTerceiro }}</th>
                     <th>CA</th>
 
                 @else {{-- Final --}}
@@ -262,7 +265,7 @@
                     <th>MFT2</th>
                     <th>MT3</th>
                     <th>CF</th>
-                    <th>PG</th>
+                    <th>{{ $labelAvaliacaoFinalTerceiro }}</th>
                     <th>CA</th>
                     <th>CFD</th>
                 @endif
@@ -307,7 +310,7 @@
                     <td>{{ $nota->pp3  !== null ? number_format($nota->pp3,  1) : '-' }}</td>
                     <td><strong>{{ $nota->mt3 !== null ? number_format($nota->mt3, 1) : '-' }}</strong></td>
                     <td><strong>{{ $nota->cf  !== null ? number_format($nota->cf,  1) : '-' }}</strong></td>
-                    <td>{{ $nota->pg  !== null ? number_format($nota->pg,  1) : '-' }}</td>
+                    <td>{{ $nota->{$campoAvaliacaoFinalTerceiro} !== null ? number_format($nota->{$campoAvaliacaoFinalTerceiro}, 1) : '-' }}</td>
                     <td><strong>{{ $nota->ca  !== null ? number_format($nota->ca,  1) : '-' }}</strong></td>
 
                 @else {{-- Final --}}
@@ -316,7 +319,7 @@
                     <td>{{ $nota->mft2 !== null ? number_format($nota->mft2, 1) : '-' }}</td>
                     <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  1) : '-' }}</td>
                     <td>{{ $nota->cf   !== null ? number_format($nota->cf,   1) : '-' }}</td>
-                    <td>{{ $nota->pg   !== null ? number_format($nota->pg,   1) : '-' }}</td>
+                    <td>{{ $nota->{$campoAvaliacaoFinalTerceiro} !== null ? number_format($nota->{$campoAvaliacaoFinalTerceiro}, 1) : '-' }}</td>
                     <td>{{ $nota->ca   !== null ? number_format($nota->ca,   1) : '-' }}</td>
                     <td>
                         <strong>{{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 1) : '-' }}</strong>

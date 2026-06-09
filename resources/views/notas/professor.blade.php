@@ -1148,14 +1148,14 @@
     /* ── Tab activa (preserva estado após submit) ── */
     $activeTab = request('_tab', old('_tab', '1'));
     $classeAtual = (int) ($turma?->classe ?? 0);
-    $usaPt3Terceiro = in_array($classeAtual, [10, 11], true);
     $usaPgTerceiro = $classeAtual === 12;
+    $usaPt3Terceiro = $classeAtual !== 0 && ! $usaPgTerceiro;
 
     /* ── Cálculos de resumo ── */
     $totalAlunos = $notas ? $notas->count() : 0;
 
     /* Progresso: % de células preenchidas (todos os 9 campos por aluno) */
-    $totalCampos = $totalAlunos * ($classeAtual === 13 ? 8 : 9);
+    $totalCampos = $totalAlunos * 9;
     $camposPreenchidos = 0;
     $aprovados   = 0;
     $reprovados  = 0;
@@ -1941,7 +1941,7 @@
             <div class="np-form-footer">
               <div class="np-form-footer-info">
                 <i class="fas fa-info-circle"></i>
-                MT3 = (MAC3+PP3)÷2 &nbsp;·&nbsp; CF = (MFT2+MT3)÷2 &nbsp;·&nbsp; CA = 0.6×CF + 0.4×PG
+                MT3 = {{ $usaPt3Terceiro ? '(MAC3+PP3+PT3)÷3' : '(MAC3+PP3)÷2' }} &nbsp;·&nbsp; CF = (MFT2+MT3)÷2 &nbsp;·&nbsp; CA = {{ $usaPgTerceiro ? '0.6×CF + 0.4×PG' : 'CF' }}
               </div>
               <div style="display:flex;gap:8px">
                 @if(!$t3AllLocked)
@@ -2173,9 +2173,9 @@
           @php
             $ppTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pp1 ?? false) && ($n->bloqueado_pp2 ?? false) && ($n->bloqueado_pp3 ?? false)));
             $ppParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pp1 ?? false) || ($n->bloqueado_pp2 ?? false) || ($n->bloqueado_pp3 ?? false));
-            $ptTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pt1 ?? false) && ($n->bloqueado_pt2 ?? false)));
-            $ptParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pt1 ?? false) || ($n->bloqueado_pt2 ?? false));
-            $pgTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || ($n->bloqueado_pg ?? false));
+            $ptTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pt1 ?? false) && ($n->bloqueado_pt2 ?? false) && ($usaPgTerceiro || ($n->bloqueado_pt3 ?? false))));
+            $ptParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pt1 ?? false) || ($n->bloqueado_pt2 ?? false) || (! $usaPgTerceiro && ($n->bloqueado_pt3 ?? false)));
+            $pgTotalBloqueado = $usaPgTerceiro && $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || ($n->bloqueado_pg ?? false));
           @endphp
 
           <div class="space-y-2 mb-3">
@@ -2194,10 +2194,10 @@
               </span>
             </div>
             <div class="np-trim-row">
-              <span class="np-trim-name">PG</span>
-              <span class="np-trim-badge {{ $pgTotalBloqueado ? 'lock' : 'open' }}">
-                <i class="fas {{ $pgTotalBloqueado ? 'fa-lock' : 'fa-lock-open' }}"></i>
-                {{ $pgTotalBloqueado ? 'Bloqueado' : 'Aberto' }}
+              <span class="np-trim-name">{{ $usaPgTerceiro ? 'PG' : 'PT3' }}</span>
+              <span class="np-trim-badge {{ $usaPgTerceiro ? ($pgTotalBloqueado ? 'lock' : 'open') : ($ptTotalBloqueado ? 'lock' : ($ptParcial ? 'empty' : 'open')) }}">
+                <i class="fas {{ $usaPgTerceiro ? ($pgTotalBloqueado ? 'fa-lock' : 'fa-lock-open') : ($ptTotalBloqueado ? 'fa-lock' : ($ptParcial ? 'fa-adjust' : 'fa-lock-open')) }}"></i>
+                {{ $usaPgTerceiro ? ($pgTotalBloqueado ? 'Bloqueado' : 'Aberto') : ($ptTotalBloqueado ? 'Bloqueado' : ($ptParcial ? 'Parcial' : 'Aberto')) }}
               </span>
             </div>
           </div>
@@ -2230,8 +2230,10 @@
               <select name="campo" class="np-op-select">
                 <option value="">Todos os campos</option>
                 <option value="pp">PP (exige trimestre)</option>
-                <option value="pt">PT (T1/T2)</option>
+                <option value="pt">PT {{ $usaPgTerceiro ? '(T1/T2)' : '(T1/T2/T3)' }}</option>
+                @if($usaPgTerceiro)
                 <option value="pg">PG (T3)</option>
+                @endif
               </select>
             </div>
             <button type="submit" class="np-btn np-btn-danger" style="width:100%"
@@ -2274,8 +2276,10 @@
               <select name="campo" class="np-op-select">
                 <option value="">Todos os campos</option>
                 <option value="pp">PP (exige trimestre)</option>
-                <option value="pt">PT (T1/T2)</option>
+                <option value="pt">PT {{ $usaPgTerceiro ? '(T1/T2)' : '(T1/T2/T3)' }}</option>
+                @if($usaPgTerceiro)
                 <option value="pg">PG (T3)</option>
+                @endif
               </select>
             </div>
             <button type="submit" class="np-btn np-btn-ghost" style="width:100%">

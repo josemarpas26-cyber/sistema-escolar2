@@ -125,12 +125,19 @@
                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pp3')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
-                @if($nota->turma->classe != 13)
+                @if((int) $nota->turma->classe === 12)
                 <div>
                     <label class="label">PG (Prova Global)</label>
                     <input type="number" name="pg" value="{{ old('pg', $nota->pg) }}" 
                            step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
                     @error('pg')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
+                </div>
+                @else
+                <div>
+                    <label class="label">PT3 (Prova Trimestral)</label>
+                    <input type="number" name="pt3" value="{{ old('pt3', $nota->pt3) }}"
+                           step="0.01" min="-1" max="20" class="input" onblur="formatNota(this)" {{ $somenteLeitura ? 'disabled' : '' }}>
+                    @error('pt3')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 @endif
             </div>
