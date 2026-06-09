@@ -119,7 +119,13 @@ class DashboardController extends Controller
                 ->where(function ($q) {
                     $q->whereNull('mac1')->orWhereNull('pp1')->orWhereNull('pt1')
                       ->orWhereNull('mac2')->orWhereNull('pp2')->orWhereNull('pt2')
-                      ->orWhereNull('mac3')->orWhereNull('pp3')->orWhereNull('pg');
+                      ->orWhereNull('mac3')->orWhereNull('pp3')
+                      ->orWhere(fn ($sub) => $sub
+                          ->whereHas('turma', fn ($turma) => $turma->whereIn('classe', ['10', '11']))
+                          ->whereNull('pt3'))
+                      ->orWhere(fn ($sub) => $sub
+                          ->whereHas('turma', fn ($turma) => $turma->where('classe', '12'))
+                          ->whereNull('pg'));
                 })
                 ->count();
         }

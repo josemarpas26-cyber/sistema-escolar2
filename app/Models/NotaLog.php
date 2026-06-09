@@ -128,6 +128,7 @@ class NotaLog extends Model
             'pt2' => 'PT 2º Trimestre',
             'mac3' => 'MAC 3º Trimestre',
             'pp3' => 'PP 3º Trimestre',
+            'pt3' => 'PT 3Âº Trimestre',
             'pg' => 'Prova Global',
             'ca_10' => 'CA 10ª Classe',
             'ca_11' => 'CA 11ª Classe',
@@ -141,6 +142,7 @@ class NotaLog extends Model
             'bloqueado_pp2' => 'Bloqueio PP 2º Trimestre',
             'bloqueado_pt2' => 'Bloqueio PT 2º Trimestre',
             'bloqueado_pp3' => 'Bloqueio PP 3º Trimestre',
+            'bloqueado_pt3' => 'Bloqueio PT 3Âº Trimestre',
             'bloqueado_pg' => 'Bloqueio PG',
             'avaliacao_continua' => 'Avaliação contínua',
         ];

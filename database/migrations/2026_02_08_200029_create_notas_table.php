@@ -31,6 +31,7 @@ return new class extends Migration
             // === 3º TRIMESTRE ===
             $table->decimal('mac3', 5, 2)->nullable();
             $table->decimal('pp3', 5, 2)->nullable();
+            $table->decimal('pt3', 5, 2)->nullable();  // Prova Trimestral 3
             $table->decimal('mt3', 5, 2)->nullable();  // Média Trimestre 3 (calculada)
             $table->decimal('cf', 5, 2)->nullable();   // Classificação Final (calculada)
             

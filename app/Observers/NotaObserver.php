@@ -26,7 +26,7 @@ class NotaObserver
     private const CAMPOS_MONITORADOS = [
         'mac1', 'pp1', 'pt1',
         'mac2', 'pp2', 'pt2',
-        'mac3', 'pp3', 'pg',
+        'mac3', 'pp3', 'pt3', 'pg',
         'ca_10', 'ca_11', 'ca_12',
         'nota_recurso',
         'status',
@@ -132,7 +132,7 @@ class NotaObserver
         return match (true) {
             in_array($campo, ['mac1', 'pp1', 'pt1', 'bloqueado_t1'], true) => '1',
             in_array($campo, ['mac2', 'pp2', 'pt2', 'bloqueado_t2'], true) => '2',
-            in_array($campo, ['mac3', 'pp3', 'pg',  'bloqueado_t3'], true) => '3',
+            in_array($campo, ['mac3', 'pp3', 'pt3', 'pg',  'bloqueado_t3'], true) => '3',
             default => null
         };
     }

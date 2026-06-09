@@ -23,7 +23,7 @@ class Nota extends Model
         'ano_letivo_id',
         'mac1', 'pp1', 'pt1', 'mt1',
         'mac2', 'pp2', 'pt2', 'mt2', 'mft2',
-        'mac3', 'pp3', 'mt3', 'cf',
+        'mac3', 'pp3', 'pt3', 'mt3', 'cf',
         'pg',
         'ca',
         'cfd',
@@ -31,14 +31,14 @@ class Nota extends Model
         'ca_10', 'ca_11', 'ca_12',
         'status',
         'bloqueado_t1', 'bloqueado_t2', 'bloqueado_t3',
-        'bloqueado_pp1', 'bloqueado_pt1', 'bloqueado_pp2', 'bloqueado_pt2', 'bloqueado_pp3', 'bloqueado_pg',
+        'bloqueado_pp1', 'bloqueado_pt1', 'bloqueado_pp2', 'bloqueado_pt2', 'bloqueado_pp3', 'bloqueado_pt3', 'bloqueado_pg',
         'observacoes',
     ];
 
     protected $casts = [
         'mac1' => 'decimal:2', 'pp1' => 'decimal:2', 'pt1' => 'decimal:2', 'mt1' => 'decimal:2',
         'mac2' => 'decimal:2', 'pp2' => 'decimal:2', 'pt2' => 'decimal:2', 'mt2' => 'decimal:2', 'mft2' => 'decimal:2',
-        'mac3' => 'decimal:2', 'pp3' => 'decimal:2', 'mt3' => 'decimal:2', 'cf' => 'decimal:2',
+        'mac3' => 'decimal:2', 'pp3' => 'decimal:2', 'pt3' => 'decimal:2', 'mt3' => 'decimal:2', 'cf' => 'decimal:2',
         'pg' => 'decimal:2',
         'ca' => 'decimal:2',
         'cfd' => 'decimal:2',
@@ -46,7 +46,7 @@ class Nota extends Model
         'ca_10' => 'decimal:2', 'ca_11' => 'decimal:2', 'ca_12' => 'decimal:2',
         'bloqueado_t1' => 'boolean', 'bloqueado_t2' => 'boolean', 'bloqueado_t3' => 'boolean',
         'bloqueado_pp1' => 'boolean', 'bloqueado_pt1' => 'boolean', 'bloqueado_pp2' => 'boolean',
-        'bloqueado_pt2' => 'boolean', 'bloqueado_pp3' => 'boolean', 'bloqueado_pg' => 'boolean',
+        'bloqueado_pt2' => 'boolean', 'bloqueado_pp3' => 'boolean', 'bloqueado_pt3' => 'boolean', 'bloqueado_pg' => 'boolean',
     ];
 
     public function aluno()
@@ -141,11 +141,13 @@ class Nota extends Model
 
     private function calcularTrimestre3(int $classe, ConfiguracaoAvaliacao $configuracaoAvaliacao): void
     {
+        $this->limparAvaliacaoFinalNaoAplicavel($classe);
+
         $this->mt3 = $this->calcularMediaDinamica(3, $configuracaoAvaliacao);
 
         $this->cf = $this->calcularClassificacaoFinalComRegraEspecial();
 
-        if ($classe === 13) {
+        if ($classe !== 12) {
             $this->ca = $this->cf !== null
                 ? round((float) $this->cf, 2)
                 : null;
@@ -163,6 +165,21 @@ class Nota extends Model
             : null;
 
         $this->atualizarCfd($classe);
+    }
+
+    private function limparAvaliacaoFinalNaoAplicavel(int $classe): void
+    {
+        if ($classe === 12) {
+            $this->pt3 = null;
+
+            return;
+        }
+
+        $this->pg = null;
+
+        if ($classe === 13) {
+            $this->pt3 = null;
+        }
     }
 
     private function calcularMediaDinamica(int $periodo, ConfiguracaoAvaliacao $configuracaoAvaliacao): ?float

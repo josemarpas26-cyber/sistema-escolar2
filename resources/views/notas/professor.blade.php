@@ -1147,19 +1147,25 @@
 
     /* ── Tab activa (preserva estado após submit) ── */
     $activeTab = request('_tab', old('_tab', '1'));
+    $classeAtual = (int) ($turma?->classe ?? 0);
+    $usaPt3Terceiro = in_array($classeAtual, [10, 11], true);
+    $usaPgTerceiro = $classeAtual === 12;
 
     /* ── Cálculos de resumo ── */
     $totalAlunos = $notas ? $notas->count() : 0;
 
     /* Progresso: % de células preenchidas (todos os 9 campos por aluno) */
-    $totalCampos = $totalAlunos * 9;
+    $totalCampos = $totalAlunos * ($classeAtual === 13 ? 8 : 9);
     $camposPreenchidos = 0;
     $aprovados   = 0;
     $reprovados  = 0;
 
     if ($notas) {
         foreach ($notas as $n) {
-            foreach (['mac1','pp1','pt1','mac2','pp2','pt2','mac3','pp3','pg'] as $c) {
+            $camposResumo = ['mac1','pp1','pt1','mac2','pp2','pt2','mac3','pp3'];
+            $camposResumo[] = $usaPt3Terceiro ? 'pt3' : ($usaPgTerceiro ? 'pg' : null);
+
+            foreach (array_filter($camposResumo) as $c) {
                 if ($n->$c !== null) $camposPreenchidos++;
             }
             if ($n->cfd_efetiva !== null) {
@@ -1800,7 +1806,11 @@
                     <th><span class="np-th-tooltip" data-tip="Média Final até 2º Trimestre (referência)">MFT2 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Média de Avaliações Contínuas — 3º Trimestre">MAC3 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Prova do Professor — 3º Trimestre">PP3 <i class="fas fa-info-circle"></i></span></th>
+                    @if($usaPt3Terceiro)
+                    <th><span class="np-th-tooltip" data-tip="Prova Trimestral - 3o Trimestre">PT3 <i class="fas fa-info-circle"></i></span></th>
+                    @elseif($usaPgTerceiro)
                     <th><span class="np-th-tooltip" data-tip="Prova Global">PG <i class="fas fa-info-circle"></i></span></th>
+                    @endif
                     <th><span class="np-th-tooltip" data-tip="Média do 3º Trimestre = (MAC3+PP3)÷2">MT3 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Classificação Final = (MFT2+MT3)÷2">CF <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Classificação Final da Disciplina (resultado final)">CFD <i class="fas fa-info-circle"></i></span></th>
@@ -1854,14 +1864,16 @@
                              @input="onNotaInput($event, {{ $idx }}, 't3')"
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
+                    @if($usaPt3Terceiro || $usaPgTerceiro)
                     <td><div class="np-input-wrap">
                       <input type="number" step="0.01" min="-1" max="20"
-                             name="notas[{{ $idx }}][pg]" value="{{ $nota->pg }}"
-                             class="np-nota-input {{ $nota->pg !== null ? ($nota->pg >= 10 ? 'val-ok' : 'val-fail') : '' }}"
+                             name="notas[{{ $idx }}][{{ $usaPt3Terceiro ? 'pt3' : 'pg' }}]" value="{{ $usaPt3Terceiro ? $nota->pt3 : $nota->pg }}"
+                             class="np-nota-input {{ ($usaPt3Terceiro ? $nota->pt3 : $nota->pg) !== null ? (($usaPt3Terceiro ? $nota->pt3 : $nota->pg) >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked3 ? 'disabled' : '' }}
                              @input="onNotaInput($event, {{ $idx }}, 't3')"
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
+                    @endif
                     <td>
                       <span class="np-computed {{ $nota->mt3 !== null ? ($nota->mt3 >= 10 ? 'c-ok' : 'c-fail') : 'c-empty' }}"
                             id="mt3-{{ $idx }}">
@@ -1904,6 +1916,7 @@
                 @php
                   $medMac3 = $notas->whereNotNull('mac3')->avg('mac3');
                   $medPp3  = $notas->whereNotNull('pp3')->avg('pp3');
+                  $medPt3  = $notas->whereNotNull('pt3')->avg('pt3');
                   $medPg   = $notas->whereNotNull('pg')->avg('pg');
                   $medMt3  = $notas->whereNotNull('mt3')->avg('mt3');
                   $medCf   = $notas->whereNotNull('cf')->avg('cf');
