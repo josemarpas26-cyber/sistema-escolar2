@@ -204,8 +204,10 @@
                             <select name="campo" class="nr-input nr-input-inline">
                                 <option value="">Todos os campos</option>
                                 <option value="pp">PP (exige trimestre)</option>
-                                <option value="pt">PT (T1/T2)</option>
+                                <option value="pt">PT {{ (int) ($turmaSelecionada?->classe ?? 0) === 12 ? '(T1/T2)' : '(T1/T2/T3)' }}</option>
+                                @if((int) ($turmaSelecionada?->classe ?? 0) === 12)
                                 <option value="pg">PG (T3)</option>
+                                @endif
                             </select>
                             <span class="nr-op-label">Aluno:</span>
                             <select name="aluno_id" class="nr-input nr-input-inline">
@@ -239,8 +241,10 @@
                             <select name="campo" class="nr-input nr-input-inline">
                                 <option value="">Todos os campos</option>
                                 <option value="pp">PP (exige trimestre)</option>
-                                <option value="pt">PT (T1/T2)</option>
+                                <option value="pt">PT {{ (int) ($turmaSelecionada?->classe ?? 0) === 12 ? '(T1/T2)' : '(T1/T2/T3)' }}</option>
+                                @if((int) ($turmaSelecionada?->classe ?? 0) === 12)
                                 <option value="pg">PG (T3)</option>
+                                @endif
                             </select>
                             <span class="nr-op-label">Aluno:</span>
                             <select name="aluno_id" class="nr-input nr-input-inline">
@@ -408,7 +412,7 @@
                             <th class="nr-th-c nr-th-cfd">CFD</th>
                             <th class="nr-th-c" style="width:110px">Status</th>
                             <th class="nr-th-c" style="width:150px">Trimestres</th>
-                            <th class="nr-th-c" style="width:170px">Campos (PP/PT/PG)</th>
+                            <th class="nr-th-c" style="width:170px">Campos ({{ (int) ($turmaSelecionada?->classe ?? 0) === 12 ? 'PP/PT/PG' : 'PP/PT/PT3' }})</th>
                             <th class="nr-th-c" style="width:54px">Ações</th>
                         </tr>
                     </thead>
@@ -425,9 +429,11 @@
                             $algumBloqueado = $t1Bloqueado || $t2Bloqueado || $t3Bloqueado;
                             $ppTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pp1 ?? false) && ($nota->bloqueado_pp2 ?? false) && ($nota->bloqueado_pp3 ?? false));
                             $ppParcial = ! $ppTotal && (($nota->bloqueado_pp1 ?? false) || ($nota->bloqueado_pp2 ?? false) || ($nota->bloqueado_pp3 ?? false));
-                            $ptTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pt1 ?? false) && ($nota->bloqueado_pt2 ?? false));
-                            $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false));
-                            $pgTotal = ($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false);
+                            $usaPgTerceiro = (int) ($nota->turma?->classe ?? 0) === 12;
+                            $pt3Aplicavel = ! $usaPgTerceiro;
+                            $ptTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pt1 ?? false) && ($nota->bloqueado_pt2 ?? false) && (! $pt3Aplicavel || ($nota->bloqueado_pt3 ?? false)));
+                            $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false) || ($pt3Aplicavel && ($nota->bloqueado_pt3 ?? false)));
+                            $pgTotal = $usaPgTerceiro && (($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false));
                         @endphp
                         <tr class="{{ $loop->odd ? 'nr-odd' : '' }}">
                             <td class="nr-td-c nr-muted">{{ $cnt++ }}</td>
@@ -487,7 +493,7 @@
                                 <div class="nr-tri-wrap">
                                     <span class="nr-tri {{ $ppTotal ? 'nr-tri-lock' : ($ppParcial ? 'nr-tri-mid' : 'nr-tri-open') }}" title="PP {{ $ppTotal ? 'bloqueado' : ($ppParcial ? 'parcial' : 'aberto') }}">PP</span>
                                     <span class="nr-tri {{ $ptTotal ? 'nr-tri-lock' : ($ptParcial ? 'nr-tri-mid' : 'nr-tri-open') }}" title="PT {{ $ptTotal ? 'bloqueado' : ($ptParcial ? 'parcial' : 'aberto') }}">PT</span>
-                                    <span class="nr-tri {{ $pgTotal ? 'nr-tri-lock' : 'nr-tri-open' }}" title="PG {{ $pgTotal ? 'bloqueado' : 'aberto' }}">PG</span>
+                                    <span class="nr-tri {{ $usaPgTerceiro ? ($pgTotal ? 'nr-tri-lock' : 'nr-tri-open') : 'nr-tri-mid' }}" title="{{ $usaPgTerceiro ? ('PG '.($pgTotal ? 'bloqueado' : 'aberto')) : 'PT3 aplicável no 3º trimestre' }}">{{ $usaPgTerceiro ? 'PG' : 'PT3' }}</span>
                                 </div>
                             </td>
                             <td class="nr-td-c">
@@ -557,7 +563,7 @@
                                     <th class="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20">CFD</th>
                                     <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">Estado</th>
                                     <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">T1/T2/T3</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">PP/PT/PG</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">{{ (int) ($turmaSelecionada?->classe ?? 0) === 12 ? 'PP/PT/PG' : 'PP/PT/PT3' }}</th>
                                     <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">Ação</th>
                                 </tr>
                             </thead>
@@ -577,9 +583,11 @@
                                     $algumB = $t1B || $t2B || $t3B;
                                     $ppTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pp1 ?? false) && ($nota->bloqueado_pp2 ?? false) && ($nota->bloqueado_pp3 ?? false));
                                     $ppParcial = ! $ppTotal && (($nota->bloqueado_pp1 ?? false) || ($nota->bloqueado_pp2 ?? false) || ($nota->bloqueado_pp3 ?? false));
-                                    $ptTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pt1 ?? false) && ($nota->bloqueado_pt2 ?? false));
-                                    $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false));
-                                    $pgTotal = ($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false);
+                                    $usaPgTerceiro = (int) ($nota->turma?->classe ?? 0) === 12;
+                                    $pt3Aplicavel = ! $usaPgTerceiro;
+                                    $ptTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pt1 ?? false) && ($nota->bloqueado_pt2 ?? false) && (! $pt3Aplicavel || ($nota->bloqueado_pt3 ?? false)));
+                                    $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false) || ($pt3Aplicavel && ($nota->bloqueado_pt3 ?? false)));
+                                    $pgTotal = $usaPgTerceiro && (($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false));
                                 @endphp
                                  <tr class="border-b border-gray-100 dark:border-slate-700/30 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors duration-150 group @if($loop->even) bg-white dark:bg-transparent @else bg-gray-50/50 dark:bg-slate-800/10 @endif">
                                     <td class="px-4 py-3 text-xs text-gray-400 dark:text-slate-500 group-hover:text-gray-700 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
@@ -638,7 +646,7 @@
                                         <div class="nr-tri-wrap">
                                             <span class="nr-tri {{ $ppTotal ? 'nr-tri-lock' : ($ppParcial ? 'nr-tri-mid' : 'nr-tri-open') }}">PP</span>
                                             <span class="nr-tri {{ $ptTotal ? 'nr-tri-lock' : ($ptParcial ? 'nr-tri-mid' : 'nr-tri-open') }}">PT</span>
-                                            <span class="nr-tri {{ $pgTotal ? 'nr-tri-lock' : 'nr-tri-open' }}">PG</span>
+                                            <span class="nr-tri {{ $usaPgTerceiro ? ($pgTotal ? 'nr-tri-lock' : 'nr-tri-open') : 'nr-tri-mid' }}">{{ $usaPgTerceiro ? 'PG' : 'PT3' }}</span>
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-center text-sm">

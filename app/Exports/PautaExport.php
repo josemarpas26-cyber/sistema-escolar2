@@ -68,7 +68,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
  *   O  – MT2  ← highlighted
  *   P  – MAC3 (3.º Trim)
  *   Q  – NPT1
- *   R  – PG (Prova Global / NPT2)
+ *   R  – PG (Prova Global, só 12ª classe) / NPT3 (Prova Trimestral, restantes classes)
  *   S  – MT3  ← highlighted
  *   T  – CF
  *   U  – OBSERV.
@@ -147,6 +147,9 @@ class PautaExport implements FromArray, WithStyles, WithTitle, WithEvents, WithC
 
         // Row 8 – Date | Classe / Turma / Área / Curso
         $classe  = $this->turma->classe ?? '10';
+        $usaPgTerceiro = (int) $classe === 12;
+        $labelAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'PG' : 'NPT3';
+        $campoAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'pg' : 'pt3';
         $turmaId = $this->turma->nome ?? 'GSI10AM';
         $area    = $this->turma->area ?? 'INFORMÁTICA';
         $curso   = $this->turma->curso->nome ?? 'TÉCNICO DE GESTÃO DE SISTEMAS INFORMÁTICOS';
@@ -187,7 +190,7 @@ class PautaExport implements FromArray, WithStyles, WithTitle, WithEvents, WithC
             'O' => 'MT2',
             'P' => 'MAC3',
             'Q' => 'NPT1',
-            'R' => 'PG',
+            'R' => $labelAvaliacaoFinalTerceiro,
             'S' => 'MT3',
             'T' => 'CF',
             'U' => 'OBSERV.',
@@ -224,7 +227,7 @@ class PautaExport implements FromArray, WithStyles, WithTitle, WithEvents, WithC
                 'O' => $this->calcOrValue($nota, 'mt2', 'N', 'M', 'L', self::ROW_DATA_START + $counter - 1),
                 'P' => $this->n($nota->mac3),
                 'Q' => $this->n($nota->pp3),
-                'R' => $this->n($nota->pg),
+                'R' => $this->n($nota->{$campoAvaliacaoFinalTerceiro}),
                 'S' => $this->calcOrValue($nota, 'mt3', 'R', 'Q', 'P', self::ROW_DATA_START + $counter - 1),
                 'T' => $this->n($nota->cf),
                 'U' => $nota->observacao ?? '',

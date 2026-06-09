@@ -152,7 +152,7 @@ class PautaGeralTemplateExporter
             ->get()
             ->keyBy('disciplina_id');
 
-        $config      = $this->periodoConfig($trimestre);
+        $config      = $this->periodoConfig($trimestre, $turma);
         $spreadsheet = $this->loadTemplateSpreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
         $styles      = $this->capturarEstilosBase($sheet);
@@ -958,8 +958,12 @@ class PautaGeralTemplateExporter
         return $index;
     }
 
-    private function periodoConfig(string $trimestre): array
+    private function periodoConfig(string $trimestre, Turma $turma): array
     {
+        $usaPgTerceiro = (int) $turma->classe === 12;
+        $labelAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'PG' : 'NPT3';
+        $campoAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'pg' : 'pt3';
+
         return match ($trimestre) {
             '1' => [
                 'titulo' => 'PAUTA DE APROVEITAMENTO - IÂº TRIMESTRE',
@@ -975,14 +979,14 @@ class PautaGeralTemplateExporter
             ],
             '3' => [
                 'titulo' => 'PAUTA DE APROVEITAMENTO - IIIÂº TRIMESTRE',
-                'labels' => ['F.J','F.I','MfT2','MAC3','NPT2','PG','MT3'],
-                'campos' => ['faltas_j','faltas_i','mft2','mac3','pp3','pg','mt3'],
+                'labels' => ['F.J','F.I','MfT2','MAC3','NPT2',$labelAvaliacaoFinalTerceiro,'MT3'],
+                'campos' => ['faltas_j','faltas_i','mft2','mac3','pp3',$campoAvaliacaoFinalTerceiro,'mt3'],
                 'mostrarResultado' => false,
             ],
             default => [
                 'titulo' => 'PAUTA GERAL DO ANO LETIVO',
-                'labels' => ['F.J','F.I','CF','MT1','MT2','PG','CFD'],
-                'campos' => ['faltas_j','faltas_i','cf','mt1','mt2','pg','cfd'],
+                'labels' => ['F.J','F.I','CF','MT1','MT2',$labelAvaliacaoFinalTerceiro,'CFD'],
+                'campos' => ['faltas_j','faltas_i','cf','mt1','mt2',$campoAvaliacaoFinalTerceiro,'cfd'],
                 'mostrarResultado' => true,
             ],
         };
