@@ -17,6 +17,7 @@ class ResultadoAlunoTurmaService
     private const RESULTADO_NAO_TRANSITA = "N\u{00E3}o Transita";
     private const LIMITE_NEGATIVA_GRAVE = 7.0;
     private const MAX_NEGATIVAS_NAO_TERMINAIS = 2;
+    private const MAX_NEGATIVAS_COM_RECURSO = 3;
 
     private array $notaMinimaCache = [];
 
@@ -36,6 +37,7 @@ class ResultadoAlunoTurmaService
         $temRecurso = false;
         $temNegativaTerminalSemSucessoNoRecurso = false;
         $negativasNaoTerminais = 0;
+        $totalNegativas = 0;
 
         foreach ($disciplinas as $disciplina) {
             $nota = $notasPorDisciplina[$disciplina->id] ?? null;
@@ -56,14 +58,16 @@ class ResultadoAlunoTurmaService
 
             $temNota = true;
 
-            if ($valorFinal >= $notaMinima) {
-                continue;
-            }
-
             if ($valorBase !== null && $valorBase < self::LIMITE_NEGATIVA_GRAVE) {
                 $temNegativaGrave = true;
                 continue;
             }
+
+            if ($valorFinal >= $notaMinima) {
+                continue;
+            }
+
+            $totalNegativas++;
 
             if ($this->disciplinaTerminalNaTurma($disciplina, $turma)) {
                 if ($this->recursoPendente($nota, $notaMinima)) {
@@ -78,10 +82,6 @@ class ResultadoAlunoTurmaService
             $negativasNaoTerminais++;
         }
 
-        if ($temRecurso) {
-            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
-        }
-
         if (! $temNota || $temPendente) {
             return $this->resultado(self::STATUS_PENDENTE, '', '');
         }
@@ -94,8 +94,13 @@ class ResultadoAlunoTurmaService
             $temNegativaGrave
             || $temNegativaTerminalSemSucessoNoRecurso
             || $negativasNaoTerminais > self::MAX_NEGATIVAS_NAO_TERMINAIS
+            || $totalNegativas > self::MAX_NEGATIVAS_COM_RECURSO
         ) {
             return $this->resultado(self::STATUS_REPROVADO, '', self::RESULTADO_NAO_TRANSITA);
+        }
+
+        if ($temRecurso) {
+            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
         }
 
         return $this->resultado(self::STATUS_TRANSITA, '', 'Transita');
@@ -115,6 +120,7 @@ class ResultadoAlunoTurmaService
             return $this->resultado(self::STATUS_PENDENTE, '', '');
         }
 
+        $bloqueioRecurso = $this->temBloqueioGeralDeRecurso($disciplinas, $notasPorDisciplina, $notaMinima);
         $temPendente = false;
         $temRecurso = false;
         $temTerminalReprovada = false;
@@ -134,12 +140,12 @@ class ResultadoAlunoTurmaService
                 continue;
             }
 
-            if ($valorFinal >= $notaMinima) {
+            if ($valorBase !== null && $valorBase < self::LIMITE_NEGATIVA_GRAVE) {
+                $temTerminalReprovada = true;
                 continue;
             }
 
-            if ($valorBase !== null && $valorBase < self::LIMITE_NEGATIVA_GRAVE) {
-                $temTerminalReprovada = true;
+            if ($valorFinal >= $notaMinima) {
                 continue;
             }
 
@@ -151,21 +157,48 @@ class ResultadoAlunoTurmaService
             $temTerminalReprovada = true;
         }
 
-        if ($temRecurso) {
-            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
-        }
-
         if ($temPendente) {
             return $this->resultado(self::STATUS_PENDENTE, '', '');
         }
 
-        if ($temTerminalReprovada) {
+        if ($temTerminalReprovada || $bloqueioRecurso) {
             return $this->resultado(self::STATUS_REPROVADO, '', self::RESULTADO_NAO_TRANSITA);
         }
 
-
+        if ($temRecurso) {
+            return $this->resultado(self::STATUS_RECURSO, 'Recurso', self::RESULTADO_NAO_TRANSITA);
+        }
 
         return $this->resultado(self::STATUS_TRANSITA, '', 'Transita');
+    }
+
+
+    private function temBloqueioGeralDeRecurso(Collection $disciplinas, array $notasPorDisciplina, float $notaMinima): bool
+    {
+        $totalNegativas = 0;
+
+        foreach ($disciplinas as $disciplina) {
+            $nota = $notasPorDisciplina[$disciplina->id] ?? null;
+
+            if ($this->notaEmEEF($nota)) {
+                return true;
+            }
+
+            $valorBase = $this->valorBase($nota);
+            $valorFinal = $this->valorFinal($nota);
+
+            if ($valorBase !== null && $valorBase < self::LIMITE_NEGATIVA_GRAVE) {
+                return true;
+            }
+
+            if ($valorFinal === null || $valorFinal >= $notaMinima) {
+                continue;
+            }
+
+            $totalNegativas++;
+        }
+
+        return $totalNegativas > self::MAX_NEGATIVAS_COM_RECURSO;
     }
 
     private function resultado(string $status, string $observacao, string $resultado): array
