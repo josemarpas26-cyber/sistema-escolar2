@@ -15,6 +15,9 @@
         return $valor !== null ? number_format((float) $valor, 2) : $fallback;
     };
     $classificacaoEnsinoMedioAtual = $classificacaoEnsinoMedioAtual ?? null;
+    $usaPgTerceiro = (int) ($turmaAtual?->classe ?? $notas->first()?->turma?->classe ?? 0) === 12;
+    $campoAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'pg' : 'pt3';
+    $labelAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'PG' : 'PT3';
 @endphp
 
 @if($turmaAtual)
@@ -114,7 +117,7 @@
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MFT2</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MAC3</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MT3</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">PG</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{{ $labelAvaliacaoFinalTerceiro }}</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">CFD</th>
                         <th class="px-6 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
                     </tr>
@@ -151,7 +154,7 @@
                         </td>
 
                         <td class="px-6 py-4 text-center text-gray-900 dark:text-gray-100">
-                            {{ $nota->pg ? number_format($nota->pg, 2) : '-' }}
+                            {{ $nota->{$campoAvaliacaoFinalTerceiro} ? number_format($nota->{$campoAvaliacaoFinalTerceiro}, 2) : '-' }}
                         </td>
 
                         <td class="px-6 py-4 text-center">
@@ -249,7 +252,7 @@
                     @foreach([
                         ['titulo' => '1º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(1) : true, 'campos' => [['label' => 'MAC1', 'valor' => $nota?->mac1], ['label' => 'PP1', 'valor' => $nota?->pp1], ['label' => 'PT1', 'valor' => $nota?->pt1], ['label' => 'MT1', 'valor' => $nota?->mt1]]],
                         ['titulo' => '2º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(2) : true, 'campos' => [['label' => 'MAC2', 'valor' => $nota?->mac2], ['label' => 'PP2', 'valor' => $nota?->pp2], ['label' => 'PT2', 'valor' => $nota?->pt2], ['label' => 'MT2', 'valor' => $nota?->mt2], ['label' => 'MFT2', 'valor' => $nota?->mft2]]],
-                        ['titulo' => '3º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(3) : true, 'campos' => [['label' => 'MAC3', 'valor' => $nota?->mac3], ['label' => 'PP3', 'valor' => $nota?->pp3], ['label' => 'PG', 'valor' => $nota?->pg], ['label' => 'MT3', 'valor' => $nota?->mt3]]],
+                        ['titulo' => '3º Trimestre', 'disponivel' => $nota ? $nota->trimestreEstaDisponivel(3) : true, 'campos' => [['label' => 'MAC3', 'valor' => $nota?->mac3], ['label' => 'PP3', 'valor' => $nota?->pp3], ['label' => $labelAvaliacaoFinalTerceiro, 'valor' => $nota?->{$campoAvaliacaoFinalTerceiro}], ['label' => 'MT3', 'valor' => $nota?->mt3]]],
                         ['titulo' => 'Fecho final', 'disponivel' => true, 'campos' => [['label' => 'CF', 'valor' => $nota?->cf], ['label' => 'CA', 'valor' => $nota?->ca], ['label' => $nota?->recursoMelhoraClassificacaoFinal() ? 'CFD (Recurso)' : 'CFD', 'valor' => $nota?->cfd_efetiva], ['label' => 'Estado', 'valor' => $nota?->status_final]]],
                     ] as $bloco)
                     <section class="rounded-2xl overflow-hidden" style="background:var(--surface-sunken); border:1px solid var(--border);">
@@ -323,8 +326,8 @@
             <div><strong>MT1, MT2, MT3:</strong> Médias dos Trimestres 1, 2 e 3</div>
             <div><strong>MFT2:</strong> Média dos Primeiro e Segundo Trimestres</div>
             <div><strong>PP:</strong> Prova do professor</div>
-            <div><strong>CF:</strong> Classificação da disciplina (antes da prova global)</div>
-            <div><strong>PG:</strong> Prova Global</div>
+            <div><strong>CF:</strong> Classificação da disciplina {{ $usaPgTerceiro ? '(antes da prova global)' : '' }}</div>
+            <div><strong>{{ $labelAvaliacaoFinalTerceiro }}:</strong> {{ $usaPgTerceiro ? 'Prova Global' : 'Prova Trimestral do 3º Trimestre' }}</div>
             <div><strong>CA:</strong> Classificação da anual da disciplina</div>
             <div><strong>CFD:</strong> Classificação Final da Disciplina</div>
             <div class="md:col-span-2">

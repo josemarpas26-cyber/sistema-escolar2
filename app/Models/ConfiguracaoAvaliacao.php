@@ -58,6 +58,7 @@ class ConfiguracaoAvaliacao extends Model
                 3 => [
                     ['nome' => 'Média de Avaliações Contínuas', 'codigo' => 'mac3', 'peso' => 1, 'ativo' => true, 'ordem' => 1],
                     ['nome' => 'Prova do Professor', 'codigo' => 'pp3', 'peso' => 1, 'ativo' => true, 'ordem' => 2],
+                    ['nome' => 'Prova do 3o Trimestral', 'codigo' => 'pt3', 'peso' => 1, 'ativo' => true, 'ordem' => 3],
                 ],
             ],
         ];

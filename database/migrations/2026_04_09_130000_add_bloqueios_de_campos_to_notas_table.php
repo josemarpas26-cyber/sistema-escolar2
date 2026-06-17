@@ -14,7 +14,8 @@ return new class extends Migration
             $table->boolean('bloqueado_pp2')->default(false)->after('bloqueado_pt1');
             $table->boolean('bloqueado_pt2')->default(false)->after('bloqueado_pp2');
             $table->boolean('bloqueado_pp3')->default(false)->after('bloqueado_pt2');
-            $table->boolean('bloqueado_pg')->default(false)->after('bloqueado_pp3');
+            $table->boolean('bloqueado_pt3')->default(false)->after('bloqueado_pp3');
+            $table->boolean('bloqueado_pg')->default(false)->after('bloqueado_pt3');
         });
     }
 
@@ -27,6 +28,7 @@ return new class extends Migration
                 'bloqueado_pp2',
                 'bloqueado_pt2',
                 'bloqueado_pp3',
+                'bloqueado_pt3',
                 'bloqueado_pg',
             ]);
         });

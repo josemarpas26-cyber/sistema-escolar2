@@ -26,17 +26,16 @@ class ConfiguracaoAvaliacaoPadraoSeeder extends Seeder
             ]
         );
 
-        if ($config->provas()->exists()) {
-            return;
-        }
-
         foreach ($padrao['provas'] as $periodo => $provas) {
             foreach ($provas as $index => $prova) {
-                $config->provas()->create([
-                    ...$prova,
-                    'periodo' => $periodo,
-                    'ordem' => $prova['ordem'] ?? ($index + 1),
-                ]);
+                $config->provas()->firstOrCreate(
+                    ['codigo' => $prova['codigo']],
+                    [
+                        ...$prova,
+                        'periodo' => $periodo,
+                        'ordem' => $prova['ordem'] ?? ($index + 1),
+                    ]
+                );
             }
         }
     }

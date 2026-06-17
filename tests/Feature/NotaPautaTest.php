@@ -73,7 +73,7 @@ class NotaPautaTest extends TestCase
                         'id' => $nota->id,
                         'mac3' => 14,
                         'pp3' => 16,
-                        'pg' => 18,
+                        'pt3' => 18,
                     ],
                 ],
             ]);
@@ -85,10 +85,10 @@ class NotaPautaTest extends TestCase
         $this->assertEquals(12.00, (float) $nota->mt1);
         $this->assertEquals(15.00, (float) $nota->mt2);
         $this->assertEquals(13.50, (float) $nota->mft2);
-        $this->assertEquals(15.00, (float) $nota->mt3);
-        $this->assertEquals(14.25, (float) $nota->cf);
-        $this->assertEquals(15.75, (float) $nota->ca);
-        $this->assertEquals(15.75, (float) $nota->cfd);
+        $this->assertEquals(17.00, (float) $nota->mt3);
+        $this->assertEquals(15.25, (float) $nota->cf);
+        $this->assertEquals(15.25, (float) $nota->ca);
+        $this->assertEquals(15.25, (float) $nota->cfd);
     }
 
     public function test_aluno_matriculado_no_segundo_trimestre_calcula_media_sem_primeiro_trimestre(): void
@@ -139,7 +139,7 @@ class NotaPautaTest extends TestCase
                         'id' => $nota->id,
                         'mac3' => 14,
                         'pp3' => 16,
-                        'pg' => 18,
+                        'pt3' => 18,
                     ],
                 ],
             ])
@@ -150,10 +150,10 @@ class NotaPautaTest extends TestCase
         $this->assertNull($nota->mt1);
         $this->assertEquals(15.00, (float) $nota->mt2);
         $this->assertEquals(15.00, (float) $nota->mft2);
-        $this->assertEquals(15.00, (float) $nota->mt3);
-        $this->assertEquals(15.00, (float) $nota->cf);
-        $this->assertEquals(16.20, (float) $nota->ca);
-        $this->assertEquals(16.20, (float) $nota->cfd);
+        $this->assertEquals(17.00, (float) $nota->mt3);
+        $this->assertEquals(16.00, (float) $nota->cf);
+        $this->assertEquals(16.00, (float) $nota->ca);
+        $this->assertEquals(16.00, (float) $nota->cfd);
     }
 
     public function test_aluno_do_segundo_trimestre_ignora_mt1_no_calculo_de_cf_e_cfd(): void
@@ -208,7 +208,7 @@ class NotaPautaTest extends TestCase
                         'id' => $nota->id,
                         'mac3' => 14,
                         'pp3' => 16,
-                        'pg' => 18,
+                        'pt3' => 18,
                     ],
                 ],
             ])
@@ -221,8 +221,8 @@ class NotaPautaTest extends TestCase
         $this->assertNull($nota->pt1);
         $this->assertNull($nota->mt1);
         $this->assertEquals(15.00, (float) $nota->mft2);
-        $this->assertEquals(15.00, (float) $nota->cf);
-        $this->assertEquals(16.20, (float) $nota->cfd);
+        $this->assertEquals(16.00, (float) $nota->cf);
+        $this->assertEquals(16.00, (float) $nota->cfd);
     }
 
     public function test_matricula_regular_nao_ignora_primeiro_trimestre_automaticamente(): void
@@ -273,7 +273,7 @@ class NotaPautaTest extends TestCase
                         'id' => $nota->id,
                         'mac3' => 14,
                         'pp3' => 16,
-                        'pg' => 18,
+                        'pt3' => 18,
                     ],
                 ],
             ])
@@ -284,7 +284,7 @@ class NotaPautaTest extends TestCase
         $this->assertNull($nota->mt1);
         $this->assertEquals(15.00, (float) $nota->mt2);
         $this->assertNull($nota->mft2);
-        $this->assertEquals(15.00, (float) $nota->mt3);
+        $this->assertEquals(17.00, (float) $nota->mt3);
         $this->assertNull($nota->cf);
         $this->assertNull($nota->ca);
         $this->assertNull($nota->cfd);

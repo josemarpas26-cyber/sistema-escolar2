@@ -184,7 +184,10 @@ class NotaService
                 2 => $nota->mac2 !== null && $nota->pp2 !== null && $nota->pt2 !== null && $nota->mt2 !== null,
                 3 => $nota->mac3 !== null
                     && $nota->pp3 !== null
-                    && ((int) $nota->turma->classe === 13 || $nota->pg !== null)
+                    && match ((int) $nota->turma->classe) {
+                        12 => $nota->pg !== null,
+                        default => $nota->pt3 !== null,
+                    }
                     && $nota->mt3 !== null
                     && $nota->cf !== null
                     && $nota->ca !== null,

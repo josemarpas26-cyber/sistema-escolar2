@@ -1147,6 +1147,9 @@
 
     /* ── Tab activa (preserva estado após submit) ── */
     $activeTab = request('_tab', old('_tab', '1'));
+    $classeAtual = (int) ($turma?->classe ?? 0);
+    $usaPgTerceiro = $classeAtual === 12;
+    $usaPt3Terceiro = $classeAtual !== 0 && ! $usaPgTerceiro;
 
     /* ── Cálculos de resumo ── */
     $totalAlunos = $notas ? $notas->count() : 0;
@@ -1159,7 +1162,10 @@
 
     if ($notas) {
         foreach ($notas as $n) {
-            foreach (['mac1','pp1','pt1','mac2','pp2','pt2','mac3','pp3','pg'] as $c) {
+            $camposResumo = ['mac1','pp1','pt1','mac2','pp2','pt2','mac3','pp3'];
+            $camposResumo[] = $usaPt3Terceiro ? 'pt3' : ($usaPgTerceiro ? 'pg' : null);
+
+            foreach (array_filter($camposResumo) as $c) {
                 if ($n->$c !== null) $camposPreenchidos++;
             }
             if ($n->cfd_efetiva !== null) {
@@ -1800,7 +1806,11 @@
                     <th><span class="np-th-tooltip" data-tip="Média Final até 2º Trimestre (referência)">MFT2 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Média de Avaliações Contínuas — 3º Trimestre">MAC3 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Prova do Professor — 3º Trimestre">PP3 <i class="fas fa-info-circle"></i></span></th>
+                    @if($usaPt3Terceiro)
+                    <th><span class="np-th-tooltip" data-tip="Prova Trimestral - 3o Trimestre">PT3 <i class="fas fa-info-circle"></i></span></th>
+                    @elseif($usaPgTerceiro)
                     <th><span class="np-th-tooltip" data-tip="Prova Global">PG <i class="fas fa-info-circle"></i></span></th>
+                    @endif
                     <th><span class="np-th-tooltip" data-tip="Média do 3º Trimestre = (MAC3+PP3)÷2">MT3 <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Classificação Final = (MFT2+MT3)÷2">CF <i class="fas fa-info-circle"></i></span></th>
                     <th><span class="np-th-tooltip" data-tip="Classificação Final da Disciplina (resultado final)">CFD <i class="fas fa-info-circle"></i></span></th>
@@ -1854,14 +1864,16 @@
                              @input="onNotaInput($event, {{ $idx }}, 't3')"
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
+                    @if($usaPt3Terceiro || $usaPgTerceiro)
                     <td><div class="np-input-wrap">
                       <input type="number" step="0.01" min="-1" max="20"
-                             name="notas[{{ $idx }}][pg]" value="{{ $nota->pg }}"
-                             class="np-nota-input {{ $nota->pg !== null ? ($nota->pg >= 10 ? 'val-ok' : 'val-fail') : '' }}"
+                             name="notas[{{ $idx }}][{{ $usaPt3Terceiro ? 'pt3' : 'pg' }}]" value="{{ $usaPt3Terceiro ? $nota->pt3 : $nota->pg }}"
+                             class="np-nota-input {{ ($usaPt3Terceiro ? $nota->pt3 : $nota->pg) !== null ? (($usaPt3Terceiro ? $nota->pt3 : $nota->pg) >= 10 ? 'val-ok' : 'val-fail') : '' }}"
                              {{ $locked3 ? 'disabled' : '' }}
                              @input="onNotaInput($event, {{ $idx }}, 't3')"
                              @blur="formatNotaInput($event)" placeholder="—">
                     </div></td>
+                    @endif
                     <td>
                       <span class="np-computed {{ $nota->mt3 !== null ? ($nota->mt3 >= 10 ? 'c-ok' : 'c-fail') : 'c-empty' }}"
                             id="mt3-{{ $idx }}">
@@ -1904,6 +1916,7 @@
                 @php
                   $medMac3 = $notas->whereNotNull('mac3')->avg('mac3');
                   $medPp3  = $notas->whereNotNull('pp3')->avg('pp3');
+                  $medPt3  = $notas->whereNotNull('pt3')->avg('pt3');
                   $medPg   = $notas->whereNotNull('pg')->avg('pg');
                   $medMt3  = $notas->whereNotNull('mt3')->avg('mt3');
                   $medCf   = $notas->whereNotNull('cf')->avg('cf');
@@ -1928,7 +1941,7 @@
             <div class="np-form-footer">
               <div class="np-form-footer-info">
                 <i class="fas fa-info-circle"></i>
-                MT3 = (MAC3+PP3)÷2 &nbsp;·&nbsp; CF = (MFT2+MT3)÷2 &nbsp;·&nbsp; CA = 0.6×CF + 0.4×PG
+                MT3 = {{ $usaPt3Terceiro ? '(MAC3+PP3+PT3)÷3' : '(MAC3+PP3)÷2' }} &nbsp;·&nbsp; CF = (MFT2+MT3)÷2 &nbsp;·&nbsp; CA = {{ $usaPgTerceiro ? '0.6×CF + 0.4×PG' : 'CF' }}
               </div>
               <div style="display:flex;gap:8px">
                 @if(!$t3AllLocked)
@@ -2160,9 +2173,9 @@
           @php
             $ppTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pp1 ?? false) && ($n->bloqueado_pp2 ?? false) && ($n->bloqueado_pp3 ?? false)));
             $ppParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pp1 ?? false) || ($n->bloqueado_pp2 ?? false) || ($n->bloqueado_pp3 ?? false));
-            $ptTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pt1 ?? false) && ($n->bloqueado_pt2 ?? false)));
-            $ptParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pt1 ?? false) || ($n->bloqueado_pt2 ?? false));
-            $pgTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || ($n->bloqueado_pg ?? false));
+            $ptTotalBloqueado = $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || (($n->bloqueado_pt1 ?? false) && ($n->bloqueado_pt2 ?? false) && ($usaPgTerceiro || ($n->bloqueado_pt3 ?? false))));
+            $ptParcial = $notas && $notas->contains(fn($n) => ($n->bloqueado_pt1 ?? false) || ($n->bloqueado_pt2 ?? false) || (! $usaPgTerceiro && ($n->bloqueado_pt3 ?? false)));
+            $pgTotalBloqueado = $usaPgTerceiro && $notas && $notas->count() > 0 && $notas->every(fn($n) => $n->status === 'finalizado' || ($n->bloqueado_pg ?? false));
           @endphp
 
           <div class="space-y-2 mb-3">
@@ -2181,10 +2194,10 @@
               </span>
             </div>
             <div class="np-trim-row">
-              <span class="np-trim-name">PG</span>
-              <span class="np-trim-badge {{ $pgTotalBloqueado ? 'lock' : 'open' }}">
-                <i class="fas {{ $pgTotalBloqueado ? 'fa-lock' : 'fa-lock-open' }}"></i>
-                {{ $pgTotalBloqueado ? 'Bloqueado' : 'Aberto' }}
+              <span class="np-trim-name">{{ $usaPgTerceiro ? 'PG' : 'PT3' }}</span>
+              <span class="np-trim-badge {{ $usaPgTerceiro ? ($pgTotalBloqueado ? 'lock' : 'open') : ($ptTotalBloqueado ? 'lock' : ($ptParcial ? 'empty' : 'open')) }}">
+                <i class="fas {{ $usaPgTerceiro ? ($pgTotalBloqueado ? 'fa-lock' : 'fa-lock-open') : ($ptTotalBloqueado ? 'fa-lock' : ($ptParcial ? 'fa-adjust' : 'fa-lock-open')) }}"></i>
+                {{ $usaPgTerceiro ? ($pgTotalBloqueado ? 'Bloqueado' : 'Aberto') : ($ptTotalBloqueado ? 'Bloqueado' : ($ptParcial ? 'Parcial' : 'Aberto')) }}
               </span>
             </div>
           </div>
@@ -2217,8 +2230,10 @@
               <select name="campo" class="np-op-select">
                 <option value="">Todos os campos</option>
                 <option value="pp">PP (exige trimestre)</option>
-                <option value="pt">PT (T1/T2)</option>
+                <option value="pt">PT {{ $usaPgTerceiro ? '(T1/T2)' : '(T1/T2/T3)' }}</option>
+                @if($usaPgTerceiro)
                 <option value="pg">PG (T3)</option>
+                @endif
               </select>
             </div>
             <button type="submit" class="np-btn np-btn-danger" style="width:100%"
@@ -2261,8 +2276,10 @@
               <select name="campo" class="np-op-select">
                 <option value="">Todos os campos</option>
                 <option value="pp">PP (exige trimestre)</option>
-                <option value="pt">PT (T1/T2)</option>
+                <option value="pt">PT {{ $usaPgTerceiro ? '(T1/T2)' : '(T1/T2/T3)' }}</option>
+                @if($usaPgTerceiro)
                 <option value="pg">PG (T3)</option>
+                @endif
               </select>
             </div>
             <button type="submit" class="np-btn np-btn-ghost" style="width:100%">

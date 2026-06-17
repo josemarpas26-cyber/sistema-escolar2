@@ -27,6 +27,7 @@ class LancarNotaRequest extends FormRequest
             'notas.*.pt2' => 'nullable|numeric|between:0,20',
             'notas.*.mac3' => 'nullable|numeric|between:0,20',
             'notas.*.pp3' => 'nullable|numeric|between:0,20',
+            'notas.*.pt3' => 'nullable|numeric|between:0,20',
             'notas.*.pg' => 'nullable|numeric|between:0,20',
         ];
     }

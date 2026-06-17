@@ -31,13 +31,13 @@ class NotaController extends Controller
     private const CAMPOS_TRIMESTRE = [
         '1' => ['mac1', 'pp1', 'pt1'],
         '2' => ['mac2', 'pp2', 'pt2'],
-        '3' => ['mac3', 'pp3', 'pg'],
+        '3' => ['mac3', 'pp3', 'pt3', 'pg'],
     ];
 
     private const CAMPOS_EDITAVEIS_POR_TRIMESTRE = [
         '1' => ['pp1', 'pt1'],
         '2' => ['pp2', 'pt2'],
-        '3' => ['pp3', 'pg'],
+        '3' => ['pp3', 'pt3', 'pg'],
     ];
 
     private const BLOQUEIO_POR_CAMPO = [
@@ -46,13 +46,14 @@ class NotaController extends Controller
         'pp2' => 'bloqueado_pp2',
         'pt2' => 'bloqueado_pt2',
         'pp3' => 'bloqueado_pp3',
+        'pt3' => 'bloqueado_pt3',
         'pg' => 'bloqueado_pg',
     ];
 
     private const CAMPO_OPERACAO_POR_TRIMESTRE = [
         '1' => ['pp' => 'pp1', 'pt' => 'pt1'],
         '2' => ['pp' => 'pp2', 'pt' => 'pt2'],
-        '3' => ['pp' => 'pp3', 'pg' => 'pg'],
+        '3' => ['pp' => 'pp3', 'pt' => 'pt3', 'pg' => 'pg'],
     ];
 
     public function __construct(
@@ -560,7 +561,9 @@ class NotaController extends Controller
                 $teveCampoBloqueado = false;
 
                 // Atribui apenas campos editáveis (PP/PT/PG). MAC é sempre calculado.
-                foreach ($campos as $campo) {
+                $camposDaNota = $this->camposEditaveisDaNotaNoTrimestre($nota, $trimestre);
+
+                foreach ($camposDaNota as $campo) {
                     if (array_key_exists($campo, $notaData)) {
                         if ($this->campoEstaBloqueado($nota, $campo)) {
                             $teveCampoBloqueado = true;
@@ -579,7 +582,7 @@ class NotaController extends Controller
                     continue;
                 }
 
-                if (! $nota->isDirty($campos)) {
+                if (! $nota->isDirty($camposDaNota)) {
                     $semAlteracao++;
 
                     continue;
@@ -1102,7 +1105,7 @@ class NotaController extends Controller
                         }
 
                         $dadosBloqueio = [$campo => true];
-                        foreach (self::CAMPOS_EDITAVEIS_POR_TRIMESTRE[$trimestre] as $campoEditavel) {
+                        foreach ($this->camposEditaveisDaNotaNoTrimestre($nota, $trimestre) as $campoEditavel) {
                             $dadosBloqueio[self::BLOQUEIO_POR_CAMPO[$campoEditavel]] = true;
                         }
 
@@ -1117,6 +1120,7 @@ class NotaController extends Controller
                             && $nota->bloqueado_pp2
                             && $nota->bloqueado_pt2
                             && $nota->bloqueado_pp3
+                            && $nota->bloqueado_pt3
                             && $nota->bloqueado_pg
                         ) {
                             $jaFinalizadas++;
@@ -1134,6 +1138,7 @@ class NotaController extends Controller
                             'bloqueado_pp2' => true,
                             'bloqueado_pt2' => true,
                             'bloqueado_pp3' => true,
+                            'bloqueado_pt3' => true,
                             'bloqueado_pg' => true,
                         ]);
                     }
@@ -1278,7 +1283,7 @@ class NotaController extends Controller
 
                         if ($precisaDesbloquear) {
                             $dadosAtualizacao[$campo] = false;
-                            foreach (self::CAMPOS_EDITAVEIS_POR_TRIMESTRE[$trimestre] as $campoEditavel) {
+                            foreach ($this->camposEditaveisDaNotaNoTrimestre($nota, $trimestre) as $campoEditavel) {
                                 $dadosAtualizacao[self::BLOQUEIO_POR_CAMPO[$campoEditavel]] = false;
                             }
                         }
@@ -1298,6 +1303,7 @@ class NotaController extends Controller
                             && ! $nota->bloqueado_pp2
                             && ! $nota->bloqueado_pt2
                             && ! $nota->bloqueado_pp3
+                            && ! $nota->bloqueado_pt3
                             && ! $nota->bloqueado_pg;
 
                         if ($jaEstaAberto) {
@@ -1316,6 +1322,7 @@ class NotaController extends Controller
                             'bloqueado_pp2' => false,
                             'bloqueado_pt2' => false,
                             'bloqueado_pp3' => false,
+                            'bloqueado_pt3' => false,
                             'bloqueado_pg' => false,
                         ]);
                     }
@@ -1620,6 +1627,17 @@ class NotaController extends Controller
         }
 
         return $nota->status === 'finalizado';
+    }
+
+    private function camposEditaveisDaNotaNoTrimestre(Nota $nota, string $trimestre): array
+    {
+        if ($trimestre !== '3') {
+            return self::CAMPOS_EDITAVEIS_POR_TRIMESTRE[$trimestre] ?? [];
+        }
+
+        return (int) $nota->turma->classe === 12
+            ? ['pp3', 'pg']
+            : ['pp3', 'pt3'];
     }
 
     private function campoEstaBloqueado(Nota $nota, string $campo): bool

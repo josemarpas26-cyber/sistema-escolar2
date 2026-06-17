@@ -191,6 +191,9 @@
 
     $fotoBase64 = $aluno->foto_perfil_pdf_src;
     $isDecimaTerceiraFinal = (int) ($turma->classe ?? 0) === 13 && $trimestre === 'final';
+    $usaPgTerceiro = (int) ($turma->classe ?? 0) === 12;
+    $campoAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'pg' : 'pt3';
+    $labelAvaliacaoFinalTerceiro = $usaPgTerceiro ? 'PG' : 'PT3';
     $resumo13 = $classificacaoEnsinoMedioResumo ?? null;
 @endphp
 
@@ -268,13 +271,13 @@
                     <th>PP3</th>
                     <th>MT3</th>
                     <th>CF</th>
-                    <th>PG</th>
+                    <th>{{ $labelAvaliacaoFinalTerceiro }}</th>
                     <th>CA</th>
                 @else
                     <th>MT1</th>
                     <th>MT2</th>
                     <th>MT3</th>
-                    <th>PG</th>
+                    <th>{{ $labelAvaliacaoFinalTerceiro }}</th>
                     <th>CFD</th>
                 @endif
 
@@ -323,13 +326,13 @@
                         <td>{{ $nota->pp3  !== null ? number_format($nota->pp3,  2) : '-' }}</td>
                         <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  2) : '-' }}</td>
                         <td>{{ $nota->cf   !== null ? number_format($nota->cf,   2) : '-' }}</td>
-                        <td>{{ $nota->pg   !== null ? number_format($nota->pg,   2) : '-' }}</td>
+                        <td>{{ $nota->{$campoAvaliacaoFinalTerceiro} !== null ? number_format($nota->{$campoAvaliacaoFinalTerceiro}, 2) : '-' }}</td>
                         <td><strong>{{ $nota->ca !== null ? number_format($nota->ca, 2) : '-' }}</strong></td>
                     @else
                         <td>{{ $nota->mt1  !== null ? number_format($nota->mt1,  2) : '-' }}</td>
                         <td>{{ $nota->mt2  !== null ? number_format($nota->mt2,  2) : '-' }}</td>
                         <td>{{ $nota->mt3  !== null ? number_format($nota->mt3,  2) : '-' }}</td>
-                        <td>{{ $nota->pg   !== null ? number_format($nota->pg,   2) : '-' }}</td>
+                        <td>{{ $nota->{$campoAvaliacaoFinalTerceiro} !== null ? number_format($nota->{$campoAvaliacaoFinalTerceiro}, 2) : '-' }}</td>
                         <td>
                             <strong>{{ $nota->cfd_efetiva !== null ? number_format($nota->cfd_efetiva, 2) : '-' }}</strong>
                             @if($nota->recursoMelhoraClassificacaoFinal())
@@ -419,9 +422,9 @@
         @elseif($trimestre === '2')
             MAC2 = Média de Avaliações Contínuas | PP2 = Prova do Professor | PT2 = Prova Trimestral | MT2 = Média do 2º Trimestre
         @elseif($trimestre === '3')
-            MAC3 = Média de Avaliações Contínuas | PP3 = Prova do Professor | MT3 = Média do 3º Trimestre | CF = Classificação Final | PG = Prova Global | CA = Classificação Anual
+            MAC3 = Média de Avaliações Contínuas | PP3 = Prova do Professor | {{ $labelAvaliacaoFinalTerceiro }} = {{ $usaPgTerceiro ? 'Prova Global' : 'Prova Trimestral do 3º Trimestre' }} | MT3 = Média do 3º Trimestre | CF = Classificação Final | CA = Classificação Anual
         @else
-            MT1, MT2, MT3 = Médias dos Trimestres | PG = Prova Global | CFD = Classificação Final da Disciplina
+            MT1, MT2, MT3 = Médias dos Trimestres | {{ $labelAvaliacaoFinalTerceiro }} = {{ $usaPgTerceiro ? 'Prova Global' : 'Prova Trimestral do 3º Trimestre' }} | CFD = Classificação Final da Disciplina
         @endif
     </div>
 
