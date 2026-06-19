@@ -241,7 +241,7 @@ class DemoDataSeeder extends Seeder
             foreach ($discIds as $discId) {
 
                 $mac  = (float) max(0, min(20, round($base,        2)));
-                $pg   = (float) max(0, min(20, round($base + 0.4,  2)));
+                $pt3  = (float) max(0, min(20, round($base,        2)));
                 $cf   = (float) max(0, min(20, round($base,        2)));
                 $cfd  = (float) max(0, min(20, round($base,        2)));
 
@@ -274,7 +274,8 @@ class DemoDataSeeder extends Seeder
                         // 3.º trimestre
                         'mac3' => $mac,
                         'pp3'  => $mac,
-                        'pg'   => $pg,
+                        'pt3'  => $pt3,
+                        'pg'   => null,
                         'mt3'  => $mac,
                         // Classificações finais
                         'cf'          => $cf,

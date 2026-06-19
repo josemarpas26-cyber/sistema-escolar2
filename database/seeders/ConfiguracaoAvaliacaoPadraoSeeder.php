@@ -18,7 +18,7 @@ class ConfiguracaoAvaliacaoPadraoSeeder extends Seeder
 
         $padrao = ConfiguracaoAvaliacao::estruturaPadrao();
 
-        $config = ConfiguracaoAvaliacao::firstOrCreate(
+        $config = ConfiguracaoAvaliacao::updateOrCreate(
             ['ano_letivo_id' => $ano->id],
             [
                 'peso_pg' => $padrao['peso_pg'],
@@ -28,7 +28,7 @@ class ConfiguracaoAvaliacaoPadraoSeeder extends Seeder
 
         foreach ($padrao['provas'] as $periodo => $provas) {
             foreach ($provas as $index => $prova) {
-                $config->provas()->firstOrCreate(
+                $config->provas()->updateOrCreate(
                     ['codigo' => $prova['codigo']],
                     [
                         ...$prova,
