@@ -34,7 +34,7 @@ Artisan::command('backup:database', function () {
         $sqlitePath = $connection['database'] ?? database_path('database.sqlite');
 
         if (! File::exists($sqlitePath)) {
-            $this->error("Arquivo SQLite não encontrado em: {$sqlitePath}");
+            $this->error("Ficheiro SQLite não encontrado em: {$sqlitePath}");
             return self::FAILURE;
         }
 

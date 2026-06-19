@@ -327,19 +327,19 @@ class TurmaController extends Controller
 
         // Verificar se há alunos matriculados
         if ($turma->alunos()->wherePivot('status', 'matriculado')->count() > 0) {
-            return back()->with('error', 'Não é possível deletar uma turma com alunos matriculados!');
+            return back()->with('error', 'Não é possível eliminar uma turma com alunos matriculados.');
         }
 
         // Verificar se há notas lançadas
         if ($turma->notas()->count() > 0) {
-            return back()->with('error', 'Não é possível deletar uma turma com notas lançadas!');
+            return back()->with('error', 'Não é possível eliminar uma turma com notas lançadas.');
         }
 
         $turma->delete();
 
         return redirect()
             ->route('turmas.index')
-            ->with('success', 'Turma deletada com sucesso!');
+            ->with('success', 'Turma eliminada com sucesso!');
     }
 
     /**
@@ -815,7 +815,7 @@ class TurmaController extends Controller
         $statusPermitidos = ['transferido', 'desistente'];
 
         if (! in_array($status, $statusPermitidos, true)) {
-            return back()->with('error', 'Status de matrícula inválido.');
+            return back()->with('error', 'Estado da matrícula inválido.');
         }
 
         $pivot = DB::table('turma_aluno')

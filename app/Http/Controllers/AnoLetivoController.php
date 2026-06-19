@@ -262,14 +262,14 @@ class AnoLetivoController extends Controller
         $this->checkPermission('anos.create');
 
         if ($anoLetivo->turmas()->count() > 0) {
-            return back()->with('error', 'Não é possível deletar um ano letivo com turmas associadas!');
+            return back()->with('error', 'Não é possível eliminar um ano letivo com turmas associadas.');
         }
 
         $anoLetivo->delete();
 
         return redirect()
             ->route('anos-letivos.index')
-            ->with('success', 'Ano letivo deletado com sucesso!');
+            ->with('success', 'Ano letivo eliminado com sucesso!');
     }
 
     private function configuracaoInicial(): array
