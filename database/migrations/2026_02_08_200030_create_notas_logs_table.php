@@ -17,16 +17,17 @@ return new class extends Migration
             $table->foreignId('aluno_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('turma_id')->constrained()->onDelete('cascade');
             $table->foreignId('disciplina_id')->constrained()->onDelete('cascade');
+            $table->boolean('acao_global')->default(false);
             
             // Tipo de alteração
-            $table->enum('acao', ['criacao', 'edicao', 'exclusao', 'finalizacao', 'reabertura'])->default('edicao');
+            $table->string('acao', 80)->default('edicao');
             
             // Campo alterado
             $table->string('campo_alterado'); // Ex: mac1, pp1, mt1, etc
             
             // Valores
-            $table->decimal('valor_anterior', 5, 2)->nullable();
-            $table->decimal('valor_novo', 5, 2)->nullable();
+            $table->text('valor_anterior')->nullable();
+            $table->text('valor_novo')->nullable();
             
             // Contexto adicional
             $table->string('trimestre')->nullable(); // 1, 2, 3
@@ -39,6 +40,7 @@ return new class extends Migration
             $table->index(['nota_id', 'data_alteracao']);
             $table->index(['aluno_id', 'disciplina_id']);
             $table->index(['usuario_id', 'data_alteracao']);
+            $table->index('acao_global');
             $table->index('data_alteracao');
         });
     }

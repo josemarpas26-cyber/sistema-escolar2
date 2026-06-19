@@ -19,6 +19,7 @@ return new class extends Migration
             // Um professor pode lecionar várias disciplinas na mesma turma
             // Mas não pode lecionar a mesma disciplina na mesma turma 2x
             $table->unique(['professor_id', 'turma_id', 'disciplina_id', 'ano_letivo_id'], 'professor_turma_disc_ano_unique');
+            $table->unique(['turma_id', 'disciplina_id', 'ano_letivo_id'], 'turma_disc_ano_unique');
         });
     }
 

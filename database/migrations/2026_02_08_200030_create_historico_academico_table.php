@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('ano_letivo_id')->constrained('anos_letivos')->onDelete('restrict');
             
             // Dados da avaliação final
-            $table->enum('classe', ['10', '11', '12']);
+            $table->enum('classe', ['10', '11', '12', '13']);
             $table->decimal('classificacao_final', 5, 2); // CFD ou CA dependendo do contexto
             $table->enum('resultado', ['aprovado', 'reprovado', 'dispensado'])->default('aprovado');
             
@@ -30,10 +30,27 @@ return new class extends Migration
             $table->index(['aluno_id', 'ano_letivo_id']);
             $table->index(['turma_id', 'disciplina_id']);
         });
+
+        Schema::create('classificacoes_ensino_medio', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('aluno_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('turma_id')->constrained()->onDelete('cascade');
+            $table->foreignId('ano_letivo_id')->constrained('anos_letivos')->onDelete('cascade');
+            $table->decimal('pap', 5, 2)->nullable();
+            $table->decimal('ecs', 5, 2)->nullable();
+            $table->text('observacoes')->nullable();
+            $table->timestamps();
+
+            $table->unique(
+                ['aluno_id', 'turma_id', 'ano_letivo_id'],
+                'classificacoes_ensino_medio_aluno_turma_ano_unique'
+            );
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('classificacoes_ensino_medio');
         Schema::dropIfExists('historico_academico');
     }
 };
