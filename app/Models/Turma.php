@@ -17,6 +17,7 @@ class Turma extends Model
         'ano_letivo_id',
         'coordenador_turma_id',
         'capacidade',
+        'sala',
         'turno',
         'ativo',
     ];
@@ -24,6 +25,7 @@ class Turma extends Model
     protected $casts = [
         'ativo' => 'boolean',
         'capacidade' => 'integer',
+        'sala' => 'string',
         'turno' => 'string',
     ];
 

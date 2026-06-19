@@ -289,7 +289,7 @@
         </div>
 
     <h1>PAUTA GERAL DA TURMA</h1>
-    <p>{{ $turma->curso->nome }} — {{ $turma->classe }}ª Classe &nbsp;|&nbsp; {{ $turma->nome_completo }} &nbsp;|&nbsp; Ano Letivo: {{ $turma->anoLetivo->nome }}</p>
+    <p>{{ $turma->curso->nome }} — {{ $turma->classe }}ª Classe &nbsp;|&nbsp; {{ $turma->nome_completo }} &nbsp;|&nbsp; Sala: {{ $turma->sala ?? '-' }} &nbsp;|&nbsp; Ano Letivo: {{ $turma->anoLetivo->nome }}</p>
     <p><strong>Período: {{ $trimestreLabel }}</strong> &nbsp;|&nbsp; Formato de folha: <strong>{{ $pageSize }} Paisagem</strong></p>
 </div>
 
