@@ -113,16 +113,16 @@ class DisciplinaController extends Controller
         $this->checkPermission('disciplinas.delete');
 
         if ($disciplina->turmas()->exists()) {
-            return back()->with('error', 'Nao e possivel deletar uma disciplina com turmas associadas!');
+            return back()->with('error', 'Não é possível eliminar uma disciplina com turmas associadas.');
         }
 
         if ($disciplina->notas()->exists()) {
-            return back()->with('error', 'Nao e possivel deletar uma disciplina com notas lancadas!');
+            return back()->with('error', 'Não é possível eliminar uma disciplina com notas lançadas.');
         }
 
         $disciplina->delete();
 
-        return redirect()->route('disciplinas.index')->with('success', 'Disciplina deletada com sucesso!');
+        return redirect()->route('disciplinas.index')->with('success', 'Disciplina eliminada com sucesso!');
     }
 
     public function toggleStatus(Disciplina $disciplina)
@@ -176,8 +176,8 @@ class DisciplinaController extends Controller
     private function disciplinaMessages(): array
     {
         return [
-            'coordenador_id.unique' => 'Este professor ja coordena outra disciplina.',
-            'coordenador_id.exists' => 'O coordenador selecionado nao existe.',
+            'coordenador_id.unique' => 'Este professor já coordena outra disciplina.',
+            'coordenador_id.exists' => 'O coordenador selecionado não existe.',
         ];
     }
 

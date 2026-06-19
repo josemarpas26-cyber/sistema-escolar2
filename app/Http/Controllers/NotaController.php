@@ -117,7 +117,7 @@ class NotaController extends Controller
                 ->isNotEmpty();
 
             if (! $temAtribuicao) {
-                return back()->with('error', 'Voce nao leciona esta disciplina nesta turma.');
+                return back()->with('error', 'Você não leciona esta disciplina nesta turma.');
             }
 
             $turma = Turma::findOrFail($turmaId);
@@ -458,7 +458,7 @@ class NotaController extends Controller
         }
 
         if ($naoAplicaveis > 0) {
-            $partes[] = "{$naoAplicaveis} nota(s) ignorada(s) por nao se aplicarem a este trimestre";
+            $partes[] = "{$naoAplicaveis} nota(s) ignorada(s) por não se aplicarem a este trimestre";
         }
 
         if (! empty($naoEncontradas)) {
@@ -718,15 +718,15 @@ class NotaController extends Controller
         }
 
         if ($semAlteracao > 0) {
-            $partes[] = "{$semAlteracao} sem alteraçao";
+            $partes[] = "{$semAlteracao} sem alteração";
         }
 
         if ($inelegiveis > 0) {
-            $partes[] = "{$inelegiveis} inelegivel(is)";
+            $partes[] = "{$inelegiveis} inelegível(is)";
         }
 
         if (! empty($naoEncontradas)) {
-            $partes[] = count($naoEncontradas).' registo(s) nao encontrado(s)';
+            $partes[] = count($naoEncontradas).' registo(s) não encontrado(s)';
         }
 
         $mensagem = empty($partes)
@@ -946,7 +946,7 @@ class NotaController extends Controller
             }
         });
 
-        return back()->with('success', 'Classificações finais do ensino médio actualizadas com sucesso.');
+        return back()->with('success', 'Classificações finais do ensino médio atualizadas com sucesso.');
     }
 
     // -------------------------------------------------------------------------
@@ -983,12 +983,12 @@ class NotaController extends Controller
                 ->exists();
 
             if (! $temAtribuicao) {
-                abort(403, 'Voce nao tem permissao para inicializar esta pauta.');
+                abort(403, 'Você não tem permissão para inicializar esta pauta.');
             }
         }
 
         if ($turma->ano_letivo_id !== $anoLetivo->id) {
-            return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
+            return back()->with('error', 'A turma selecionada não pertence ao ano letivo ativo.');
         }
 
         $criados = $this->notaService->criarNotasParaTurma($turma, $disciplina);
@@ -998,7 +998,7 @@ class NotaController extends Controller
                 'turma_id' => IdMask::encode((int) $turma->id),
                 'disciplina_id' => IdMask::encode((int) $disciplina->id),
             ])
-            ->with('success', "Pauta inicializada. {$criados} registros criados.");
+            ->with('success', "Pauta inicializada. {$criados} registo(s) criado(s).");
     }
 
     public function importarCAs(Request $request)
@@ -1047,15 +1047,15 @@ class NotaController extends Controller
         $turma = $turmaId ? Turma::findOrFail($turmaId) : null;
 
         if ($turma && $turma->ano_letivo_id !== $anoLetivo->id) {
-            return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
+            return back()->with('error', 'A turma selecionada não pertence ao ano letivo ativo.');
         }
 
         if ($disciplinaId && ! $turma) {
-            return back()->with('error', 'Selecione uma turma para operar uma disciplina especifica.');
+            return back()->with('error', 'Selecione uma turma para operar uma disciplina específica.');
         }
 
         if ($disciplinaId && $turma && ! $turma->disciplinas()->where('disciplinas.id', $disciplinaId)->exists()) {
-            return back()->with('error', 'A disciplina selecionada nao pertence a turma informada.');
+            return back()->with('error', 'A disciplina selecionada não pertence à turma informada.');
         }
 
         $alunoId = $validated['aluno_id'] ?? null;
@@ -1209,15 +1209,15 @@ class NotaController extends Controller
         $disciplina = $disciplinaId ? Disciplina::findOrFail($disciplinaId) : null;
 
         if ($turma && $turma->ano_letivo_id !== $anoLetivo->id) {
-            return back()->with('error', 'A turma selecionada nao pertence ao ano letivo ativo.');
+            return back()->with('error', 'A turma selecionada não pertence ao ano letivo ativo.');
         }
 
         if ($disciplinaId && ! $turma) {
-            return back()->with('error', 'Selecione uma turma para operar uma disciplina especifica.');
+            return back()->with('error', 'Selecione uma turma para operar uma disciplina específica.');
         }
 
         if ($disciplinaId && $turma && ! $turma->disciplinas()->where('disciplinas.id', $disciplinaId)->exists()) {
-            return back()->with('error', 'A disciplina selecionada nao pertence a turma informada.');
+            return back()->with('error', 'A disciplina selecionada não pertence à turma informada.');
         }
 
         $alunoId = $validated['aluno_id'] ?? null;
@@ -1417,7 +1417,7 @@ class NotaController extends Controller
             ->exists();
 
         if (! $temAtribuicao) {
-            abort(403, 'Voce nao tem permissao para editar esta nota.');
+            abort(403, 'Você não tem permissão para editar esta nota.');
         }
     }
 
@@ -1676,10 +1676,10 @@ class NotaController extends Controller
         }
 
         if ($trimestre && (($nota->{"bloqueado_t{$trimestre}"} ?? false) === true)) {
-            abort(403, "Este {$trimestre}o trimestre esta finalizado e bloqueado para edicao.");
+            abort(403, "Este {$trimestre}º trimestre está finalizado e bloqueado para edição.");
         }
 
-        abort(403, 'Esta nota ja foi finalizada e esta bloqueada para edicao.');
+        abort(403, 'Esta nota já foi finalizada e está bloqueada para edição.');
     }
 
     private function registrarLogOperacaoPauta(
@@ -1721,7 +1721,7 @@ class NotaController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('error', 'Nenhum ano letivo ativo encontrado. Entre em contacto com a administracao.');
+            ->with('error', 'Nenhum ano letivo ativo encontrado. Entre em contacto com a administração.');
     }
 
     private function buscarNotasDaPauta(AnoLetivo $anoLetivo, ?int $turmaId = null, ?int $disciplinaId = null, ?int $alunoId = null)
@@ -1752,10 +1752,10 @@ class NotaController extends Controller
         $trimestreInicial = $nota->trimestreInicialDisponivel();
 
         if ($trimestre === 1 && $trimestreInicial === 2) {
-            return 'O 1º trimestre nao se aplica a este aluno porque a matricula ocorreu a partir do 2º trimestre.';
+            return 'O 1º trimestre não se aplica a este aluno porque a matrícula ocorreu a partir do 2º trimestre.';
         }
 
-        return "O {$trimestre}o trimestre nao se aplica a este aluno porque a matricula ocorreu apenas no {$trimestreInicial}o trimestre.";
+        return "O {$trimestre}º trimestre não se aplica a este aluno porque a matrícula ocorreu apenas no {$trimestreInicial}º trimestre.";
     }
 
     public function solicitarDivisaoPorDois(Request $request, Nota $nota)

@@ -13,6 +13,7 @@
         areaFormacao: '',
         turno: '{{ old('turno', '') }}',
         capacidade: '{{ old('capacidade', 30) }}',
+        sala: '{{ old('sala', '') }}',
         nomeCompleto: '',
         gerarNomeCompleto() {
           const classeNumLimpo = (this.classeNum ?? '').replace(/[^0-9]/g, '').trim();
@@ -165,6 +166,25 @@
                         @enderror
                     </div>
 
+                    <!-- Sala -->
+                    <div>
+                        <label class="label">Sala</label>
+                        <input
+                            type="text"
+                            name="sala"
+                            value="{{ old('sala') }}"
+                            maxlength="20"
+                            placeholder="Ex: 08, B-12"
+                            x-model="sala"
+                            class="input uppercase @error('sala') border-red-400 bg-red-50 @enderror">
+                        <p class="text-xs text-slate-400 mt-1">
+                            Opcional. Informe o número ou código da sala da turma.
+                        </p>
+                        @error('sala')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Turno -->
                     <div>
                         <label class="label">Turno *</label>
@@ -262,6 +282,10 @@
                     <div>
                         <span class="text-gray-600">Capacidade:</span>
                         <p class="font-semibold text-gray-900" x-text="capacidade ? capacidade + ' alunos' : '-'">-</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Sala:</span>
+                        <p class="font-semibold text-gray-900" x-text="sala ? sala.toUpperCase() : '-'">-</p>
                     </div>
                 </div>
             </x-card>

@@ -77,12 +77,12 @@ class CursoController extends Controller
             ],
             'ativo' => 'boolean',
         ], [
-            'codigo.required' => 'O codigo do curso e obrigatorio.',
-            'codigo.min' => 'O codigo deve ter pelo menos 2 letras.',
-            'codigo.max' => 'O codigo nao pode ter mais de 10 letras.',
-            'codigo.regex' => 'O codigo deve conter apenas letras de A a Z.',
-            'codigo.unique' => 'Este codigo ja esta a ser usado por outro curso.',
-            'area_formacao_id.required' => 'Selecione a area de formacao do curso.',
+            'codigo.required' => 'O código do curso é obrigatório.',
+            'codigo.min' => 'O código deve ter pelo menos 2 letras.',
+            'codigo.max' => 'O código não pode ter mais de 10 letras.',
+            'codigo.regex' => 'O código deve conter apenas letras de A a Z.',
+            'codigo.unique' => 'Este código já está a ser usado por outro curso.',
+            'area_formacao_id.required' => 'Selecione a área de formação do curso.',
         ]);
 
         $validated['codigo'] = strtoupper(trim($validated['codigo']));
@@ -152,12 +152,12 @@ class CursoController extends Controller
             ],
             'ativo' => 'boolean',
         ], [
-            'codigo.required' => 'O codigo do curso e obrigatorio.',
-            'codigo.min' => 'O codigo deve ter pelo menos 2 letras.',
-            'codigo.max' => 'O codigo nao pode ter mais de 10 letras.',
-            'codigo.regex' => 'O codigo deve conter apenas letras de A a Z.',
-            'codigo.unique' => 'Este codigo ja esta a ser usado por outro curso.',
-            'area_formacao_id.required' => 'Selecione a area de formacao do curso.',
+            'codigo.required' => 'O código do curso é obrigatório.',
+            'codigo.min' => 'O código deve ter pelo menos 2 letras.',
+            'codigo.max' => 'O código não pode ter mais de 10 letras.',
+            'codigo.regex' => 'O código deve conter apenas letras de A a Z.',
+            'codigo.unique' => 'Este código já está a ser usado por outro curso.',
+            'area_formacao_id.required' => 'Selecione a área de formação do curso.',
         ]);
 
         $validated['codigo'] = strtoupper(trim($validated['codigo']));
@@ -176,14 +176,14 @@ class CursoController extends Controller
         $this->checkPermission('cursos.delete');
 
         if ($curso->turmas()->count() > 0) {
-            return back()->with('error', 'Nao e possivel deletar um curso com turmas associadas!');
+            return back()->with('error', 'Não é possível eliminar um curso com turmas associadas.');
         }
 
         $curso->delete();
 
         return redirect()
             ->route('cursos.index')
-            ->with('success', 'Curso deletado com sucesso!');
+            ->with('success', 'Curso eliminado com sucesso!');
     }
 
     /**

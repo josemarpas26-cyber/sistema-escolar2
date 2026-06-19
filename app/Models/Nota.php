@@ -99,17 +99,17 @@ class Nota extends Model
     {
         if (! $this->relationLoaded('turma') || ! $this->relationLoaded('disciplina')) {
             throw new \LogicException(
-                "Relacoes nao carregadas em Nota #{$this->id}. "
+                "Relações não carregadas em Nota #{$this->id}. "
                 . "Use load(['turma', 'disciplina']) ou with(['turma', 'disciplina']) antes de chamar recalcular()."
             );
         }
 
         if (! $this->turma) {
-            throw new \RuntimeException("Nota #{$this->id} nao possui turma associada.");
+            throw new \RuntimeException("Nota #{$this->id} não possui turma associada.");
         }
 
         if (! $this->disciplina) {
-            throw new \RuntimeException("Nota #{$this->id} nao possui disciplina associada.");
+            throw new \RuntimeException("Nota #{$this->id} não possui disciplina associada.");
         }
     }
 
