@@ -37,7 +37,7 @@ class UserController extends Controller
     private function assertPodeDestruir(): void
     {
         if (!auth()->user()->isAdmin() && !auth()->user()->isSecretaria()) {
-            abort(403, 'Apenas administradores e secretaria podem deletar utilizadores.');
+            abort(403, 'Apenas administradores e a secretaria podem eliminar utilizadores.');
         }
     }
 
@@ -48,7 +48,7 @@ class UserController extends Controller
     private function assertPodeAtribuirRole(?Role $role): void
     {
         if ($role?->name === 'admin' && !auth()->user()->isAdmin()) {
-            abort(403, 'Secretária não pode criar um admin.');
+            abort(403, 'A secretária não pode criar um administrador.');
         }
     }
 
@@ -286,12 +286,12 @@ class UserController extends Controller
         $this->assertPodeDestruir();
 
         if ($user->id === auth()->id()) {
-            return back()->with('error', 'Não pode deletar o seu próprio utilizador!');
+            return back()->with('error', 'Não pode eliminar o seu próprio utilizador.');
         }
 
         // Secretária não pode deletar ADM
         if ($user->isAdmin() && !auth()->user()->isAdmin()) {
-            abort(403, 'Secretária não pode deletar administradores.');
+            abort(403, 'A secretária não pode eliminar administradores.');
         }
 
         // Guardar snapshot antes de deletar
@@ -301,7 +301,7 @@ class UserController extends Controller
 
         return redirect()
             ->route('users.index')
-            ->with('success', "Utilizador {$user->name} deletado. Pode ser restaurado na Lixeira.");
+            ->with('success', "Utilizador {$user->name} eliminado. Pode ser restaurado na Lixeira.");
     }
 
     /**
@@ -341,7 +341,7 @@ class UserController extends Controller
         $user = User::withTrashed()->findOrFail($id);
 
         if (!$user->trashed()) {
-            return back()->with('error', 'Este utilizador não está na lixeira.');
+            return back()->with('error', 'Este utilizador não está na Lixeira.');
         }
 
         $user->restore();

@@ -545,7 +545,7 @@ class PautaGeralTemplateExporter
     {
         $templatePath = base_path(self::TEMPLATE_PATH);
         if (! file_exists($templatePath)) {
-            throw new \RuntimeException('Template da pauta geral nao encontrado em '.$templatePath);
+            throw new \RuntimeException('Template da pauta geral não encontrado em '.$templatePath);
         }
         return IOFactory::load($templatePath);
     }

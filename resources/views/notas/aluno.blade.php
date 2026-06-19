@@ -226,8 +226,8 @@
                     <div>
                         <h3 class="text-lg font-bold" style="color:var(--tx-1);">{{ $item['disciplina']->nome }} - {{ $item['disciplina']->codigo }}</h3>
                         <p class="mt-2 text-sm" style="color:var(--tx-3);">
-                            Professor: {{ $item['professor']?->name ?? 'Nao associado' }}
-                            · Coordenador: {{ $item['coordenador']?->name ?? 'Nao definido' }}
+                            Professor: {{ $item['professor']?->name ?? 'Não associado' }}
+                            · Coordenador: {{ $item['coordenador']?->name ?? 'Não definido' }}
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-2">

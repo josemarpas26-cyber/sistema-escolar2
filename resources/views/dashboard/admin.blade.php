@@ -654,7 +654,7 @@ function schoolCalendar() {
         },
 
         deleteEvent(id) {
-            if (!confirm('Apagar este evento?')) return;
+            if (!confirm('Deseja remover este evento?')) return;
             this.events = this.events.filter(e => e.id !== id);
             localStorage.setItem('siga_cal_events', JSON.stringify(this.events));
         },

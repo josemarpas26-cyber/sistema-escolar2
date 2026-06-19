@@ -29,7 +29,7 @@ class EstatisticasController extends Controller
         $secoes = $this->estatisticasAcademicas->construirSecoes($user, $anoLetivo, $alunoFiltroId);
 
         if ($secoes->isEmpty()) {
-            abort(403, 'Perfil sem acesso a estatisticas.');
+            abort(403, 'Perfil sem acesso a estatísticas.');
         }
 
         $filtros = $this->construirFiltrosDisponiveis($user, $anoLetivo, $secoes, $alunoFiltroId);

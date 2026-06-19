@@ -78,7 +78,7 @@
                 <span class="text-gray-600">Disciplina Terminal (legado):</span>
                 <div class="mt-1">
                     <x-badge type="{{ $disciplina->disciplina_terminal ? 'success' : 'gray' }}">
-                        {{ $disciplina->disciplina_terminal ? 'Sim' : 'Nao' }}
+                        {{ $disciplina->disciplina_terminal ? 'Sim' : 'Não' }}
                     </x-badge>
                 </div>
             </div>
@@ -114,7 +114,7 @@
                                         {{ $curso->pivot->ano_terminal }}ª classe
                                     </x-badge>
                                 @else
-                                    <x-badge type="gray">Nao terminal</x-badge>
+                                    <x-badge type="gray">Não terminal</x-badge>
                                 @endif
                             </td>
                         </tr>
