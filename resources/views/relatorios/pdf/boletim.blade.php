@@ -232,6 +232,10 @@
             <span class="info-value">{{ $turma->nome_completo }}</span>
         </div>
         <div class="info-row">
+            <span class="info-label">Sala:</span>
+            <span class="info-value">{{ $turma->sala ?? '-' }}</span>
+        </div>
+        <div class="info-row">
             <span class="info-label">Ano Letivo:</span>
             <span class="info-value">{{ $anoLetivo->nome }}</span>
         </div>
