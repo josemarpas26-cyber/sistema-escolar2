@@ -121,6 +121,23 @@
                                min="1" max="100" class="input" required>
                     </div>
 
+                    <div>
+                        <label class="label">Sala</label>
+                        <input
+                            type="text"
+                            name="sala"
+                            value="{{ old('sala', $turma->sala) }}"
+                            maxlength="20"
+                            placeholder="Ex: 08, B-12"
+                            class="input uppercase @error('sala') border-red-400 bg-red-50 @enderror">
+                        <p class="text-xs text-slate-400 mt-1">
+                            Opcional. Informe o número ou código da sala da turma.
+                        </p>
+                        @error('sala')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     
                     <div>
                         <label class="label">Turno *</label>
@@ -186,6 +203,10 @@
                     <div>
                         <span class="text-gray-600">Total de Alunos:</span>
                         <p class="font-semibold text-gray-900">{{ $turma->total_alunos }} / {{ $turma->capacidade }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Sala:</span>
+                        <p class="font-semibold text-gray-900">{{ old('sala', $turma->sala) ?: '-' }}</p>
                     </div>
                     <div>
                         <span class="text-gray-600">Criada em:</span>

@@ -74,6 +74,38 @@ class ResultadoAlunoTurmaServiceTest extends TestCase
         $this->assertSame('Não Transita', $resultado['resultado']);
     }
 
+    public function test_reprova_com_negativa_inferior_a_sete_mesmo_tendo_recurso_pendente(): void
+    {
+        [$turma, $aluno, $disciplinas] = $this->criarCenarioBase(classe: '12', terminalIndex: 2, anoTerminal: 12);
+
+        $this->criarNota($turma, $aluno, $disciplinas[0], 6);
+        $this->criarNota($turma, $aluno, $disciplinas[1], 13);
+        $this->criarNota($turma, $aluno, $disciplinas[2], 8);
+
+        $resultado = $this->avaliar($turma, $aluno);
+
+        $this->assertSame(ResultadoAlunoTurmaService::STATUS_REPROVADO, $resultado['status']);
+        $this->assertSame('Não Transita', $resultado['resultado']);
+        $this->assertSame('', $resultado['observacao']);
+    }
+
+    public function test_reprova_com_mais_de_tres_negativas_mesmo_tendo_recurso_pendente(): void
+    {
+        [$turma, $aluno, $disciplinas] = $this->criarCenarioBase(classe: '12', terminalIndex: 2, anoTerminal: 12);
+        $disciplinaExtra = $this->adicionarDisciplina($turma, 'Biologia', 'BIO');
+
+        $this->criarNota($turma, $aluno, $disciplinas[0], 8);
+        $this->criarNota($turma, $aluno, $disciplinas[1], 8);
+        $this->criarNota($turma, $aluno, $disciplinas[2], 8);
+        $this->criarNota($turma, $aluno, $disciplinaExtra, 8);
+
+        $resultado = $this->avaliar($turma, $aluno);
+
+        $this->assertSame(ResultadoAlunoTurmaService::STATUS_REPROVADO, $resultado['status']);
+        $this->assertSame('Não Transita', $resultado['resultado']);
+        $this->assertSame('', $resultado['observacao']);
+    }
+
     public function test_disciplina_terminal_de_outra_classe_conta_como_nao_terminal(): void
     {
         [$turma, $aluno, $disciplinas] = $this->criarCenarioBase(classe: '11', terminalIndex: 2, anoTerminal: 12);
@@ -150,6 +182,24 @@ class ResultadoAlunoTurmaServiceTest extends TestCase
             ->get(['disciplina_id', 'cf', 'cfd', 'nota_recurso']);
 
         return app(ResultadoAlunoTurmaService::class)->avaliar($turma, $turma->disciplinas, $notas);
+    }
+
+    private function adicionarDisciplina(Turma $turma, string $nome, string $codigo): Disciplina
+    {
+        $disciplina = Disciplina::create([
+            'nome' => $nome,
+            'codigo' => $codigo,
+            'leciona_10' => true,
+            'leciona_11' => true,
+            'leciona_12' => true,
+            'disciplina_terminal' => false,
+            'ativo' => true,
+        ]);
+
+        $turma->disciplinas()->attach($disciplina->id);
+        $turma->curso->disciplinas()->attach($disciplina->id, ['ano_terminal' => null]);
+
+        return $disciplina;
     }
 
     private function criarNota(Turma $turma, User $aluno, Disciplina $disciplina, float $cfd): void

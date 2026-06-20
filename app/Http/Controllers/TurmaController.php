@@ -129,6 +129,7 @@ class TurmaController extends Controller
                 }),
             ],
             'capacidade' => 'required|integer|min:1|max:100',
+            'sala' => ['nullable', 'string', 'max:20'],
             'turno' => ['required', 'in:M,T'],
             'disciplinas' => 'nullable|array',
             'disciplinas.*' => 'exists:disciplinas,id',
@@ -138,10 +139,12 @@ class TurmaController extends Controller
             'nome.regex' => 'O nome da turma deve ser uma letra de A a Z.',
             'turno.required' => 'O turno é obrigatório.',
             'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
+            'sala.max' => 'A sala não pode ter mais de 20 caracteres.',
             'nome.unique' => "Já existe uma turma com o nome {$nomeCompletoInformado} neste curso, classe e turno.",
         ]);
 
             $validated['nome'] = strtoupper(trim($validated['nome']));
+            $validated['sala'] = $this->normalizarSala($validated['sala'] ?? null);
 
         $erroDisciplinas = $this->validarDisciplinasDaClasse($validated['classe'], $request->input('disciplinas', []));
 
@@ -269,6 +272,7 @@ class TurmaController extends Controller
                     }),
             ],
             'capacidade' => 'required|integer|min:1|max:100',
+            'sala' => ['nullable', 'string', 'max:20'],
             'turno' => ['required', 'in:M,T'],
             'ativo' => 'boolean',
             'disciplinas' => 'nullable|array',
@@ -279,10 +283,12 @@ class TurmaController extends Controller
             'nome.regex' => 'O nome da turma deve ser uma letra de A a Z.',
             'turno.required' => 'O turno é obrigatório.',
             'turno.in' => 'O turno deve ser Manhã (M) ou Tarde (T).',
+            'sala.max' => 'A sala não pode ter mais de 20 caracteres.',
             'nome.unique' => "Já existe uma turma com o nome {$nomeCompletoInformado} neste curso, classe e turno.",
         ]);
 
             $validated['nome'] = strtoupper(trim($validated['nome']));
+            $validated['sala'] = $this->normalizarSala($validated['sala'] ?? null);
 
         $erroDisciplinas = $this->validarDisciplinasDaClasse($validated['classe'], $request->input('disciplinas', []));
 
@@ -327,19 +333,19 @@ class TurmaController extends Controller
 
         // Verificar se há alunos matriculados
         if ($turma->alunos()->wherePivot('status', 'matriculado')->count() > 0) {
-            return back()->with('error', 'Não é possível deletar uma turma com alunos matriculados!');
+            return back()->with('error', 'Não é possível eliminar uma turma com alunos matriculados.');
         }
 
         // Verificar se há notas lançadas
         if ($turma->notas()->count() > 0) {
-            return back()->with('error', 'Não é possível deletar uma turma com notas lançadas!');
+            return back()->with('error', 'Não é possível eliminar uma turma com notas lançadas.');
         }
 
         $turma->delete();
 
         return redirect()
             ->route('turmas.index')
-            ->with('success', 'Turma deletada com sucesso!');
+            ->with('success', 'Turma eliminada com sucesso!');
     }
 
     /**
@@ -659,6 +665,7 @@ class TurmaController extends Controller
                 'ano_letivo_id'        => $proximoAno->id,
                 'coordenador_turma_id' => $turma->coordenador_turma_id,
                 'capacidade'           => $turma->capacidade,
+                'sala'                 => $turma->sala,
                 'turno'                => $turma->turno,
                 'ativo'                => true,
             ]);
@@ -815,7 +822,7 @@ class TurmaController extends Controller
         $statusPermitidos = ['transferido', 'desistente'];
 
         if (! in_array($status, $statusPermitidos, true)) {
-            return back()->with('error', 'Status de matrícula inválido.');
+            return back()->with('error', 'Estado da matrícula inválido.');
         }
 
         $pivot = DB::table('turma_aluno')
@@ -879,5 +886,12 @@ class TurmaController extends Controller
         $turno = strtoupper(trim((string) ($dados['turno'] ?? 'X')));
 
         return strtoupper(trim((string) $cursoCodigo)).$classe.$nome.$turno;
+    }
+
+    private function normalizarSala(?string $sala): ?string
+    {
+        $sala = trim((string) $sala);
+
+        return $sala === '' ? null : mb_strtoupper($sala);
     }
 }

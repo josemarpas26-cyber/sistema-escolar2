@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\AnoLetivo;
 use App\Models\AreaFormacao;
 use App\Models\AvaliacaoContinua;
-use App\Models\ClassificacaoEnsinoMedio;
 use App\Models\Curso;
 use App\Models\Disciplina;
 use App\Models\Nota;
@@ -20,347 +19,310 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        // ─────────────────────────────────────────
+        // ROLES
+        // ─────────────────────────────────────────
         $roles = Role::all()->keyBy('name');
 
+        // ─────────────────────────────────────────
+        // UTILIZADORES DE SISTEMA
+        // ─────────────────────────────────────────
         User::firstOrCreate(['email' => 'admin@escola.ao'], [
-            'name' => 'Administrador do Sistema',
+            'name'     => 'Administrador do Sistema',
             'password' => Hash::make('password'),
-            'role_id' => $roles['admin']->id,
-            'ativo' => true,
+            'role_id'  => $roles['admin']->id,
+            'ativo'    => true,
         ]);
 
         User::firstOrCreate(['email' => 'secretaria@escola.ao'], [
-            'name' => 'Fátima Cardoso',
+            'name'     => 'Fátima Cardoso',
             'password' => Hash::make('password'),
-            'role_id' => $roles['secretaria']->id,
+            'role_id'  => $roles['secretaria']->id,
             'telefone' => '923456789',
-            'genero' => 'F',
-            'ativo' => true,
+            'genero'   => 'F',
+            'ativo'    => true,
         ]);
 
+        // ─────────────────────────────────────────
+        // PROFESSORES
+        // ─────────────────────────────────────────
         $profDados = [
-            ['Matemática', 'prof.mat@escola.ao', 'M'],
-            ['Física', 'prof.fis@escola.ao', 'F'],
-            ['Química', 'prof.qui@escola.ao', 'M'],
-            ['Biologia', 'prof.bio@escola.ao', 'F'],
-            ['Português', 'prof.port@escola.ao', 'M'],
-            ['Inglês', 'prof.ing@escola.ao', 'F'],
-            ['História', 'prof.hist@escola.ao', 'M'],
-            ['Geografia', 'prof.geo@escola.ao', 'F'],
-            ['Educação Física', 'prof.ef@escola.ao', 'M'],
-            ['TIC', 'prof.tic@escola.ao', 'F'],
-            ['Filosofia', 'prof.fil@escola.ao', 'M'],
-            ['Empreendedorismo', 'prof.emp@escola.ao', 'F'],
-            ['Projecto Tecnológico', 'prof.pt@escola.ao', 'M'],
+            ['Matemática',   'prof.mat@escola.ao',  'M'],
+            ['Física',       'prof.fis@escola.ao',  'F'],
+            ['Química',      'prof.qui@escola.ao',  'M'],
+            ['Biologia',     'prof.bio@escola.ao',  'F'],
+            ['Português',    'prof.port@escola.ao', 'M'],
+            ['Inglês',       'prof.ing@escola.ao',  'F'],
+            ['História',     'prof.hist@escola.ao', 'M'],
+            ['Geografia',    'prof.geo@escola.ao',  'F'],
+            ['Educação Física', 'prof.ef@escola.ao','M'],
+            ['TIC',          'prof.tic@escola.ao',  'F'],
         ];
 
         $professores = [];
         foreach ($profDados as $i => [$nome, $email, $genero]) {
             $professores[] = User::firstOrCreate(['email' => $email], [
-                'name' => "Prof. {$nome}",
+                'name'     => "Prof. {$nome}",
                 'password' => Hash::make('password'),
-                'role_id' => $roles['professor']->id,
-                'bi' => '006'.str_pad((string) ($i + 1), 9, '0', STR_PAD_LEFT).'LA041',
-                'telefone' => '923'.str_pad((string) ($i + 1), 6, '0', STR_PAD_LEFT),
-                'genero' => $genero,
-                'ativo' => true,
+                'role_id'  => $roles['professor']->id,
+                'bi'       => '006' . str_pad((string) ($i + 1), 9, '0', STR_PAD_LEFT) . 'LA041',
+                'telefone' => '923' . str_pad((string) ($i + 1), 6, '0', STR_PAD_LEFT),
+                'genero'   => $genero,
+                'ativo'    => true,
             ]);
         }
 
+        // ─────────────────────────────────────────
+        // ALUNOS  (30 alunos para a turma 10-A)
+        // ─────────────────────────────────────────
         $alunos = [];
         for ($i = 1; $i <= 30; $i++) {
             $alunos[] = User::firstOrCreate(['email' => "aluno{$i}@escola.ao"], [
-                'name' => "Aluno {$i}",
-                'password' => Hash::make('password'),
-                'role_id' => $roles['aluno']->id,
-                'numero_processo' => '2023'.str_pad((string) $i, 3, '0', STR_PAD_LEFT),
-                'bi' => '007'.str_pad((string) $i, 9, '0', STR_PAD_LEFT).'LA041',
-                'data_nascimento' => '2007-01-01',
-                'genero' => $i % 2 === 0 ? 'F' : 'M',
-                'telefone' => '924'.str_pad((string) $i, 6, '0', STR_PAD_LEFT),
-                'nome_encarregado' => "Encarregado {$i}",
-                'contacto_encarregado' => '923'.str_pad((string) (300000 + $i), 6, '0', STR_PAD_LEFT),
-                'ativo' => true,
+                'name'               => "Aluno {$i}",
+                'password'           => Hash::make('password'),
+                'role_id'            => $roles['aluno']->id,
+                'numero_processo'    => '2024' . str_pad((string) $i, 3, '0', STR_PAD_LEFT),
+                'bi'                 => '007' . str_pad((string) $i, 9, '0', STR_PAD_LEFT) . 'LA041',
+                'data_nascimento'    => '2008-01-01',
+                'genero'             => $i % 2 === 0 ? 'F' : 'M',
+                'telefone'           => '924' . str_pad((string) $i, 6, '0', STR_PAD_LEFT),
+                'nome_encarregado'   => "Encarregado {$i}",
+                'contacto_encarregado' => '923' . str_pad((string) (300000 + $i), 6, '0', STR_PAD_LEFT),
+                'ativo'              => true,
             ]);
         }
 
-        $anos = [
-            ['2023/2024', '2023-09-01', '2024-07-31', true],
-            ['2024/2025', '2024-09-01', '2025-07-31', true],
-            ['2025/2026', '2025-09-01', '2026-07-31', true],
-            ['2026/2027', '2026-09-01', '2027-07-31', false],
-        ];
-
-        $anosIds = [];
+        // ─────────────────────────────────────────
+        // ANO LECTIVO  (único, activo, não encerrado)
+        // ─────────────────────────────────────────
         AnoLetivo::query()->update(['ativo' => false]);
 
-        foreach ($anos as $idx => [$nome, $ini, $fim, $enc]) {
-            $ano = AnoLetivo::updateOrCreate(['nome' => $nome], [
-                'data_inicio' => $ini,
-                'data_fim' => $fim,
-                'encerrado' => $enc,
-                'ativo' => $idx === 3,
-            ]);
+        $anoLetivo = AnoLetivo::updateOrCreate(
+            ['nome' => '2025/2026'],
+            [
+                'data_inicio' => '2025-09-01',
+                'data_fim'    => '2026-07-31',
+                'encerrado'   => false,
+                'ativo'       => true,
+            ]
+        );
 
-            $anosIds[] = $ano->id;
-        }
+        // ─────────────────────────────────────────
+        // ÁREA DE FORMAÇÃO + CURSO
+        // ─────────────────────────────────────────
+        $area = AreaFormacao::firstOrCreate(['nome' => 'Ciências'], [
+            'descricao' => 'Cursos da área de ciências gerais.',
+            'ativo'     => true,
+        ]);
 
         $cfb = Curso::firstOrCreate(['codigo' => 'CFB'], [
-            'nome' => 'Ciências Físicas e Biológicas',
-            'coordenador_id' => $professores[0]->id,
-            'ativo' => true,
+            'nome'              => 'Ciências Físicas e Biológicas',
+            'area_formacao_id'  => $area->id,
+            'coordenador_id'    => $professores[0]->id,
+            'ativo'             => true,
         ]);
 
-        $cej = Curso::firstOrCreate(['codigo' => 'CEJ'], [
-            'nome' => 'Ciências Económicas e Jurídicas',
-            'coordenador_id' => $professores[4]->id,
-            'ativo' => true,
-        ]);
+        $cfb->update(['area_formacao_id' => $area->id]);
 
-        $area = AreaFormacao::firstOrCreate(['nome' => 'Ciencias'], [
-            'descricao' => 'Cursos da area de ciencias gerais.',
-            'ativo' => true,
-        ]);
-
-        foreach ([$cfb, $cej] as $curso) {
-            $curso->update(['area_formacao_id' => $area->id]);
-        }
-
-        $discData = [
-            ['MAT', 'Matemática', 1, 1, 1, 0, 1],
-            ['FIS', 'Física', 1, 1, 1, 0, 1],
-            ['QUI', 'Química', 1, 1, 1, 0, 1],
-            ['BIO', 'Biologia', 1, 1, 1, 0, 1],
-            ['LP', 'Língua Portuguesa', 1, 1, 1, 0, 1],
-            ['ING', 'Inglês', 1, 1, 1, 0, 1],
-            ['HIS', 'História', 1, 1, 1, 0, 1],
-            ['GEO', 'Geografia', 1, 1, 1, 0, 1],
-            ['EF', 'Educação Física', 1, 1, 1, 0, 1],
-            ['TIC', 'TIC', 1, 0, 0, 0, 1],
-            ['FIL', 'Filosofia', 0, 1, 1, 0, 1],
-            ['EMP', 'Empreendedorismo', 0, 0, 1, 0, 1],
-            ['PTEC', 'Projecto Tecnológico', 0, 0, 0, 1, 1],
+        // ─────────────────────────────────────────
+        // DISCIPLINAS DA 10ª CLASSE
+        // ─────────────────────────────────────────
+        $discData10 = [
+            //  código  nome                   l10 l11 l12 l13 terminal  prof_idx
+            ['MAT',  'Matemática',              1,  1,  1,  0,  true,   0],
+            ['FIS',  'Física',                  1,  1,  1,  0,  true,   1],
+            ['QUI',  'Química',                 1,  1,  1,  0,  true,   2],
+            ['BIO',  'Biologia',                1,  1,  1,  0,  true,   3],
+            ['LP',   'Língua Portuguesa',       1,  1,  1,  0,  true,   4],
+            ['ING',  'Inglês',                  1,  1,  1,  0,  true,   5],
+            ['HIS',  'História',                1,  1,  1,  0,  true,   6],
+            ['GEO',  'Geografia',               1,  1,  1,  0,  true,   7],
+            ['EF',   'Educação Física',         1,  1,  1,  0,  true,   8],
+            ['TIC',  'TIC',                     1,  0,  0,  0,  true,   9],
         ];
 
         $disciplinas = [];
-        foreach ($discData as [$cod, $nome, $l10, $l11, $l12, $l13, $terminal]) {
+        $profMap     = [];
+
+        foreach ($discData10 as [$cod, $nome, $l10, $l11, $l12, $l13, $terminal, $profIdx]) {
             $disciplinas[$cod] = Disciplina::updateOrCreate(['codigo' => $cod], [
-                'nome' => $nome,
-                'leciona_10' => $l10,
-                'leciona_11' => $l11,
-                'leciona_12' => $l12,
-                'leciona_13' => $l13,
-                'disciplina_terminal' => $terminal,
-                'ativo' => true,
+                'nome'                 => $nome,
+                'leciona_10'           => $l10,
+                'leciona_11'           => $l11,
+                'leciona_12'           => $l12,
+                'leciona_13'           => $l13,
+                'disciplina_terminal'  => $terminal,
+                'ativo'                => true,
+            ]);
+            $profMap[$cod] = $profIdx;
+        }
+
+        // Associar disciplinas ao curso
+        $anoTerminalPorDisc = [
+            'MAT' => 12, 'FIS' => 12, 'QUI' => 12, 'BIO' => 12,
+            'LP'  => 12, 'ING' => 12, 'HIS' => 12, 'GEO' => 12,
+            'EF'  => 12, 'TIC' => 10,
+        ];
+
+        foreach ($disciplinas as $cod => $disc) {
+            $cfb->disciplinas()->syncWithoutDetaching([
+                $disc->id => ['ano_terminal' => $anoTerminalPorDisc[$cod] ?? null],
             ]);
         }
 
-        $profMap = [
-            'MAT' => 0,
-            'FIS' => 1,
-            'QUI' => 2,
-            'BIO' => 3,
-            'LP' => 4,
-            'ING' => 5,
-            'HIS' => 6,
-            'GEO' => 7,
-            'EF' => 8,
-            'TIC' => 9,
-            'FIL' => 10,
-            'EMP' => 11,
-            'PTEC' => 12,
-        ];
+        // ─────────────────────────────────────────
+        // TURMA  10-A
+        // ─────────────────────────────────────────
+        $turma = Turma::firstOrCreate([
+            'nome'          => 'A',
+            'classe'        => '10',
+            'curso_id'      => $cfb->id,
+            'ano_letivo_id' => $anoLetivo->id,
+        ], [
+            'coordenador_turma_id' => $professores[0]->id,
+            'capacidade'           => 40,
+            'turno'                => 'M',
+            'ativo'                => true,
+        ]);
 
-        $classDiscs = [
-            '10' => ['MAT', 'FIS', 'QUI', 'BIO', 'LP', 'ING', 'HIS', 'GEO', 'EF', 'TIC'],
-            '11' => ['MAT', 'FIS', 'QUI', 'BIO', 'LP', 'ING', 'HIS', 'GEO', 'EF', 'FIL'],
-            '12' => ['MAT', 'FIS', 'QUI', 'BIO', 'LP', 'ING', 'HIS', 'GEO', 'EF', 'FIL', 'EMP'],
-            '13' => ['PTEC'],
-        ];
+        // Disciplinas na turma
+        $discIds = array_map(fn ($d) => $d->id, array_values($disciplinas));
+        $turma->disciplinas()->sync($discIds);
 
-        $disciplinasTerminaisPorClasse = [
-            'MAT' => 12,
-            'FIS' => 12,
-            'QUI' => 12,
-            'BIO' => 12,
-            'LP' => 12,
-            'ING' => 12,
-            'HIS' => 12,
-            'GEO' => 12,
-            'EF' => 12,
-            'TIC' => 10,
-            'FIL' => 12,
-            'EMP' => 12,
-            'PTEC' => 13,
-        ];
+        // Professores na turma
+        DB::table('professor_turma_disciplina')
+            ->where('turma_id', $turma->id)
+            ->where('ano_letivo_id', $anoLetivo->id)
+            ->whereNotIn('disciplina_id', $discIds)
+            ->delete();
 
-        foreach ([$cfb, $cej] as $curso) {
-            foreach ($disciplinas as $codigo => $disciplina) {
-                $curso->disciplinas()->syncWithoutDetaching([
-                    $disciplina->id => ['ano_terminal' => $disciplinasTerminaisPorClasse[$codigo] ?? null],
-                ]);
-            }
+        foreach ($disciplinas as $cod => $disc) {
+            DB::table('professor_turma_disciplina')->updateOrInsert(
+                [
+                    'professor_id'  => $professores[$profMap[$cod]]->id,
+                    'turma_id'      => $turma->id,
+                    'disciplina_id' => $disc->id,
+                    'ano_letivo_id' => $anoLetivo->id,
+                ],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
         }
 
-        for ($year = 0; $year < 4; $year++) {
-            $classe = (string) (10 + $year);
-            $anoId = $anosIds[$year];
+        // ─────────────────────────────────────────
+        // MATRÍCULAS + NOTAS DOS ALUNOS
+        // ─────────────────────────────────────────
+        foreach ($alunos as $idx => $aluno) {
 
-            foreach ([['A', $cfb, array_slice($alunos, 0, 15)], ['B', $cej, array_slice($alunos, 15, 15)]] as [$nome, $curso, $grupo]) {
-                $turma = Turma::firstOrCreate([
-                    'nome' => $nome,
-                    'classe' => $classe,
-                    'curso_id' => $curso->id,
-                    'ano_letivo_id' => $anoId,
-                ], [
-                    'coordenador_turma_id' => $professores[$nome === 'A' ? 0 : 4]->id,
-                    'capacidade' => 40,
-                    'turno' => 'M',
-                    'ativo' => true,
-                ]);
+            // Status variado para ter dados realistas
+            $status = match (true) {
+                in_array($idx, [1, 9], true)  => 'reprovado',
+                in_array($idx, [3, 12], true) => 'recurso',
+                $idx === 5                    => 'aprovado',
+                default                       => 'matriculado',
+            };
 
-                $ids = array_map(fn ($c) => $disciplinas[$c]->id, $classDiscs[$classe]);
-                $turma->disciplinas()->sync($ids);
+            DB::table('turma_aluno')->updateOrInsert(
+                ['turma_id' => $turma->id, 'aluno_id' => $aluno->id],
+                [
+                    'data_matricula' => '2024-09-01',
+                    'status'         => $status,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]
+            );
 
-                DB::table('professor_turma_disciplina')
-                    ->where('turma_id', $turma->id)
-                    ->where('ano_letivo_id', $anoId)
-                    ->whereNotIn('disciplina_id', $ids)
-                    ->delete();
+            // Base de nota por perfil do aluno
+            $base = match (true) {
+                in_array($idx, [1, 9], true)  => 8.2,   // reprovados
+                in_array($idx, [3, 12], true) => 9.0,   // recurso
+                default                       => 11.5 + (($idx % 5) - 2),
+            };
 
-                foreach ($classDiscs[$classe] as $cod) {
-                    $profId = $professores[$profMap[$cod]]->id;
+            foreach ($discIds as $discId) {
 
-                    DB::table('professor_turma_disciplina')->updateOrInsert(
+                $mac  = (float) max(0, min(20, round($base,        2)));
+                $pt3  = (float) max(0, min(20, round($base,        2)));
+                $cf   = (float) max(0, min(20, round($base,        2)));
+                $cfd  = (float) max(0, min(20, round($base,        2)));
+
+                // Nota de recurso apenas para os alunos em recurso
+                $notaRecurso = match ($idx) {
+                    3  => 11.2,
+                    12 => 9.3,
+                    default => null,
+                };
+
+                $nota = Nota::updateOrCreate(
+                    [
+                        'aluno_id'      => $aluno->id,
+                        'turma_id'      => $turma->id,
+                        'disciplina_id' => $discId,
+                        'ano_letivo_id' => $anoLetivo->id,
+                    ],
+                    [
+                        // 1.º trimestre
+                        'mac1' => $mac,
+                        'pp1'  => $mac,
+                        'pt1'  => $mac,
+                        'mt1'  => $mac,
+                        // 2.º trimestre
+                        'mac2' => $mac,
+                        'pp2'  => $mac,
+                        'pt2'  => $mac,
+                        'mt2'  => $mac,
+                        'mft2' => $mac,
+                        // 3.º trimestre
+                        'mac3' => $mac,
+                        'pp3'  => $mac,
+                        'pt3'  => $pt3,
+                        'pg'   => null,
+                        'mt3'  => $mac,
+                        // Classificações finais
+                        'cf'          => $cf,
+                        'ca'          => $cf,
+                        'cfd'         => $cfd,
+                        'nota_recurso'=> $notaRecurso,
+                        'status'      => 'finalizado',
+                    ]
+                );
+
+                // ─────────────────────────────────
+                // AVALIAÇÕES CONTÍNUAS (2 por trimestre)
+                // ─────────────────────────────────
+                foreach ([1, 2, 3] as $tri) {
+                    $macTri = (float) $nota->{'mac' . $tri};
+
+                    AvaliacaoContinua::updateOrCreate(
                         [
-                            'professor_id' => $profId,
-                            'turma_id' => $turma->id,
-                            'disciplina_id' => $disciplinas[$cod]->id,
-                            'ano_letivo_id' => $anoId,
+                            'nota_id'   => $nota->id,
+                            'trimestre' => $tri,
+                            'descricao' => "AC {$tri}.1",
                         ],
-                        ['updated_at' => now(), 'created_at' => now()]
-                    );
-                }
-
-                foreach ($grupo as $idx => $aluno) {
-                    $status = 'matriculado';
-                    if ($year < 3) {
-                        if (in_array($idx, [1, 9], true)) {
-                            $status = 'reprovado';
-                        }
-                        if (in_array($idx, [3, 12], true)) {
-                            $status = 'recurso';
-                        }
-                        if (in_array($idx, [5], true)) {
-                            $status = 'concluido';
-                        }
-                        if ($idx === 3 && $year === 1) {
-                            $status = 'aprovado';
-                        }
-                    }
-
-                    DB::table('turma_aluno')->updateOrInsert(
-                        ['turma_id' => $turma->id, 'aluno_id' => $aluno->id],
                         [
-                            'data_matricula' => now()->subYears(3 - $year)->toDateString(),
-                            'status' => $status,
-                            'updated_at' => now(),
-                            'created_at' => now(),
+                            'professor_id'   => $professores[$profMap[
+                                array_search($discId, array_map(fn ($d) => $d->id, $disciplinas))
+                                    ?: array_key_first($profMap)
+                            ] ?? $professores[0]->id]->id
+                                ?? $professores[0]->id,
+                            'valor'          => max(0, min(20, round($macTri - 0.5, 2))),
+                            'data_avaliacao' => now()->subDays(20),
                         ]
                     );
 
-                    $base = 11.5 + (($idx % 5) - 2);
-                    if (in_array($idx, [1, 9], true)) {
-                        $base = 8.2;
-                    }
-                    if (in_array($idx, [3, 12], true)) {
-                        $base = 9.0;
-                    }
-
-                    foreach ($ids as $discId) {
-                        $pg = max(0, min(20, round($base + 0.4, 2)));
-                        $cf = max(0, min(20, round($base, 2)));
-                        $cfd = max(0, min(20, round($base, 2)));
-                        $notaRecurso = null;
-
-                        if (in_array($idx, [3, 12], true)) {
-                            $notaRecurso = $idx === 3 ? 11.2 : 9.3;
-                        }
-
-                        Nota::updateOrCreate(
-                            [
-                                'aluno_id' => $aluno->id,
-                                'turma_id' => $turma->id,
-                                'disciplina_id' => $discId,
-                                'ano_letivo_id' => $anoId,
-                            ],
-                            [
-                                'mac1' => $cf,
-                                'pp1' => $cf,
-                                'pt1' => $cf,
-                                'mt1' => $cf,
-                                'mac2' => $cf,
-                                'pp2' => $cf,
-                                'pt2' => $cf,
-                                'mt2' => $cf,
-                                'mft2' => $cf,
-                                'mac3' => $cf,
-                                'pp3' => $cf,
-                                'pg' => $pg,
-                                'mt3' => $cf,
-                                'cf' => $cf,
-                                'ca' => $cf,
-                                'cfd' => $cfd,
-                                'nota_recurso' => $notaRecurso,
-                                'status' => 'finalizado',
-                            ]
-                        );
-                    }
-
-                    if ($classe === '13') {
-                        $ecs = max(0, min(20, round($base + 0.2, 2)));
-                        $pap = max(0, min(20, round($base + 0.8, 2)));
-
-                        ClassificacaoEnsinoMedio::updateOrCreate(
-                            [
-                                'aluno_id' => $aluno->id,
-                                'turma_id' => $turma->id,
-                                'ano_letivo_id' => $anoId,
-                            ],
-                            [
-                                'ecs' => $ecs,
-                                'pap' => $pap,
-                                'observacoes' => $idx % 2 === 0
-                                    ? 'Registo automático da classificação final da 13ª classe.'
-                                    : 'Aluno apto para avaliação final da 13ª classe.',
-                            ]
-                        );
-                    }
+                    AvaliacaoContinua::updateOrCreate(
+                        [
+                            'nota_id'   => $nota->id,
+                            'trimestre' => $tri,
+                            'descricao' => "AC {$tri}.2",
+                        ],
+                        [
+                            'professor_id'   => $professores[0]->id,
+                            'valor'          => max(0, min(20, round($macTri + 0.5, 2))),
+                            'data_avaliacao' => now()->subDays(10),
+                        ]
+                    );
                 }
             }
         }
-
-        $professorPadrao = $professores[0];
-        Nota::query()->limit(120)->get()->each(function (Nota $nota) use ($professorPadrao) {
-            foreach ([1, 2, 3] as $tri) {
-                AvaliacaoContinua::updateOrCreate(
-                    ['nota_id' => $nota->id, 'trimestre' => $tri, 'descricao' => "AC {$tri}.1"],
-                    [
-                        'professor_id' => $professorPadrao->id,
-                        'valor' => max(0, min(20, round(((float) $nota->{'mac'.$tri}) - 0.5, 2))),
-                        'data_avaliacao' => now()->subDays(20),
-                    ]
-                );
-
-                AvaliacaoContinua::updateOrCreate(
-                    ['nota_id' => $nota->id, 'trimestre' => $tri, 'descricao' => "AC {$tri}.2"],
-                    [
-                        'professor_id' => $professorPadrao->id,
-                        'valor' => max(0, min(20, round(((float) $nota->{'mac'.$tri}) + 0.5, 2))),
-                        'data_avaliacao' => now()->subDays(10),
-                    ]
-                );
-            }
-        });
     }
 }

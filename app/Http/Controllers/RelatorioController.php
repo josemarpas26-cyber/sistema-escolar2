@@ -992,7 +992,7 @@ class RelatorioController extends Controller
             ?? AnoLetivo::ativo()->value('id');
 
         if (! $anoLetivoId) {
-            return back()->with('error', 'Nenhum ano lectivo encontrado.');
+            return back()->with('error', 'Nenhum ano letivo encontrado.');
         }
 
         $alunoSelecionado = null;

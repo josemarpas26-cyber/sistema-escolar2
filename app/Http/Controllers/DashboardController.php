@@ -23,7 +23,7 @@ class DashboardController extends Controller
             $user->isSecretaria() => $this->secretariaDashboard(),
             $user->isProfessor()  => $this->professorDashboard(),
             $user->isAluno()      => $this->alunoDashboard(),
-            default               => abort(403, 'Papel de usuário não reconhecido'),
+            default               => abort(403, 'Papel de utilizador não reconhecido'),
         };
     }
 

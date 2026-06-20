@@ -128,7 +128,7 @@ class FocusModeController extends Controller
         $idsParaAlterar = array_values(array_diff($validated['user_ids'], $idsSemAlteracao));
 
         if (empty($idsParaAlterar)) {
-            return back()->with('warning', 'Modo Foco: nenhum registo foi alterado, pois todos já estavam com esse status.');
+            return back()->with('warning', 'Modo Foco: nenhum registo foi alterado, pois todos já estavam com esse estado.');
         }
 
         $afetados = 0;
@@ -148,7 +148,7 @@ class FocusModeController extends Controller
         $mensagem = "Modo Foco aplicado: {$afetados} registo(s) atualizado(s) em lote.";
 
         if ($inalterados > 0) {
-            $mensagem .= " {$inalterados} registo(s) já estavam com esse status e foram preservados.";
+            $mensagem .= " {$inalterados} registo(s) já estavam com esse estado e foram preservados.";
         }
 
         return back()->with('success', $mensagem);
@@ -222,13 +222,13 @@ class FocusModeController extends Controller
             }
 
             if (blank($registro['name'] ?? null) || blank($registro['numero_processo'] ?? null) || blank($registro['bi'] ?? null) || blank($registro['data_nascimento'] ?? null)) {
-                $errors[] = "Linha {$linha}: campos obrigatórios ausentes (name, numero_processo, bi, data_nascimento).";
+                $errors[] = "Linha {$linha}: campos obrigatórios ausentes (nome, número de processo, BI e data de nascimento).";
                 continue;
             }
 
             $timestampNascimento = strtotime((string) ($registro['data_nascimento'] ?? ''));
             if ($timestampNascimento === false) {
-                $errors[] = "Linha {$linha}: data_nascimento inválida.";
+                $errors[] = "Linha {$linha}: data de nascimento inválida.";
                 continue;
             }
 

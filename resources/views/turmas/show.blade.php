@@ -340,6 +340,10 @@
                     <p class="font-semibold text-gray-900">{{ $turma->classe }}ª Classe</p>
                 </div>
                 <div>
+                    <span class="text-gray-600">Sala:</span>
+                    <p class="font-semibold text-gray-900">{{ $turma->sala ?: '-' }}</p>
+                </div>
+                <div>
                     <span class="text-gray-600">Coordenador:</span>
                     <p class="font-semibold text-gray-900">
                         @if($turma->coordenador)

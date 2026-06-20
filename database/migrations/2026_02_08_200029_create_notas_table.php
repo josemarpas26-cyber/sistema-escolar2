@@ -43,14 +43,27 @@ return new class extends Migration
             
             // === CLASSIFICAÇÃO FINAL DO CICLO ===
             $table->decimal('cfd', 5, 2)->nullable(); // Classificação Final da Disciplina (calculada)
+            $table->decimal('nota_recurso', 5, 2)->nullable();
             
             // === NOTAS ANTERIORES (para cálculo CFD) ===
             $table->decimal('ca_10', 5, 2)->nullable(); // CA da 10ª (importado)
             $table->decimal('ca_11', 5, 2)->nullable(); // CA da 11ª (importado)
+            $table->decimal('ca_12', 5, 2)->nullable(); // CA da 12ª (importado)
             
             // === CONTROLE ===
             $table->enum('status', ['em_lancamento', 'finalizado'])->default('em_lancamento');
+            $table->boolean('bloqueado_t1')->default(false);
+            $table->boolean('bloqueado_t2')->default(false);
+            $table->boolean('bloqueado_t3')->default(false);
+            $table->boolean('bloqueado_pp1')->default(false);
+            $table->boolean('bloqueado_pt1')->default(false);
+            $table->boolean('bloqueado_pp2')->default(false);
+            $table->boolean('bloqueado_pt2')->default(false);
+            $table->boolean('bloqueado_pp3')->default(false);
+            $table->boolean('bloqueado_pt3')->default(false);
+            $table->boolean('bloqueado_pg')->default(false);
             $table->text('observacoes')->nullable();
+            $table->boolean('usar_divisao_aritmetica_por_2')->default(false);
             
             $table->timestamps();
             
@@ -61,10 +74,27 @@ return new class extends Migration
             $table->index(['turma_id', 'disciplina_id']);
             $table->index(['aluno_id', 'ano_letivo_id']);
         });
+
+        Schema::create('divisao_aritmetica_solicitacoes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('nota_id')->constrained('notas')->cascadeOnDelete();
+            $table->foreignId('professor_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('coordenador_id')->constrained('users')->cascadeOnDelete();
+            $table->string('status')->default('pendente');
+            $table->text('mensagem')->nullable();
+            $table->timestamp('respondida_em')->nullable();
+            $table->foreignId('respondida_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('resposta')->nullable();
+            $table->timestamps();
+
+            $table->index(['coordenador_id', 'status']);
+            $table->index(['professor_id', 'status']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('divisao_aritmetica_solicitacoes');
         Schema::dropIfExists('notas');
     }
 };

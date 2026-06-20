@@ -15,7 +15,7 @@ class CheckPermission
         }
 
         if (!$request->user()?->hasPermission($permission)) {
-            abort(403, 'Você não tem permissão para acessar esta página.');
+            abort(403, 'Você não tem permissão para aceder a esta página.');
         }
 
         return $next($request);

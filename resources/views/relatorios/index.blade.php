@@ -231,6 +231,7 @@
     </div>
 
 
+    @if(auth()->user()?->isAdmin() || auth()->user()?->isSecretaria())
     {{-- ================= HISTÓRICOS (ABAS) ================= --}}
     <div class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50">
@@ -312,7 +313,7 @@
             </div>
         </div>
     </div>
-
+    @endif
 </div>
 @endsection
 

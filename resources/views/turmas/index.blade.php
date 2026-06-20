@@ -19,6 +19,7 @@
                     <th style="padding:10px 20px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Turma</th>
                     <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Curso</th>
                     <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Classe</th>
+                    <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Sala</th>
                     <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Alunos</th>
                     <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Ano Letivo</th>
                     <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);">Turno</th>
@@ -51,6 +52,9 @@
                     </td>
                     <td style="padding:14px 16px;text-align:center;">
                         <x-badge type="primary">{{ $turma->classe }}ª</x-badge>
+                    </td>
+                    <td style="padding:14px 16px;text-align:center;">
+                        <span style="font-size:13px;color:var(--text-secondary);">{{ $turma->sala ?: '—' }}</span>
                     </td>
                     <td style="padding:14px 16px;">
                         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">

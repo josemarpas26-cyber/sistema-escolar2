@@ -27,7 +27,7 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         if ($user->isAluno() || $user->isProfessor()) {
-            abort(403, 'Nao tem permissao para editar informacoes de perfil. Apenas a senha pode ser alterada.');
+            abort(403, 'Não tem permissão para editar as informações de perfil. Apenas a senha pode ser alterada.');
         }
 
         $validated = $request->validate([
@@ -37,12 +37,12 @@ class ProfileController extends Controller
             'endereco' => ['nullable', 'string', 'max:255'],
             'foto_perfil' => ['nullable', 'image', 'max:2048'],
         ], [
-            'name.required' => 'O nome e obrigatorio',
-            'email.required' => 'O email e obrigatorio',
-            'email.email' => 'Insira um email valido',
-            'email.unique' => 'Este email ja esta em uso',
-            'foto_perfil.image' => 'O arquivo deve ser uma imagem',
-            'foto_perfil.max' => 'A imagem nao pode exceder 2MB',
+            'name.required' => 'O nome é obrigatório.',
+            'email.required' => 'O email é obrigatório.',
+            'email.email' => 'Insira um email válido.',
+            'email.unique' => 'Este email já está em uso.',
+            'foto_perfil.image' => 'O ficheiro deve ser uma imagem.',
+            'foto_perfil.max' => 'A imagem não pode exceder 2 MB.',
         ]);
 
         $emailAnterior = $user->email;
@@ -77,10 +77,10 @@ class ProfileController extends Controller
             'current_password' => ['required', 'current_password'],
             'password' => ['required', Password::defaults(), 'confirmed'],
         ], [
-            'current_password.required' => 'A senha atual e obrigatoria',
-            'current_password.current_password' => 'A senha atual esta incorreta',
-            'password.required' => 'A nova senha e obrigatoria',
-            'password.confirmed' => 'As senhas nao coincidem',
+            'current_password.required' => 'A senha atual é obrigatória.',
+            'current_password.current_password' => 'A senha atual está incorreta.',
+            'password.required' => 'A nova senha é obrigatória.',
+            'password.confirmed' => 'As senhas não coincidem.',
         ]);
 
         $request->user()->update([
@@ -95,14 +95,14 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if ($user->isAluno() || $user->isProfessor()) {
-            abort(403, 'Nao tem permissao para deletar a sua conta. Contacte a administracao.');
+            abort(403, 'Não tem permissão para eliminar a sua conta. Contacte a administração.');
         }
 
         $request->validate([
             'password' => ['required', 'current_password'],
         ], [
-            'password.required' => 'A senha e obrigatoria',
-            'password.current_password' => 'A senha esta incorreta',
+            'password.required' => 'A senha é obrigatória.',
+            'password.current_password' => 'A senha está incorreta.',
         ]);
 
         Auth::logout();
