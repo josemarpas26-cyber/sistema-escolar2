@@ -10,6 +10,13 @@
 [x-cloak] { display: none !important; }
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Prevent flex children from collapsing to character-wide columns on mobile. */
+.flex,
+.inline-flex {
+    min-width: 0;
+}
+
+
 :root {
     --font-body: var(--font-sans, 'Plus Jakarta Sans', system-ui, sans-serif);
     --font-display: var(--font-sans, 'Plus Jakarta Sans', system-ui, sans-serif);
@@ -140,6 +147,8 @@
 html,
 body {
     min-height: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 html {
