@@ -447,7 +447,7 @@
             display: flex; align-items: center; gap: 12px;
             width: 100%; min-width: 0;
             padding: 0 1rem;
-            overflow: hidden;
+            overflow: visible;
         }
         .topbar-menu-btn {
             background: none; border: none;
@@ -471,14 +471,17 @@
 
         }
         .topbar-breadcrumb {
-            display: none; align-items: center; gap: 6px;
+            display: flex; align-items: center; gap: 6px;
             font-size: 11.5px; color: var(--tx-4);
             margin-top: 1px;
             min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        @media (min-width: 640px) { .topbar-breadcrumb { display: flex; } }
         @media (min-width: 769px) { .topbar-page-title { font-size: 1.25rem; } }
         .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 0; }
+        .topbar-actions > div { display: flex; align-items: center; gap: 10px; }
         .topbar-actions > * { flex-shrink: 0; }
 
         .theme-toggle {
@@ -533,12 +536,40 @@
             .topbar {
                 gap: 12px;
                 padding-inline: 14px;
+                padding-block: 10px;
+                height: auto;
+                min-height: var(--topbar-h);
+                align-items: flex-start;
+                flex-wrap: wrap;
+                overflow: visible;
+            }
+            .topbar-title {
+                flex: 1 1 calc(100% - 48px);
+                min-width: 0;
             }
             .topbar-page-title {
                 font-size: 1rem;
             }
+            .topbar-breadcrumb {
+                display: flex;
+            }
             .topbar-actions {
+                width: 100%;
+                flex: 1 1 100%;
+                flex-wrap: wrap;
                 gap: 8px;
+                padding-left: 44px;
+                min-width: 0;
+            }
+            .topbar-actions > div {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                min-width: 0;
+            }
+            .topbar-actions > *,
+            .topbar-actions > div > * {
+                flex-shrink: 0;
             }
            .topbar-actions .btn {
                 padding-inline: 10px;
