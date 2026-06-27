@@ -110,13 +110,13 @@ class DemoDataSeeder extends Seeder
         // ─────────────────────────────────────────
         // ÁREA DE FORMAÇÃO + CURSO
         // ─────────────────────────────────────────
-        $area = AreaFormacao::firstOrCreate(['nome' => 'Ciências'], [
+        $area = AreaFormacao::firstOrCreate(['nome' => 'Informática de gestão'], [
             'descricao' => 'Cursos da área de ciências gerais.',
             'ativo'     => true,
         ]);
 
-        $cfb = Curso::firstOrCreate(['codigo' => 'CFB'], [
-            'nome'              => 'Ciências Físicas e Biológicas',
+        $cfb = Curso::firstOrCreate(['codigo' => 'GSI'], [
+            'nome'              => 'Gestão de sistemas informáticos',
             'area_formacao_id'  => $area->id,
             'coordenador_id'    => $professores[0]->id,
             'ativo'             => true,

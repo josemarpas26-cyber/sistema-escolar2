@@ -8,7 +8,10 @@ use App\Support\ProfilePhotoStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Contracts\Notifications\Dispatcher as NotificationDispatcher;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class User extends Authenticatable
 {
@@ -44,6 +47,23 @@ class User extends Authenticatable
         'ativo' => 'boolean',
     ];
 
+    /**
+     * Envia notificacoes sem interromper o fluxo principal quando o ambiente
+     * nao permite SMTP, broadcast ou outro canal externo.
+     */
+    public function notify($instance): void
+    {
+        try {
+            app(NotificationDispatcher::class)->send($this, $instance);
+        } catch (Throwable $exception) {
+            Log::warning('Notificacao descartada por falha no canal de envio.', [
+                'user_id' => $this->getKey(),
+                'notification' => is_object($instance) ? $instance::class : gettype($instance),
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
     // === RELACIONAMENTOS ===
 
     public function role()
