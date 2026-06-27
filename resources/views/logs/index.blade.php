@@ -17,27 +17,36 @@
 
 {{-- Filtros --}}
 <x-card title="Filtros" icon="fas fa-filter" class="mb-6">
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-         @csrf
-        <input type="text" name="utilizador" value="{{ request('utilizador') }}" placeholder="Pesquisar utilizador" class="input">
-        <input type="text" name="turma"      value="{{ request('turma') }}"      placeholder="Pesquisar turma"      class="input">
-        <input type="text" name="curso"      value="{{ request('curso') }}"      placeholder="Pesquisar curso"      class="input">
-        <input type="text" name="disciplina" value="{{ request('disciplina') }}" placeholder="Pesquisar disciplina" class="input">
+    <form method="GET" class="space-y-3">
+        @csrf
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <input type="text" name="utilizador" value="{{ request('utilizador') }}" placeholder="Pesquisar utilizador" class="input w-full">
+            <input type="text" name="turma"      value="{{ request('turma') }}"      placeholder="Pesquisar turma"      class="input w-full">
+            <input type="text" name="curso"      value="{{ request('curso') }}"      placeholder="Pesquisar curso"      class="input w-full">
+            <input type="text" name="disciplina" value="{{ request('disciplina') }}" placeholder="Pesquisar disciplina" class="input w-full">
 
-        <select name="acao" class="input">
-            <option value="">Todas as ações</option>
-            <option value="criacao"  @selected(request('acao') === 'criacao') >Criação</option>
-            <option value="edicao"   @selected(request('acao') === 'edicao')  >Edição</option>
-            <option value="exclusao" @selected(request('acao') === 'exclusao')>Exclusão</option>
-        </select>
+            <select name="acao" class="input w-full">
+                <option value="">Todas as ações</option>
+                <option value="criacao"  @selected(request('acao') === 'criacao') >Criação</option>
+                <option value="edicao"   @selected(request('acao') === 'edicao')  >Edição</option>
+                <option value="exclusao" @selected(request('acao') === 'exclusao')>Exclusão</option>
+            </select>
 
-        <input type="date" name="data_inicio" value="{{ request('data_inicio') }}" class="input" placeholder="Data inicial">
-        <input type="date" name="data_fim"    value="{{ request('data_fim') }}"    class="input" placeholder="Data final">
+            <div>
+                <label for="logs-data-inicio" class="block text-xs font-medium text-gray-500 mb-1">Data inicial</label>
+                <input id="logs-data-inicio" type="date" name="data_inicio" value="{{ request('data_inicio') }}" class="input w-full">
+            </div>
+            <div>
+                <label for="logs-data-fim" class="block text-xs font-medium text-gray-500 mb-1">Data final</label>
+                <input id="logs-data-fim" type="date" name="data_fim" value="{{ request('data_fim') }}" class="input w-full">
+            </div>
+        </div>
 
         <div class="flex gap-2">
-            <button type="submit" class="btn btn-primary flex-1">Filtrar</button>
-            <a href="{{ route('logs.index') }}" class="btn btn-outline">
-                <i class="fas fa-times"></i>
+            <button type="submit" class="btn btn-primary flex-1 sm:flex-none">Filtrar</button>
+            <a href="{{ route('logs.index') }}" class="btn btn-outline flex-1 sm:flex-none">
+                <i class="fas fa-times mr-2"></i>
+                Limpar
             </a>
         </div>
     </form>

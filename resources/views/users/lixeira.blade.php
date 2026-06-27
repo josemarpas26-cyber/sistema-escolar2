@@ -13,20 +13,28 @@
 
 {{-- Filtro --}}
 <x-card class="mb-6">
-    <form method="GET" class="flex gap-4">
-         @csrf
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Pesquisar por nome ou email..."
-               class="input flex-1">
-        <button type="submit" class="btn btn-primary">
-            <i class="fas fa-search mr-2"></i>
-            Filtrar
-        </button>
-        @if(request('search'))
-        <a href="{{ route('users.lixeira') }}" class="btn btn-outline">
-            <i class="fas fa-times"></i>
-        </a>
-        @endif
+    <form method="GET" class="space-y-3">
+        @csrf
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="sm:col-span-2 lg:col-span-1">
+                <label for="lixeira-search" class="block text-xs font-medium text-gray-500 mb-1">Pesquisar utilizador</label>
+                <input id="lixeira-search" type="text" name="search" value="{{ request('search') }}"
+                       placeholder="Pesquisar por nome ou email..."
+                       class="input w-full">
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary flex-1 sm:flex-none">
+                <i class="fas fa-search mr-2"></i>
+                Filtrar
+            </button>
+            @if(request('search'))
+            <a href="{{ route('users.lixeira') }}" class="btn btn-outline flex-1 sm:flex-none">
+                <i class="fas fa-times mr-2"></i>
+                Limpar
+            </a>
+            @endif
+        </div>
     </form>
 </x-card>
 <br>

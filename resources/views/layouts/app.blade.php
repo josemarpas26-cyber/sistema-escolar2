@@ -445,6 +445,7 @@
             background: var(--surface);
             border-bottom: 1px solid var(--border);
             display: flex; align-items: center; gap: 12px;
+            width: 100%; min-width: 0;
             padding: 0 1rem;
             overflow: hidden;
         }
@@ -452,7 +453,7 @@
             background: none; border: none;
             color: var(--tx-3); cursor: pointer;
             padding: 8px; border-radius: var(--r-sm);
-            display: flex; align-items: center;
+            display: flex; align-items: center; flex-shrink: 0;
             font-size: 18px; transition: color .15s;
         }
         .topbar-menu-btn:hover { color: var(--tx-1); }
@@ -463,17 +464,22 @@
             font-size: 1rem; font-weight: 700;
             color: var(--tx-1);
             letter-spacing: -.4px; line-height: 1.2;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             max-width: 100%;
+
         }
         .topbar-breadcrumb {
             display: none; align-items: center; gap: 6px;
             font-size: 11.5px; color: var(--tx-4);
             margin-top: 1px;
+            min-width: 0;
         }
         @media (min-width: 640px) { .topbar-breadcrumb { display: flex; } }
         @media (min-width: 769px) { .topbar-page-title { font-size: 1.25rem; } }
-        .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 0; }
+        .topbar-actions > * { flex-shrink: 0; }
 
         .theme-toggle {
             width: 36px; height: 36px;
@@ -533,6 +539,10 @@
             }
             .topbar-actions {
                 gap: 8px;
+            }
+           .topbar-actions .btn {
+                padding-inline: 10px;
+                font-size: 12px;
             }
             .main-content {
                 padding: 18px 14px 24px;
