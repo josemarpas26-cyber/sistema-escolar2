@@ -444,7 +444,8 @@
             height: var(--topbar-h);
             background: var(--surface);
             border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 12px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            flex-wrap: nowrap;
             width: 100%; min-width: 0;
             padding: 0 1rem;
             overflow: visible;
@@ -539,12 +540,12 @@
                 padding-block: 10px;
                 height: auto;
                 min-height: var(--topbar-h);
-                align-items: flex-start;
-                flex-wrap: wrap;
+                align-items: center;
+                flex-wrap: nowrap;
                 overflow: visible;
             }
             .topbar-title {
-                flex: 1 1 calc(100% - 48px);
+                flex: 1 1 auto;
                 min-width: 0;
             }
             .topbar-page-title {
@@ -554,16 +555,16 @@
                 display: flex;
             }
             .topbar-actions {
-                width: 100%;
-                flex: 1 1 100%;
-                flex-wrap: wrap;
+                width: auto;
+                flex: 0 0 auto;
+                flex-wrap: nowrap;
                 gap: 8px;
-                padding-left: 44px;
-                min-width: 0;
+                padding-left: 0;
+                min-width: auto;
             }
             .topbar-actions > div {
                 display: flex;
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
                 gap: 8px;
                 min-width: 0;
             }
@@ -576,7 +577,7 @@
                 font-size: 12px;
             }
             .main-content {
-                padding: 18px 14px 24px;
+                padding: 16px 14px 24px;
             }
             .alerts-wrap {
                 padding: 14px 14px 0;
@@ -1056,7 +1057,7 @@
 
             <div class="topbar-actions">
                 @yield('header-actions')
-                <button class="theme-toggle" id="darkToggle" aria-label="Alternar tema">
+                <button type="button" class="theme-toggle" id="darkToggle" aria-label="Alternar tema">
                     <i id="themeIcon" class="fas fa-moon"></i>
                 </button>
             </div>
