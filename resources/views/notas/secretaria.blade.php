@@ -66,7 +66,7 @@
                         <select name="disciplina_id" class="nr-input {{ !request('turma_id') ? 'nr-disabled' : '' }}"
                                 {{ !request('turma_id') ? 'disabled' : '' }}
                                 onchange="this.form.submit()">
-                            <option value="" {{ !request('disciplina_id') ? 'selected' : '' }}>SituaÃ§Ã£o final da turma</option>
+                            <option value="" {{ !request('disciplina_id') ? 'selected' : '' }}>Situação final da turma</option>
                             @if(request('turma_id') && $disciplinas->isNotEmpty())
                                 @foreach($disciplinas as $disciplina)
                                     <option value="{{ $disciplina->id }}" {{ request('disciplina_id') == $disciplina->id ? 'selected' : '' }}>
