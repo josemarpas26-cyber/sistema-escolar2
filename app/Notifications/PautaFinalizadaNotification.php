@@ -31,15 +31,15 @@ class PautaFinalizadaNotification extends Notification
     {
         $campoLabel = $this->campo ? strtoupper($this->campo) : null;
         $titulo = $this->campo && $this->trimestre
-            ? "{$campoLabel} do {$this->trimestre}Âº trimestre bloqueado"
+            ? "{$campoLabel} do {$this->trimestre}º trimestre bloqueado"
             : ($this->trimestre
-                ? "{$this->trimestre}Âº trimestre finalizado"
+                ? "{$this->trimestre}º trimestre finalizado"
                 : 'Pauta finalizada');
 
         $descricao = $this->campo && $this->trimestre
-            ? "A secretaria bloqueou o campo {$campoLabel} do {$this->trimestre}Âº trimestre."
+            ? "A secretaria bloqueou o campo {$campoLabel} do {$this->trimestre}º trimestre."
             : ($this->trimestre
-                ? "A secretaria finalizou e bloqueou o {$this->trimestre}Âº trimestre da pauta."
+                ? "A secretaria finalizou e bloqueou o {$this->trimestre}º trimestre da pauta."
                 : 'A secretaria finalizou a pauta e bloqueou novas edições.');
 
         return [
@@ -53,6 +53,7 @@ class PautaFinalizadaNotification extends Notification
             'campo' => $this->campo,
             'motivo' => $this->motivo,
             'autor_nome' => $this->autor->name,
+            'tipo' => 'pauta_finalizada',
             'link' => route('notas.professor-index', [
                 'turma_id' => $this->turma->id,
                 'disciplina_id' => $this->disciplina->id,

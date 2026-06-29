@@ -53,6 +53,7 @@ class PautaDesbloqueadaNotification extends Notification
             'campo' => $this->campo,
             'motivo' => $this->motivo,
             'autor_nome' => $this->autor->name,
+            'tipo' => 'pauta_reaberta',
             'link' => route('notas.professor-index', [
                 'turma_id' => $this->turma->id,
                 'disciplina_id' => $this->disciplina->id,
