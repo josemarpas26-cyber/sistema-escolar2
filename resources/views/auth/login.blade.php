@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="auth-title">Bem-vindo de volta</div>
+<div class="auth-title">Bem-vindo ao SIGA</div>
 <p class="auth-subtitle">Entre com as suas credenciais para aceder ao sistema</p>
 
 <form method="POST" action="{{ route('login') }}">
@@ -91,15 +91,15 @@
     <div class="auth-demo-title">Credenciais de demonstração</div>
     <div class="auth-demo-row">
         <span class="auth-demo-role">Administrador</span>
-        <span class="auth-demo-cred">admin@escola.ao / password</span>
+        <span class="auth-demo-cred">admin@escola.ao</span>
     </div>
     <div class="auth-demo-row">
         <span class="auth-demo-role">Aluno (Nº Processo)</span>
-        <span class="auth-demo-cred">2024001 / password</span>
+        <span class="auth-demo-cred">2024001</span>
     </div>
     <div class="auth-demo-row">
         <span class="auth-demo-role">Aluno (email)</span>
-        <span class="auth-demo-cred">aluno1@escola.ao / password</span>
+        <span class="auth-demo-cred">aluno1@escola.ao</span>
     </div>
 </div>
 
