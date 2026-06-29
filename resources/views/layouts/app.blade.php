@@ -444,10 +444,11 @@
             height: var(--topbar-h);
             background: var(--surface);
             border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 12px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            flex-wrap: nowrap;
             width: 100%; min-width: 0;
             padding: 0 1rem;
-            overflow: hidden;
+            overflow: visible;
         }
         .topbar-menu-btn {
             background: none; border: none;
@@ -471,14 +472,17 @@
 
         }
         .topbar-breadcrumb {
-            display: none; align-items: center; gap: 6px;
+            display: flex; align-items: center; gap: 6px;
             font-size: 11.5px; color: var(--tx-4);
             margin-top: 1px;
             min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        @media (min-width: 640px) { .topbar-breadcrumb { display: flex; } }
         @media (min-width: 769px) { .topbar-page-title { font-size: 1.25rem; } }
         .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 0; }
+        .topbar-actions > div { display: flex; align-items: center; gap: 10px; }
         .topbar-actions > * { flex-shrink: 0; }
 
         .theme-toggle {
@@ -533,19 +537,47 @@
             .topbar {
                 gap: 12px;
                 padding-inline: 14px;
+                padding-block: 10px;
+                height: auto;
+                min-height: var(--topbar-h);
+                align-items: center;
+                flex-wrap: nowrap;
+                overflow: visible;
+            }
+            .topbar-title {
+                flex: 1 1 auto;
+                min-width: 0;
             }
             .topbar-page-title {
                 font-size: 1rem;
             }
+            .topbar-breadcrumb {
+                display: flex;
+            }
             .topbar-actions {
+                width: auto;
+                flex: 0 0 auto;
+                flex-wrap: nowrap;
                 gap: 8px;
+                padding-left: 0;
+                min-width: auto;
+            }
+            .topbar-actions > div {
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 8px;
+                min-width: 0;
+            }
+            .topbar-actions > *,
+            .topbar-actions > div > * {
+                flex-shrink: 0;
             }
            .topbar-actions .btn {
                 padding-inline: 10px;
                 font-size: 12px;
             }
             .main-content {
-                padding: 18px 14px 24px;
+                padding: 16px 14px 24px;
             }
             .alerts-wrap {
                 padding: 14px 14px 0;
@@ -1025,7 +1057,7 @@
 
             <div class="topbar-actions">
                 @yield('header-actions')
-                <button class="theme-toggle" id="darkToggle" aria-label="Alternar tema">
+                <button type="button" class="theme-toggle" id="darkToggle" aria-label="Alternar tema">
                     <i id="themeIcon" class="fas fa-moon"></i>
                 </button>
             </div>

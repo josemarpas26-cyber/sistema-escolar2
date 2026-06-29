@@ -1466,7 +1466,7 @@ svg {
 }
 /* Mobile overflow guards for topbar and page content */
 .topbar {
-    overflow: hidden;
+    overflow: visible;
 }
 
 .topbar-title {
@@ -1483,6 +1483,23 @@ svg {
     max-width: 100%;
 }
 
+.topbar-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar-actions {
+    min-width: 0;
+}
+
+.topbar-actions > div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .main-wrap,
 .main-content {
     min-width: 0;
@@ -1494,6 +1511,33 @@ svg {
 }
 
 @media (max-width: 768px) {
+    .topbar {
+        height: auto;
+        min-height: var(--topbar-h, 64px);
+        align-items: flex-start;
+        flex-wrap: wrap;
+        overflow: visible;
+    }
+
+    .topbar-title {
+        flex: 1 1 calc(100% - 48px);
+    }
+
+    .topbar-breadcrumb {
+        display: flex;
+    }
+
+    .topbar-actions {
+        width: 100%;
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+        padding-left: 44px;
+    }
+
+    .topbar-actions > div {
+        flex-wrap: wrap;
+    }
+
     .main-content {
         padding: 1rem;
         overflow-x: hidden;
