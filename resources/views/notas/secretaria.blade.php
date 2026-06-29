@@ -524,158 +524,77 @@
             </div>
 
             @else
-            {{-- ── TODAS AS DISCIPLINAS ── --}}
-            @if($notasAgrupadas && $notasAgrupadas->isNotEmpty())
-                @foreach($disciplinas as $disc)
-                @php
-                    $notasDaDisciplina = $notas->where('disciplina_id', $disc->id);
-                @endphp
-                @if($notasDaDisciplina->isEmpty()) @continue @endif
-
-                <div class="bg-white dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700/50 mb-6 overflow-hidden">
-                    {{-- Cabeçalho da disciplina --}}
-                    <div class="flex items-center justify-between px-5 py-3 bg-white text-gray-800 dark:bg-gray-800 dark:text-white rounded-t-xl">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-bold text-gray-800 uppercase tracking-widest dark:text-white">{{ $disc->nome }}</span>
-                             <span class="text-xs text-gray-600 dark:text-gray-300">{{ $disc->codigo }}</span>
-                        </div>
-                        @php
-                            $cfds       = $notasDaDisciplina->filter(fn($n) => $n->cfd_efetiva !== null);
-                            $mediaDisc  = $cfds->avg('cfd_efetiva');
-                            $aprovDisc  = $cfds->filter(fn($n) => $n->isAprovado())->count();
-                            $reprovDisc = $cfds->filter(fn($n) => !$n->isAprovado())->count();
-                        @endphp
-                        <div class="flex items-center gap-2 text-xs">
-                            <span class="text-gray-600 dark:text-gray-300">Média:</span>
-                            @if($mediaDisc)
-                                <span class="font-bold text-gray-800 dark:text-white">{{ number_format($mediaDisc,2) }}</span>
-                            @else
-                                <span class="font-bold text-gray-800 dark:text-white">—</span>
-                            @endif
-                            <span class="inline-flex items-center rounded-full border border-green-200 px-2 py-0.5 text-[.63rem] font-bold bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 dark:border-green-700">{{ $aprovDisc }} Apr</span>
-                            <span class="inline-flex items-center rounded-full border border-red-200 px-2 py-0.5 text-[.63rem] font-bold bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 dark:border-red-700">{{ $reprovDisc }} Rep</span>
-                        </div>
-                    </div>
-
-                    {{-- Tabela da disciplina --}}
-                    <div class="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-gray-100 dark:scrollbar-track-slate-800">
-                        <table class="w-full min-w-[900px] border-collapse text-sm">
-                            <thead>
-                                {{-- CORRIGIDO: removida a <tr> duplicada e o <th> CFD duplicado --}}
-                                <tr class="bg-gray-100 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-700/50 text-gray-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-500 dark:text-slate-400 w-10">Nº</th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-500 dark:text-slate-400">Aluno</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MT1</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MT2</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MFT2</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">MT3</th>
-                                    <th class="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20">CFD</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">Estado</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">T1/T2/T3</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">{{ (int) ($turmaSelecionada?->classe ?? 0) === 12 ? 'PP/PT/PG' : 'PP/PT/PT3' }}</th>
-                                    <th class="px-4 py-3 text-center font-semibold text-gray-500 dark:text-slate-400">Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php $cnt = 1; @endphp
-                                @foreach($notasAgrupadas as $alunoId => $dados)
-                                @php
-                                    $nota = $dados['notas']->get($disc->id);
-                                    if (!$nota) continue;
-                                    $aluno  = $dados['aluno'];
-                                    $temCfd = !is_null($nota->cfd_efetiva);
-                                    $aprov  = $temCfd && $nota->isAprovado();
-                                    $locked = ($nota->status ?? '') === 'finalizado' && !$podeReabrirNotas;
-                                    $t1B    = $nota->bloqueado_t1 ?? false;
-                                    $t2B    = $nota->bloqueado_t2 ?? false;
-                                    $t3B    = $nota->bloqueado_t3 ?? false;
-                                    $algumB = $t1B || $t2B || $t3B;
-                                    $ppTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pp1 ?? false) && ($nota->bloqueado_pp2 ?? false) && ($nota->bloqueado_pp3 ?? false));
-                                    $ppParcial = ! $ppTotal && (($nota->bloqueado_pp1 ?? false) || ($nota->bloqueado_pp2 ?? false) || ($nota->bloqueado_pp3 ?? false));
-                                    $usaPgTerceiro = (int) ($nota->turma?->classe ?? 0) === 12;
-                                    $pt3Aplicavel = ! $usaPgTerceiro;
-                                    $ptTotal = ($nota->status ?? '') === 'finalizado' || (($nota->bloqueado_pt1 ?? false) && ($nota->bloqueado_pt2 ?? false) && (! $pt3Aplicavel || ($nota->bloqueado_pt3 ?? false)));
-                                    $ptParcial = ! $ptTotal && (($nota->bloqueado_pt1 ?? false) || ($nota->bloqueado_pt2 ?? false) || ($pt3Aplicavel && ($nota->bloqueado_pt3 ?? false)));
-                                    $pgTotal = $usaPgTerceiro && (($nota->status ?? '') === 'finalizado' || ($nota->bloqueado_pg ?? false));
-                                @endphp
-                                 <tr class="border-b border-gray-100 dark:border-slate-700/30 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors duration-150 group @if($loop->even) bg-white dark:bg-transparent @else bg-gray-50/50 dark:bg-slate-800/10 @endif">
-                                    <td class="px-4 py-3 text-xs text-gray-400 dark:text-slate-500 group-hover:text-gray-700 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $cnt++ }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150">
-                                        <a href="{{ route('users.show', $aluno) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">{{ $aluno->name ?? '—' }}</a>
-                                        <span class="text-gray-400 dark:text-slate-500 text-xs">{{ $aluno->numero_processo ?? '' }}</span>
-                                    </td>
-                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt1 ? number_format($nota->mt1,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt2 ? number_format($nota->mt2,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center font-bold">{{ $nota->mft2 ? number_format($nota->mft2,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-150 text-center">{{ $nota->mt3 ? number_format($nota->mt3,2) : '—' }}</td>
-                                    <td class="px-4 py-3 text-center font-bold text-sm bg-blue-50 dark:bg-blue-900/10">
-                                        @if($temCfd)
-                                            <strong class="{{ $aprov ? 'nr-ok' : 'nr-fail' }}">{{ number_format($nota->cfd_efetiva,2) }}</strong>
-                                            @if($nota->recursoMelhoraClassificacaoFinal())
-                                                <div class="text-[11px] font-semibold text-amber-600 mt-1">Recurso</div>
-                                            @endif
-                                        @else
-                                            <span class="nr-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-center text-sm">
-                                        @if($nota->recursoPendente())
-                                            <span class="nr-badge nr-badge-pend" style="font-size:.62rem;padding:2px 6px;"><i class="fas fa-file-signature"></i> Recurso</span>
-                                        @elseif($temCfd)
-                                            <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold {{ $aprov ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700/50' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700/50' }}" style="font-size:.62rem;padding:2px 6px;">
-                                                <i class="fas {{ $aprov ? 'fa-check' : 'fa-times' }}"></i>
-                                                {{ $aprov ? 'Apr' : 'Rep' }}
-                                            </span>
-                                        @else
-                                            <span class="nr-badge nr-badge-pend" style="font-size:.62rem;padding:2px 6px;"><i class="fas fa-hourglass-half"></i> Pend</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-center text-sm">
-                                        @if(($nota->status ?? '') === 'finalizado' && !$algumB)
-                                            <div class="nr-tri-wrap">
-                                                <span class="nr-tri nr-tri-lock">T1</span>
-                                                <span class="nr-tri nr-tri-lock">T2</span>
-                                                <span class="nr-tri nr-tri-lock">T3</span>
-                                            </div>
-                                        @elseif($algumB)
-                                            <div class="nr-tri-wrap">
-                                                <span class="nr-tri {{ $t1B ? 'nr-tri-lock' : 'nr-tri-open' }}">T1</span>
-                                                <span class="nr-tri {{ $t2B ? 'nr-tri-lock' : 'nr-tri-open' }}">T2</span>
-                                                <span class="nr-tri {{ $t3B ? 'nr-tri-lock' : 'nr-tri-open' }}">T3</span>
-                                            </div>
-                                        @else
-                                            <div class="nr-tri-wrap">
-                                                <span class="nr-tri nr-tri-open">T1</span>
-                                                <span class="nr-tri nr-tri-open">T2</span>
-                                                <span class="nr-tri nr-tri-open">T3</span>
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-center text-sm">
-                                        <div class="nr-tri-wrap">
-                                            <span class="nr-tri {{ $ppTotal ? 'nr-tri-lock' : ($ppParcial ? 'nr-tri-mid' : 'nr-tri-open') }}">PP</span>
-                                            <span class="nr-tri {{ $ptTotal ? 'nr-tri-lock' : ($ptParcial ? 'nr-tri-mid' : 'nr-tri-open') }}">PT</span>
-                                            <span class="nr-tri {{ $usaPgTerceiro ? ($pgTotal ? 'nr-tri-lock' : 'nr-tri-open') : 'nr-tri-mid' }}">{{ $usaPgTerceiro ? 'PG' : 'PT3' }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 text-center text-sm">
-                                        @if($locked)
-                                            <span class="nr-act-lock" title="Finalizado"><i class="fas fa-lock"></i></span>
-                                        @else
-                                            <a href="{{ route('notas.edit', $nota) }}" class="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-blue-300 dark:border-blue-700/40 bg-blue-100 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-600/40 transition-colors duration-150" title="Editar"><i class="fas fa-pen"></i></a>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+            {{-- ── RESUMO DA TURMA ── --}}
+            @if($situacaoFinalAlunos->isNotEmpty())
+                <div class="nr-tbl-scroll-top" id="nr-stop-turma"><div class="nr-tbl-scroll-top-inner" id="nr-stop-turma-inner"></div></div>
+                <div class="nr-tbl-wrap" id="nr-wrap-turma">
+                    <table class="nr-tbl">
+                        <thead>
+                            <tr>
+                                <th style="width:44px;text-align:center">Nº</th>
+                                <th style="min-width:220px;text-align:left">Aluno</th>
+                                <th class="nr-th-c">MT1</th>
+                                <th class="nr-th-c">MT2</th>
+                                <th class="nr-th-c">MT3</th>
+                                <th class="nr-th-c">CF</th>
+                                <th class="nr-th-c nr-th-cfd">Média Final</th>
+                                <th class="nr-th-c">Disciplinas</th>
+                                <th class="nr-th-c">Negativas</th>
+                                <th class="nr-th-c">Recursos</th>
+                                <th class="nr-th-c" style="min-width:140px">Situação</th>
+                                <th style="min-width:220px;text-align:left">Observação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($situacaoFinalAlunos as $item)
+                            @php
+                                $statusClass = match($item['status']) {
+                                    \App\Services\ResultadoAlunoTurmaService::STATUS_TRANSITA => 'nr-badge-ok',
+                                    \App\Services\ResultadoAlunoTurmaService::STATUS_REPROVADO => 'nr-badge-fail',
+                                    default => 'nr-badge-pend',
+                                };
+                                $statusIcon = match($item['status']) {
+                                    \App\Services\ResultadoAlunoTurmaService::STATUS_TRANSITA => 'fa-check',
+                                    \App\Services\ResultadoAlunoTurmaService::STATUS_REPROVADO => 'fa-times',
+                                    default => 'fa-hourglass-half',
+                                };
+                            @endphp
+                            <tr class="{{ $loop->odd ? 'nr-odd' : '' }}">
+                                <td class="nr-td-c nr-muted">{{ $loop->iteration }}</td>
+                                <td>
+                                    <a href="{{ route('users.show', $item['aluno']) }}" class="nr-aluno-link">{{ $item['aluno']->name ?? '—' }}</a>
+                                    <span class="nr-proc">{{ $item['aluno']->numero_processo ?? '' }}</span>
+                                </td>
+                                <td class="nr-td-c">{{ $item['mt1_media'] !== null ? number_format($item['mt1_media'], 2) : '—' }}</td>
+                                <td class="nr-td-c">{{ $item['mt2_media'] !== null ? number_format($item['mt2_media'], 2) : '—' }}</td>
+                                <td class="nr-td-c">{{ $item['mt3_media'] !== null ? number_format($item['mt3_media'], 2) : '—' }}</td>
+                                <td class="nr-td-c">{{ $item['cf_media'] !== null ? number_format($item['cf_media'], 2) : '—' }}</td>
+                                <td class="nr-td-c">
+                                    @if($item['cfd_media'] !== null)
+                                        <strong class="{{ $item['cfd_media'] >= 10 ? 'nr-ok' : 'nr-fail' }}">{{ number_format($item['cfd_media'], 2) }}</strong>
+                                    @else
+                                        <span class="nr-muted">—</span>
+                                    @endif
+                                </td>
+                                <td class="nr-td-c">{{ $item['disciplinas_lancadas'] }}/{{ $item['total_disciplinas'] }}</td>
+                                <td class="nr-td-c">{{ $item['negativas'] }}</td>
+                                <td class="nr-td-c">{{ $item['recursos'] }}</td>
+                                <td class="nr-td-c">
+                                    <span class="nr-badge {{ $statusClass }}">
+                                        <i class="fas {{ $statusIcon }}"></i>
+                                        {{ $item['resultado'] }}
+                                    </span>
+                                </td>
+                                <td class="nr-muted">{{ $item['observacao'] ?: '—' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
-                @endforeach
             @else
                 <div class="nr-empty">
                     <i class="fas fa-clipboard-list" style="font-size:2rem;color:#cbd5e1;display:block;margin-bottom:10px"></i>
-                    Nenhuma nota encontrada para esta turma.
+                    Nenhum aluno encontrado para esta turma.
                 </div>
             @endif
             @endif
