@@ -600,10 +600,14 @@ class NotaPautaTest extends TestCase
 
         Notification::assertSentTo($professor, PautaFinalizadaNotification::class, function ($notification, $channels, $notifiable) {
             $dados = $notification->toArray($notifiable);
+            $broadcast = $notification->toBroadcast($notifiable)->data;
 
             return in_array('database', $channels, true)
                 && in_array('broadcast', $channels, true)
-                && ($dados['trimestre'] ?? null) === '1';
+                && ($dados['trimestre'] ?? null) === '1'
+                && ($dados['tipo'] ?? null) === 'pauta_finalizada'
+                && ($broadcast['tipo'] ?? null) === 'pauta_finalizada'
+                && str_contains($dados['titulo'] ?? '', '1º trimestre');
         });
 
         $this
@@ -616,9 +620,12 @@ class NotaPautaTest extends TestCase
 
         Notification::assertSentTo($professor, PautaDesbloqueadaNotification::class, function ($notification, $channels, $notifiable) {
             $dados = $notification->toArray($notifiable);
+            $broadcast = $notification->toBroadcast($notifiable)->data;
 
             return in_array('database', $channels, true)
                 && in_array('broadcast', $channels, true)
+                && ($dados['tipo'] ?? null) === 'pauta_reaberta'
+                && ($broadcast['tipo'] ?? null) === 'pauta_reaberta'
                 && ($dados['turma_id'] ?? null) !== null
                 && ($dados['disciplina_id'] ?? null) !== null;
         });
