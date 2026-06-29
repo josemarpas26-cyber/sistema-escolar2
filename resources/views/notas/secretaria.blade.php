@@ -164,7 +164,7 @@
                     @if($disciplinaSelecionada)
                         <span style="color:#3b82f6">{{ $disciplinaSelecionada->nome }}</span>
                     @else
-                        <span style="color:#64748b">SituaÃ§Ã£o final da turma</span>
+                        <span style="color:#64748b">Situação final da turma</span>
                     @endif
                 </div>
                 <div class="nr-sel-sub">
