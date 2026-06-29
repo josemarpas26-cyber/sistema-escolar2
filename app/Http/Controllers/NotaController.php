@@ -18,10 +18,12 @@ use App\Notifications\PautaDesbloqueadaNotification;
 use App\Services\EstadoMatriculaService;
 use App\Services\EstatisticasAcademicasService;
 use App\Services\NotaService;
+use App\Services\ResultadoAlunoTurmaService;
 use App\Support\IdMask;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -204,6 +206,8 @@ class NotaController extends Controller
         
         $notas = null;
         $notasAgrupadas = null;
+        $situacaoFinalAlunos = collect();
+        $estatisticasSituacaoFinal = null;
         $turmaSelecionada = null;
         $disciplinaSelecionada = null;
         $estatisticasPauta = null;
@@ -235,12 +239,21 @@ class NotaController extends Controller
             }
 
             if (! $disciplinaSelecionada) {
-                $notasAgrupadas = $notas
-                    ->groupBy('aluno_id')
-                    ->map(fn ($grupo) => [
-                        'aluno' => $grupo->first()->aluno,
-                        'notas' => $grupo->keyBy('disciplina_id'),
-                    ]);
+                $situacaoFinalAlunos = $this->montarSituacaoFinalAlunos(
+                    $turmaSelecionada,
+                    $disciplinas,
+                    $notas,
+                    $request->input('aluno')
+                );
+
+                $estatisticasSituacaoFinal = [
+                    'total' => $situacaoFinalAlunos->count(),
+                    'aprovados' => $situacaoFinalAlunos->where('status', ResultadoAlunoTurmaService::STATUS_TRANSITA)->count(),
+                    'reprovados' => $situacaoFinalAlunos->where('status', ResultadoAlunoTurmaService::STATUS_REPROVADO)->count(),
+                    'recurso' => $situacaoFinalAlunos->where('status', ResultadoAlunoTurmaService::STATUS_RECURSO)->count(),
+                    'pendentes' => $situacaoFinalAlunos->where('status', ResultadoAlunoTurmaService::STATUS_PENDENTE)->count(),
+                    'media_final' => $situacaoFinalAlunos->whereNotNull('cfd_media')->avg('cfd_media'),
+                ];
 
                 if ((int) $turmaSelecionada->classe === 13) {
                     $classificacoesEnsinoMedio = app(\App\Services\ClassificacaoEnsinoMedioService::class)
@@ -254,6 +267,8 @@ class NotaController extends Controller
             'disciplinas',
             'notas',
             'notasAgrupadas',
+            'situacaoFinalAlunos',
+            'estatisticasSituacaoFinal',
             'turmaSelecionada',
             'disciplinaSelecionada',
             'estatisticasPauta',
@@ -1722,6 +1737,72 @@ class NotaController extends Controller
         return redirect()
             ->route('dashboard')
             ->with('error', 'Nenhum ano letivo ativo encontrado. Entre em contacto com a administração.');
+    }
+
+    private function montarSituacaoFinalAlunos(
+        Turma $turma,
+        Collection $disciplinas,
+        Collection $notas,
+        ?string $termoAluno = null
+    ): Collection {
+        $disciplinas = $disciplinas->values();
+        $notasPorAluno = $notas->groupBy('aluno_id');
+
+        $alunosQuery = $turma->alunos()
+            ->wherePivotIn('status', ['matriculado', 'recurso', 'aprovado', 'reprovado']);
+
+        if (filled($termoAluno)) {
+            $alunosQuery->where(function ($query) use ($termoAluno) {
+                $query->where('name', 'like', "%{$termoAluno}%")
+                    ->orWhere('numero_processo', 'like', "%{$termoAluno}%");
+            });
+        }
+
+        $resultadoAlunoService = app(ResultadoAlunoTurmaService::class);
+
+        return $alunosQuery
+            ->get()
+            ->map(function (User $aluno) use ($turma, $disciplinas, $notasPorAluno, $resultadoAlunoService) {
+                $notasAluno = $notasPorAluno->get($aluno->id, collect());
+                $resultado = $resultadoAlunoService->avaliar($turma, $disciplinas, $notasAluno);
+                $notasComFinal = $notasAluno->filter(fn (Nota $nota) => $nota->cfd_efetiva !== null);
+
+                return [
+                    'aluno' => $aluno,
+                    'status_matricula' => $aluno->pivot?->status,
+                    'mt1_media' => $this->mediaCampoNotas($notasAluno, 'mt1'),
+                    'mt2_media' => $this->mediaCampoNotas($notasAluno, 'mt2'),
+                    'mt3_media' => $this->mediaCampoNotas($notasAluno, 'mt3'),
+                    'cf_media' => $this->mediaCampoNotas($notasAluno, 'cf'),
+                    'cfd_media' => $notasComFinal->isNotEmpty()
+                        ? round((float) $notasComFinal->avg('cfd_efetiva'), 2)
+                        : null,
+                    'disciplinas_lancadas' => $notasAluno->pluck('disciplina_id')->unique()->count(),
+                    'total_disciplinas' => $disciplinas->count(),
+                    'negativas' => $notasComFinal->filter(fn (Nota $nota) => ! $nota->isAprovado())->count(),
+                    'recursos' => $notasAluno->filter(fn (Nota $nota) => $nota->recursoPendente())->count(),
+                    'status' => $resultado['status'],
+                    'resultado' => $resultado['resultado'] ?: match ($resultado['status']) {
+                        ResultadoAlunoTurmaService::STATUS_TRANSITA => 'Aprovado',
+                        ResultadoAlunoTurmaService::STATUS_REPROVADO => 'Reprovado',
+                        ResultadoAlunoTurmaService::STATUS_RECURSO => 'Recurso',
+                        default => 'Pendente',
+                    },
+                    'observacao' => $resultado['observacao'],
+                ];
+            })
+            ->values();
+    }
+
+    private function mediaCampoNotas(Collection $notas, string $campo): ?float
+    {
+        $valores = $notas
+            ->pluck($campo)
+            ->filter(fn ($valor) => is_numeric($valor));
+
+        return $valores->isNotEmpty()
+            ? round((float) $valores->avg(), 2)
+            : null;
     }
 
     private function buscarNotasDaPauta(AnoLetivo $anoLetivo, ?int $turmaId = null, ?int $disciplinaId = null, ?int $alunoId = null)

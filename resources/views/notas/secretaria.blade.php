@@ -11,6 +11,8 @@
     $disciplinas           = $disciplinas           ?? collect();
     $notas                 = $notas                 ?? collect();
     $notasAgrupadas        = $notasAgrupadas        ?? collect();
+    $situacaoFinalAlunos   = $situacaoFinalAlunos   ?? collect();
+    $estatisticasSituacaoFinal = $estatisticasSituacaoFinal ?? null;
     $classificacoesEnsinoMedio = $classificacoesEnsinoMedio ?? collect();
     $turmaSelecionada      = $turmaSelecionada      ?? null;
     $disciplinaSelecionada = $disciplinaSelecionada ?? null;
@@ -25,6 +27,13 @@
     $totalEmLancamento        = $notas->where('status', '!=', 'finalizado')->count();
     $totalBloqueadasTrimestre = $notas->filter(fn($n) => $n->bloqueado_t1 || $n->bloqueado_t2 || $n->bloqueado_t3)->count();
     $opcoesAlunosOperacao     = $notas->pluck('aluno')->filter()->unique('id')->sortBy('name')->values();
+
+    if ($turmaSelecionada && !$disciplinaSelecionada && $estatisticasSituacaoFinal) {
+        $mediaGeral = $estatisticasSituacaoFinal['media_final'];
+        $totalAprovados = $estatisticasSituacaoFinal['aprovados'];
+        $totalReprovados = $estatisticasSituacaoFinal['reprovados'];
+        $totalPendentes = $estatisticasSituacaoFinal['pendentes'] + $estatisticasSituacaoFinal['recurso'];
+    }
 @endphp
 
 <div id="notas-root">
@@ -53,11 +62,11 @@
                     </div>
 
                     <div class="nr-field">
-                        <label class="nr-label"><i class="fas fa-book-open"></i> Disciplina <span style="color:#dc2626">*</span></label>
+                        <label class="nr-label"><i class="fas fa-book-open"></i> Disciplina</label>
                         <select name="disciplina_id" class="nr-input {{ !request('turma_id') ? 'nr-disabled' : '' }}"
                                 {{ !request('turma_id') ? 'disabled' : '' }}
                                 onchange="this.form.submit()">
-                            <option value="" {{ !request('disciplina_id') ? 'selected' : '' }}>Todas as disciplinas</option>
+                            <option value="" {{ !request('disciplina_id') ? 'selected' : '' }}>SituaÃ§Ã£o final da turma</option>
                             @if(request('turma_id') && $disciplinas->isNotEmpty())
                                 @foreach($disciplinas as $disciplina)
                                     <option value="{{ $disciplina->id }}" {{ request('disciplina_id') == $disciplina->id ? 'selected' : '' }}>
@@ -155,7 +164,7 @@
                     @if($disciplinaSelecionada)
                         <span style="color:#3b82f6">{{ $disciplinaSelecionada->nome }}</span>
                     @else
-                        <span style="color:#64748b">Todas as Disciplinas</span>
+                        <span style="color:#64748b">SituaÃ§Ã£o final da turma</span>
                     @endif
                 </div>
                 <div class="nr-sel-sub">
